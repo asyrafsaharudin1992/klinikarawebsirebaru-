@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: services
+    // Document ID: auto-generated
+    // Fields:
+    //   - title: string (required) - Title of the service
+    //   - category: string (required) - Category of the service (AraMommy, AraVax, AraSihat, Other)
+    //   - imageUrl: string (required) - URL of the promotional image
+    //   - rankOrder: number (required) - Order of the service in the list
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email == "asyrafsaharudin@hsohealthcare.com" && request.auth.token.email_verified == true
+      );
+    }
+
+    function isValidService() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['title', 'category', 'imageUrl', 'rankOrder']) &&
+             data.keys().hasOnly(['title', 'category', 'imageUrl', 'rankOrder']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
+             data.category is string && data.category in ['AraMommy', 'AraVax', 'AraSihat', 'Other'] &&
+             data.imageUrl is string && data.imageUrl.size() > 0 && data.imageUrl.size() < 1000 &&
+             data.rankOrder is number;
+    }
+
+    match /services/{serviceId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidService();
+      allow update: if isAdmin() && isValidService();
+      allow delete: if isAdmin();
+    }
+  }
+}

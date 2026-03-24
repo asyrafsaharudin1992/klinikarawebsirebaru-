@@ -1,0 +1,22 @@
+{
+  "entities": {
+    "Service": {
+      "title": "Service",
+      "description": "A medical service promotion",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "category": { "type": "string", "enum": ["AraMommy", "AraVax", "AraSihat", "Other"] },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "rankOrder": { "type": "number" }
+      },
+      "required": ["title", "category", "imageUrl", "rankOrder"]
+    }
+  },
+  "firestore": {
+    "/services/{serviceId}": {
+      "schema": "Service",
+      "description": "List of services"
+    }
+  }
+}
