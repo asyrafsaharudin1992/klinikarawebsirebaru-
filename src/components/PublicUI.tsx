@@ -9,7 +9,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import GoogleReviews from './GoogleReviews';
 import SEO from './SEO';
 
-const ServiceCarouselRow = ({ title, services, onSelect, lang }: { title: string, services: Service[], onSelect: (s: Service) => void, key?: string | number, lang: 'BM' | 'EN' }) => {
+const ServiceCarouselRow = ({ title, services, onSelect, lang, subheading }: { title: string, services: Service[], onSelect: (s: Service) => void, key?: string | number, lang: 'BM' | 'EN', subheading?: string }) => {
   if (!services || services.length === 0) return null;
   return (
     <div className="mb-8 md:mb-12">
@@ -18,7 +18,7 @@ const ServiceCarouselRow = ({ title, services, onSelect, lang }: { title: string
           {title}
           <ChevronRight className="w-5 h-5 text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
         </h2>
-        <p className="text-sm text-gray-400">{t[lang].servicesSub}</p>
+        <p className="text-sm text-gray-400">{subheading || t[lang].servicesSub}</p>
       </div>
       <div className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar px-4 md:px-12 gap-2 md:gap-4 pb-4">
         {services.map(service => {
@@ -524,6 +524,7 @@ export default function PublicUI() {
                         services={categoryServices as Service[]} 
                         onSelect={handleOpenModal}
                         lang={lang}
+                        subheading={settings?.servicesSub}
                       />
                     );
                   }) : (
@@ -545,7 +546,7 @@ export default function PublicUI() {
               return collaborators.length > 0 ? (
                 <section key="teamAra" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
                   <h2 className="text-xl md:text-2xl font-bold text-white mb-1">{t[lang].teamAraTitle}</h2>
-                  <p className="text-sm text-gray-400 mb-6">{t[lang].teamAraSub}</p>
+                  <p className="text-sm text-gray-400 mb-6">{settings?.teamAraSub || t[lang].teamAraSub}</p>
                   <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pb-6 hide-scrollbar">
                     {collaborators.map(collab => (
                       <div key={collab.id} className="w-[280px] sm:w-[300px] flex-shrink-0 flex flex-col bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden snap-center group">
@@ -574,7 +575,7 @@ export default function PublicUI() {
               return vendors.length > 0 ? (
                 <section key="vendors" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
                   <h2 className="text-xl md:text-2xl font-bold text-white mb-1">{t[lang].vendorsTitle}</h2>
-                  <p className="text-sm text-gray-400 mb-6">{settings.vendorSubheading || t[lang].vendorsSub}</p>
+                  <p className="text-sm text-gray-400 mb-6">{settings?.vendorsSub || settings?.vendorSubheading || t[lang].vendorsSub}</p>
                   <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pb-6 hide-scrollbar">
                     {vendors.map(vendor => (
                       <div 
@@ -608,7 +609,7 @@ export default function PublicUI() {
                 <div key="panels" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12 max-w-7xl mx-auto w-full">
                   <div className="max-w-4xl mx-auto mb-4">
                     <h2 className="text-xl md:text-2xl font-bold text-white mb-1">{t[lang].panelsTitle}</h2>
-                    <p className="text-sm text-gray-400">{t[lang].panelsSub}</p>
+                    <p className="text-sm text-gray-400">{settings?.panelsSub || t[lang].panelsSub}</p>
                   </div>
                   <div className="flex items-center gap-4 overflow-x-auto pb-4 no-scrollbar snap-x snap-mandatory">
                     {panels.map((panel) => (

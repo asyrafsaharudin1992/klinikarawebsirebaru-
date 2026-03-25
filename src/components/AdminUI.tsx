@@ -761,8 +761,12 @@ export default function AdminUI({ user }: { user: User }) {
     setSuccessMsg(null);
     try {
       await updateDoc(doc(db, 'settings', 'homepage'), {
-        vendorSubheading: settings.vendorSubheading,
-        carouselOrder: settings.carouselOrder
+        vendorSubheading: settings.vendorSubheading || '',
+        carouselOrder: settings.carouselOrder || ['services', 'teamAra', 'vendors', 'panels'],
+        servicesSub: settings.servicesSub || '',
+        teamAraSub: settings.teamAraSub || '',
+        panelsSub: settings.panelsSub || '',
+        vendorsSub: settings.vendorsSub || ''
       });
       setSuccessMsg('Layout saved successfully!');
       setTimeout(() => setSuccessMsg(null), 3000);
@@ -2268,16 +2272,52 @@ export default function AdminUI({ user }: { user: User }) {
           </div>
 
           <div className="space-y-8">
-            <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1.5">Vendor Subheading</label>
-              <input
-                type="text"
-                value={settings.vendorSubheading}
-                onChange={e => setSettings({...settings, vendorSubheading: e.target.value})}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
-                placeholder="e.g., Business entity that gives perks to TeamAra members"
-              />
-              <p className="text-xs text-zinc-500 mt-2">This text appears below the "Vendor TeamAra" title on the homepage.</p>
+            <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 space-y-6">
+              <h3 className="text-lg font-medium text-white mb-4 border-b border-zinc-800 pb-2">Subheadings</h3>
+              
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Services Subheading</label>
+                <input
+                  type="text"
+                  value={settings.servicesSub || ''}
+                  onChange={e => setSettings({...settings, servicesSub: e.target.value})}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                  placeholder="e.g., Swipe to explore our available packages"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">TeamAra Subheading</label>
+                <input
+                  type="text"
+                  value={settings.teamAraSub || ''}
+                  onChange={e => setSettings({...settings, teamAraSub: e.target.value})}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                  placeholder="e.g., Exclusive health plans for your whole family"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Vendors Subheading</label>
+                <input
+                  type="text"
+                  value={settings.vendorsSub || settings.vendorSubheading || ''}
+                  onChange={e => setSettings({...settings, vendorsSub: e.target.value, vendorSubheading: e.target.value})}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                  placeholder="e.g., Business entities providing perks to TeamAra members"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Panels Subheading</label>
+                <input
+                  type="text"
+                  value={settings.panelsSub || ''}
+                  onChange={e => setSettings({...settings, panelsSub: e.target.value})}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                  placeholder="e.g., Click to see branch availability"
+                />
+              </div>
             </div>
 
             <div>
