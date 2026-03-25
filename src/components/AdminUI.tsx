@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { User, signOut } from 'firebase/auth';
-import { collection, onSnapshot, query, orderBy, addDoc, doc, deleteDoc, writeBatch, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, doc, deleteDoc, writeBatch, updateDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, auth, storage } from '../firebase';
-import { Service, Location, Panel, Collaborator, AdminUser, handleFirestoreError, OperationType } from '../types';
+import { Service, Location, Panel, Collaborator, AdminUser, Vendor, AppSettings, handleFirestoreError, OperationType } from '../types';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { LogOut, Plus, GripVertical, Image as ImageIcon, Trash2, Loader2, AlertCircle, CheckCircle2, X, Edit2, Sparkles, MapPin } from 'lucide-react';
+import { LogOut, Plus, GripVertical, Image as ImageIcon, Trash2, Loader2, AlertCircle, CheckCircle2, X, Edit2, Sparkles, MapPin, Phone, ArrowUp, ArrowDown } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { GoogleGenAI } from '@google/genai';
 
@@ -80,7 +80,7 @@ const SortableServiceItem: React.FC<{ service: Service, onDelete: (id: string) =
 }
 
 export default function AdminUI({ user }: { user: User }) {
-  const [activeTab, setActiveTab] = useState<'services' | 'locations' | 'panels' | 'collaborators' | 'leads' | 'staff'>('services');
+  const [activeTab, setActiveTab] = useState<'services' | 'locations' | 'panels' | 'collaborators' | 'leads' | 'staff' | 'vendors' | 'layout'>('services');
 
   const [currentAdminInfo, setCurrentAdminInfo] = useState<AdminUser | null>(null);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
@@ -89,6 +89,8 @@ export default function AdminUI({ user }: { user: User }) {
   const [locations, setLocations] = useState<Location[]>([]);
   const [panels, setPanels] = useState<Panel[]>([]);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [settings, setSettings] = useState<AppSettings>({ vendorSubheading: '', carouselOrder: ['services', 'teamAra', 'vendors', 'panels'] });
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [adminLoading, setAdminLoading] = useState(true);
@@ -131,6 +133,20 @@ export default function AdminUI({ user }: { user: User }) {
   });
   const [collabImageFile, setCollabImageFile] = useState<File | null>(null);
   const [collabImagePreview, setCollabImagePreview] = useState<string | null>(null);
+
+  // Vendor Form state
+  const [editingVendorId, setEditingVendorId] = useState<string | null>(null);
+  const [deleteVendorConfirmId, setDeleteVendorConfirmId] = useState<string | null>(null);
+  const [vendorForm, setVendorForm] = useState({
+    name: '',
+    address: '',
+    phone: '',
+    mapUrl: '',
+    imageUrl: '',
+    perks: ''
+  });
+  const [vendorImageFile, setVendorImageFile] = useState<File | null>(null);
+  const [vendorImagePreview, setVendorImagePreview] = useState<string | null>(null);
 
   // Staff Form state
   const [staffForm, setStaffForm] = useState({
@@ -264,6 +280,31 @@ export default function AdminUI({ user }: { user: User }) {
       handleFirestoreError(error, OperationType.LIST, 'collaborators', auth);
     });
 
+    const qVendors = query(collection(db, 'vendors'));
+    const unsubscribeVendors = onSnapshot(qVendors, (snapshot) => {
+      const vendorData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Vendor[];
+      
+      setVendors(vendorData);
+    }, (error) => {
+      console.error("Admin Vendors Fetch Error:", error);
+      handleFirestoreError(error, OperationType.LIST, 'vendors', auth);
+    });
+
+    const docSettings = doc(db, 'settings', 'homepage');
+    const unsubscribeSettings = onSnapshot(docSettings, (docSnap) => {
+      if (docSnap.exists()) {
+        setSettings(docSnap.data() as AppSettings);
+      } else {
+        setSettings({ vendorSubheading: '', carouselOrder: ['services', 'teamAra', 'vendors', 'panels'] });
+      }
+    }, (error) => {
+      console.error("Admin Settings Fetch Error:", error);
+      handleFirestoreError(error, OperationType.GET, 'settings/homepage', auth);
+    });
+
     const qLeads = query(collection(db, 'leads'));
     const unsubscribeLeads = onSnapshot(qLeads, (snapshot) => {
       let leadsData = snapshot.docs.map(doc => ({
@@ -294,6 +335,8 @@ export default function AdminUI({ user }: { user: User }) {
       unsubscribeLocations();
       unsubscribePanels();
       unsubscribeCollaborators();
+      unsubscribeVendors();
+      unsubscribeSettings();
       unsubscribeLeads();
     };
   }, [user, currentAdminInfo?.role, currentAdminInfo?.branchId]);
@@ -609,6 +652,146 @@ export default function AdminUI({ user }: { user: User }) {
     } finally {
       setDeleteCollabConfirmId(null);
     }
+  };
+
+  const resetVendorForm = () => {
+    setVendorForm({ name: '', address: '', phone: '', mapUrl: '', imageUrl: '', perks: '' });
+    setVendorImageFile(null);
+    setVendorImagePreview(null);
+    setEditingVendorId(null);
+  };
+
+  const handleEditVendor = (vendor: Vendor) => {
+    setVendorForm({
+      name: vendor.name,
+      address: vendor.address,
+      phone: vendor.phone,
+      mapUrl: vendor.mapUrl,
+      imageUrl: vendor.imageUrl,
+      perks: vendor.perks
+    });
+    setVendorImagePreview(vendor.imageUrl);
+    setVendorImageFile(null);
+    setEditingVendorId(vendor.id || null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSaveVendor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      let finalImageUrl = vendorForm.imageUrl || '';
+
+      if (vendorImageFile) {
+        const options = {
+          maxSizeMB: 0.5,
+          maxWidthOrHeight: 1200,
+          useWebWorker: true,
+        };
+        const compressedFile = await imageCompression(vendorImageFile, options);
+        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${vendorImageFile.name}`;
+        const storageRef = ref(storage, `vendors/${uniqueFileName}`);
+        const uploadTask = uploadBytesResumable(storageRef, compressedFile);
+
+        finalImageUrl = await new Promise<string>((resolve, reject) => {
+          uploadTask.on(
+            'state_changed',
+            null,
+            (error) => reject(error),
+            async () => {
+              const url = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve(url);
+            }
+          );
+        });
+      }
+
+      if (!finalImageUrl) {
+        throw new Error('Please upload an image for the vendor.');
+      }
+
+      const vendorData = { 
+        ...vendorForm,
+        imageUrl: finalImageUrl
+      };
+      
+      if (editingVendorId) {
+        await updateDoc(doc(db, 'vendors', editingVendorId), vendorData);
+        setSuccessMsg('Vendor updated successfully!');
+      } else {
+        await addDoc(collection(db, 'vendors'), vendorData);
+        setSuccessMsg('Vendor added successfully!');
+      }
+      resetVendorForm();
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (error: any) {
+      setErrorMsg(error.message || 'Failed to save vendor.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteVendor = async (id: string) => {
+    setDeleteVendorConfirmId(id);
+  };
+
+  const confirmDeleteVendor = async () => {
+    if (!deleteVendorConfirmId) return;
+    try {
+      const vendorToDelete = vendors.find(v => v.id === deleteVendorConfirmId);
+      if (vendorToDelete?.imageUrl) {
+        await deleteImageFromStorage(vendorToDelete.imageUrl);
+      }
+      await deleteDoc(doc(db, 'vendors', deleteVendorConfirmId));
+      setSuccessMsg('Vendor deleted successfully!');
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (error) {
+      setErrorMsg('Failed to delete vendor.');
+    } finally {
+      setDeleteVendorConfirmId(null);
+    }
+  };
+
+  const handleSaveLayout = async () => {
+    setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      await updateDoc(doc(db, 'settings', 'homepage'), {
+        vendorSubheading: settings.vendorSubheading,
+        carouselOrder: settings.carouselOrder
+      });
+      setSuccessMsg('Layout saved successfully!');
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (error: any) {
+      // If document doesn't exist, create it
+      if (error.code === 'not-found') {
+        try {
+          await setDoc(doc(db, 'settings', 'homepage'), settings);
+          setSuccessMsg('Layout saved successfully!');
+          setTimeout(() => setSuccessMsg(null), 3000);
+        } catch (innerError: any) {
+          setErrorMsg(innerError.message || 'Failed to save layout.');
+        }
+      } else {
+        setErrorMsg(error.message || 'Failed to save layout.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const moveCarouselItem = (index: number, direction: 'up' | 'down') => {
+    const newOrder = [...settings.carouselOrder];
+    if (direction === 'up' && index > 0) {
+      [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+    } else if (direction === 'down' && index < newOrder.length - 1) {
+      [newOrder[index + 1], newOrder[index]] = [newOrder[index], newOrder[index + 1]];
+    }
+    setSettings({ ...settings, carouselOrder: newOrder });
   };
 
   const fillKajangLocation = () => {
@@ -1068,6 +1251,18 @@ export default function AdminUI({ user }: { user: User }) {
             className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'collaborators' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
             Manage TeamAra
+          </button>
+          <button
+            onClick={() => setActiveTab('vendors')}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'vendors' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          >
+            Manage Vendors
+          </button>
+          <button
+            onClick={() => setActiveTab('layout')}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'layout' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          >
+            Manage Layout
           </button>
           <button
             onClick={() => setActiveTab('leads')}
@@ -1888,6 +2083,237 @@ export default function AdminUI({ user }: { user: User }) {
                 ))
               )}
             </div>
+          </div>
+        </div>
+      </main>
+      )}
+
+      {activeTab === 'vendors' && (
+      <main className="max-w-6xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-5">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sticky top-24 shadow-xl">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-zinc-800">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                {editingVendorId ? <Edit2 className="w-5 h-5 text-blue-500" /> : <Plus className="w-5 h-5 text-red-500" />}
+                {editingVendorId ? 'Edit Vendor' : 'Add New Vendor'}
+              </h2>
+              {editingVendorId && (
+                <button onClick={resetVendorForm} className="text-xs text-zinc-400 hover:text-white flex items-center gap-1 transition-colors">
+                  <X className="w-3 h-3" /> Cancel Edit
+                </button>
+              )}
+            </div>
+
+            <form onSubmit={handleSaveVendor} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Vendor Name</label>
+                <input
+                  type="text"
+                  required
+                  value={vendorForm.name}
+                  onChange={e => setVendorForm({...vendorForm, name: e.target.value})}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                  placeholder="e.g., Ara Cafe"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Perks / Description</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={vendorForm.perks}
+                  onChange={e => setVendorForm({...vendorForm, perks: e.target.value})}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all resize-none"
+                  placeholder="e.g., 10% discount for TeamAra members"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Address</label>
+                <input
+                  type="text"
+                  required
+                  value={vendorForm.address}
+                  onChange={e => setVendorForm({...vendorForm, address: e.target.value})}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                  placeholder="e.g., 123 Main St"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">Phone Number</label>
+                  <input
+                    type="text"
+                    required
+                    value={vendorForm.phone}
+                    onChange={e => setVendorForm({...vendorForm, phone: e.target.value})}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                    placeholder="e.g., 0123456789"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">Google Maps URL</label>
+                  <input
+                    type="url"
+                    required
+                    value={vendorForm.mapUrl}
+                    onChange={e => setVendorForm({...vendorForm, mapUrl: e.target.value})}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                    placeholder="https://maps.google.com/..."
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Vendor Logo/Image</label>
+                <div className="relative group cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setVendorImageFile(file);
+                        setVendorImagePreview(URL.createObjectURL(file));
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    required={!editingVendorId && !vendorImagePreview}
+                  />
+                  <div className={`w-full h-40 rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-all overflow-hidden ${vendorImagePreview ? 'border-red-500/50 bg-red-500/5' : 'border-zinc-800 bg-zinc-950 group-hover:border-zinc-700 group-hover:bg-zinc-900'}`}>
+                    {vendorImagePreview ? (
+                      <img src={vendorImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <>
+                        <ImageIcon className="w-8 h-8 text-zinc-600 mb-2 group-hover:text-zinc-400 transition-colors" />
+                        <span className="text-sm text-zinc-500 group-hover:text-zinc-400 transition-colors">Click or drag to upload</span>
+                        <span className="text-xs text-zinc-600 mt-1">PNG, JPG up to 5MB</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (editingVendorId ? 'Update Vendor' : 'Add Vendor')}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div className="lg:col-span-7">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
+            <div className="p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
+              <h2 className="text-lg font-semibold text-white">Vendor Directory</h2>
+              <span className="px-3 py-1 bg-zinc-800 text-zinc-400 text-xs font-medium rounded-full border border-zinc-700">
+                {vendors.length} Total
+              </span>
+            </div>
+            
+            <div className="divide-y divide-zinc-800">
+              {vendors.length === 0 ? (
+                <div className="p-12 text-center text-zinc-500">
+                  <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <ImageIcon className="w-8 h-8" />
+                  </div>
+                  <p>No vendors found.</p>
+                  <p className="text-sm mt-1">Add your first vendor using the form.</p>
+                </div>
+              ) : (
+                vendors.map(vendor => (
+                  <div key={vendor.id} className="p-6 hover:bg-zinc-800/30 transition-colors group flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                    <div className="flex gap-4 items-center">
+                      <div className="w-16 h-16 rounded-lg bg-zinc-800 overflow-hidden flex-shrink-0 border border-zinc-700">
+                        <img src={vendor.imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-white mb-1">{vendor.name}</h3>
+                        <p className="text-xs text-zinc-400 mb-2 flex items-center gap-1">
+                          <MapPin className="w-3 h-3" /> {vendor.address}
+                        </p>
+                        <p className="text-xs text-zinc-500">{vendor.perks}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => handleEditVendor(vendor)} className="p-2 text-zinc-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all" title="Edit">
+                        <Edit2 className="w-5 h-5" />
+                      </button>
+                      <button onClick={() => handleDeleteVendor(vendor.id!)} className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all" title="Delete">
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+      )}
+
+      {activeTab === 'layout' && (
+      <main className="max-w-4xl mx-auto px-4 mt-8">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">
+          <div className="flex items-center justify-between mb-6 pb-4 border-b border-zinc-800">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <GripVertical className="w-5 h-5 text-red-500" />
+              Homepage Layout Manager
+            </h2>
+          </div>
+
+          <div className="space-y-8">
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-1.5">Vendor Subheading</label>
+              <input
+                type="text"
+                value={settings.vendorSubheading}
+                onChange={e => setSettings({...settings, vendorSubheading: e.target.value})}
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                placeholder="e.g., Business entity that gives perks to TeamAra members"
+              />
+              <p className="text-xs text-zinc-500 mt-2">This text appears below the "Vendor TeamAra" title on the homepage.</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-3">Homepage Section Order</label>
+              <div className="space-y-2">
+                {settings.carouselOrder.map((section, index) => (
+                  <div key={section} className="flex items-center justify-between bg-zinc-950 border border-zinc-800 p-4 rounded-xl">
+                    <span className="text-white font-medium capitalize">{section === 'teamAra' ? 'Keluarga TeamAra' : section}</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => moveCarouselItem(index, 'up')}
+                        disabled={index === 0}
+                        className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => moveCarouselItem(index, 'down')}
+                        disabled={index === settings.carouselOrder.length - 1}
+                        className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+                      >
+                        <ArrowDown className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={handleSaveLayout}
+              disabled={loading}
+              className="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Layout'}
+            </button>
           </div>
         </div>
       </main>

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, onSnapshot, query, orderBy, addDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Service, Location, Panel, Collaborator, handleFirestoreError, OperationType } from '../types';
-import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle } from 'lucide-react';
+import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType } from '../types';
+import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle, Phone } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { GoogleGenAI, Type } from '@google/genai';
 import GoogleReviews from './GoogleReviews';
@@ -67,7 +67,10 @@ export default function PublicUI() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [panels, setPanels] = useState<Panel[]>([]);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [settings, setSettings] = useState<AppSettings>({ vendorSubheading: '', carouselOrder: ['services', 'teamAra', 'vendors', 'panels'] });
   const [selectedPanel, setSelectedPanel] = useState<Panel | null>(null);
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [modalImageIndex, setModalImageIndex] = useState(0);
@@ -134,11 +137,39 @@ export default function PublicUI() {
       handleFirestoreError(error, OperationType.LIST, 'collaborators', auth);
     });
 
+    const qVendors = query(collection(db, 'vendors'));
+    const unsubscribeVendors = onSnapshot(qVendors, (snapshot) => {
+      const vendorData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Vendor[];
+      
+      setVendors(vendorData);
+    }, (error) => {
+      console.error("Vendors Fetch Error:", error);
+      handleFirestoreError(error, OperationType.LIST, 'vendors', auth);
+    });
+
+    const unsubscribeSettings = onSnapshot(doc(db, 'settings', 'homepage'), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data() as AppSettings;
+        setSettings({
+          vendorSubheading: data.vendorSubheading || '',
+          carouselOrder: data.carouselOrder || ['services', 'teamAra', 'vendors', 'panels']
+        });
+      }
+    }, (error) => {
+      console.error("Settings Fetch Error:", error);
+      handleFirestoreError(error, OperationType.GET, 'settings/homepage', auth);
+    });
+
     return () => {
       unsubscribeServices();
       unsubscribeLocations();
       unsubscribePanels();
       unsubscribeCollaborators();
+      unsubscribeVendors();
+      unsubscribeSettings();
     };
   }, []);
 
@@ -403,32 +434,6 @@ export default function PublicUI() {
         </div>
       </div>
 
-      {/* Panels Carousel Section */}
-      {panels.length > 0 && (
-        <div className="mt-12 px-4 md:px-12 max-w-7xl mx-auto w-full">
-          <div className="max-w-4xl mx-auto mb-4">
-            <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Panels</h2>
-            <p className="text-sm text-gray-400">Click to see branch availability</p>
-          </div>
-          <div className="flex items-center gap-4 overflow-x-auto pb-4 no-scrollbar snap-x snap-mandatory">
-            {panels.map((panel) => (
-              <div 
-                key={panel.id} 
-                onClick={() => setSelectedPanel(panel)}
-                className="bg-white rounded-xl h-24 w-32 flex items-center justify-center p-2 cursor-pointer hover:scale-105 transition-transform flex-shrink-0 snap-center shadow-lg border border-zinc-800"
-              >
-                <img 
-                  src={panel.imageUrl} 
-                  alt={`${panel.name} logo`} 
-                  className="max-w-full max-h-full object-contain"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {isAiSearching ? (
         <section className="pt-16 pb-20 min-h-[40vh] flex flex-col items-center justify-center text-zinc-400">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mb-4"></div>
@@ -483,61 +488,130 @@ export default function PublicUI() {
         </section>
       ) : (
         <section id="services" className="pt-16 pb-20 relative z-10">
-          {/* Carousels */}
-          {hasContent ? uniqueCategories.map(category => {
-            const categoryServices = (services || []).filter(s => s.category === category);
-            return (
-              <ServiceCarouselRow 
-                key={String(category)} 
-                title={String(category)} 
-                services={categoryServices as Service[]} 
-                onSelect={handleOpenModal}
-              />
-            );
-          }) : (
-            <div className="px-4 md:px-12 py-12 text-center">
-              <div className="bg-zinc-900/50 rounded-2xl p-12 border border-zinc-800 border-dashed max-w-2xl mx-auto">
-                <Sparkles className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-                <h3 className="text-xl font-bold mb-2">No Services Added Yet</h3>
-                <p className="text-zinc-500 mb-6">Log in to the Admin panel to start adding your clinic's services and promotions.</p>
-                <a href="/admin" className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-bold transition inline-block">
-                  Go to Admin Panel
-                </a>
-              </div>
-            </div>
-          )}
+          {settings.carouselOrder.map(section => {
+            if (section === 'services') {
+              return (
+                <div key="services">
+                  {hasContent ? uniqueCategories.map(category => {
+                    const categoryServices = (services || []).filter(s => s.category === category);
+                    return (
+                      <ServiceCarouselRow 
+                        key={String(category)} 
+                        title={String(category)} 
+                        services={categoryServices as Service[]} 
+                        onSelect={handleOpenModal}
+                      />
+                    );
+                  }) : (
+                    <div className="px-4 md:px-12 py-12 text-center">
+                      <div className="bg-zinc-900/50 rounded-2xl p-12 border border-zinc-800 border-dashed max-w-2xl mx-auto">
+                        <Sparkles className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+                        <h3 className="text-xl font-bold mb-2">No Services Added Yet</h3>
+                        <p className="text-zinc-500 mb-6">Log in to the Admin panel to start adding your clinic's services and promotions.</p>
+                        <a href="/admin" className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-bold transition inline-block">
+                          Go to Admin Panel
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            if (section === 'teamAra') {
+              return collaborators.length > 0 ? (
+                <section key="teamAra" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
+                  <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Keluarga TeamAra</h2>
+                  <p className="text-sm text-gray-400 mb-6">Keluarga TeamAra ialah entiti atau organisasi yang ahli/murid/pekerjanya dapat menikmati manfaat TeamAra secara automatik</p>
+                  <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pb-6 hide-scrollbar">
+                    {collaborators.map(collab => (
+                      <div key={collab.id} className="w-[280px] sm:w-[300px] flex-shrink-0 flex flex-col bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden snap-center group">
+                        <div className="h-48 w-full overflow-hidden bg-zinc-800">
+                          <img 
+                            src={collab.imageUrl} 
+                            alt={`${collab.name} - TeamAra Collaborator`} 
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                        <div className="p-5 flex flex-col flex-1">
+                          <h4 className="text-lg font-bold text-white mb-2">{collab.name}</h4>
+                          <div className="flex items-start gap-2 text-sm text-zinc-400 mt-auto">
+                            <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                            <p className="line-clamp-2">{collab.location}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null;
+            }
+            if (section === 'vendors') {
+              return vendors.length > 0 ? (
+                <section key="vendors" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
+                  <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Vendor TeamAra</h2>
+                  {settings.vendorSubheading && (
+                    <p className="text-sm text-gray-400 mb-6">{settings.vendorSubheading}</p>
+                  )}
+                  <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pb-6 hide-scrollbar">
+                    {vendors.map(vendor => (
+                      <div 
+                        key={vendor.id} 
+                        onClick={() => setSelectedVendor(vendor)}
+                        className="w-[280px] sm:w-[300px] flex-shrink-0 flex flex-col bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden snap-center group cursor-pointer hover:border-zinc-700 transition-colors"
+                      >
+                        <div className="h-48 w-full overflow-hidden bg-zinc-800">
+                          <img 
+                            src={vendor.imageUrl} 
+                            alt={`${vendor.name} - Vendor TeamAra`} 
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                        <div className="p-5 flex flex-col flex-1">
+                          <h4 className="text-lg font-bold text-white mb-2">{vendor.name}</h4>
+                          <div className="flex items-start gap-2 text-sm text-zinc-400 mt-auto">
+                            <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                            <p className="line-clamp-2">{vendor.address}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null;
+            }
+            if (section === 'panels') {
+              return panels.length > 0 ? (
+                <div key="panels" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12 max-w-7xl mx-auto w-full">
+                  <div className="max-w-4xl mx-auto mb-4">
+                    <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Panels</h2>
+                    <p className="text-sm text-gray-400">Click to see branch availability</p>
+                  </div>
+                  <div className="flex items-center gap-4 overflow-x-auto pb-4 no-scrollbar snap-x snap-mandatory">
+                    {panels.map((panel) => (
+                      <div 
+                        key={panel.id} 
+                        onClick={() => setSelectedPanel(panel)}
+                        className="bg-white rounded-xl h-24 w-32 flex items-center justify-center p-2 cursor-pointer hover:scale-105 transition-transform flex-shrink-0 snap-center shadow-lg border border-zinc-800"
+                      >
+                        <img 
+                          src={panel.imageUrl} 
+                          alt={`${panel.name} logo`} 
+                          className="max-w-full max-h-full object-contain"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            }
+            return null;
+          })}
 
           {/* Google Reviews Section */}
           <GoogleReviews />
-
-          {/* Keluarga TeamAra Section */}
-          {collaborators.length > 0 && (
-            <section className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
-              <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Keluarga TeamAra</h2>
-              <p className="text-sm text-gray-400 mb-6">Keluarga TeamAra ialah entiti atau organisasi yang ahli/murid/pekerjanya dapat menikmati manfaat TeamAra secara automatik</p>
-              <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pb-6 hide-scrollbar">
-                {collaborators.map(collab => (
-                  <div key={collab.id} className="w-[280px] sm:w-[300px] flex-shrink-0 flex flex-col bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden snap-center group">
-                    <div className="h-48 w-full overflow-hidden bg-zinc-800">
-                      <img 
-                        src={collab.imageUrl} 
-                        alt={`${collab.name} - TeamAra Collaborator`} 
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                    <div className="p-5 flex flex-col flex-1">
-                      <h4 className="text-lg font-bold text-white mb-2">{collab.name}</h4>
-                      <div className="flex items-start gap-2 text-sm text-zinc-400 mt-auto">
-                        <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                        <p className="line-clamp-2">{collab.location}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
 
           {/* Locations Section */}
           <section id="locations" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
@@ -797,6 +871,107 @@ export default function PublicUI() {
                 {selectedPanel.availableLocations.length === 0 && (
                   <p className="text-center text-gray-500 italic py-4">No locations listed.</p>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Vendor Modal */}
+      {selectedVendor && (
+        <div 
+          className="fixed inset-0 z-50 flex flex-col md:flex-row md:items-center md:justify-center bg-black/80 backdrop-blur-sm p-0 md:p-6 transition-opacity"
+          onClick={() => setSelectedVendor(null)}
+        >
+          <div 
+            className="bg-gray-900 w-full mt-auto md:mt-0 md:max-w-4xl rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col md:flex-row max-h-[95vh] md:max-h-[85vh] relative shadow-2xl border-t md:border border-gray-800"
+            onClick={e => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setSelectedVendor(null)}
+              className="absolute top-4 right-4 z-50 bg-black/40 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-md transition-all cursor-pointer"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {/* Left Side / Top: The Hero Image */}
+            <div className="w-full h-64 md:h-auto md:w-1/2 flex-shrink-0 bg-gray-950 relative">
+              {selectedVendor.imageUrl ? (
+                <img 
+                  src={selectedVendor.imageUrl} 
+                  alt={selectedVendor.name} 
+                  className="w-full h-full object-cover object-top"
+                  style={{ imageRendering: 'high-quality', WebkitFontSmoothing: 'antialiased' }}
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-zinc-600">No Image</div>
+              )}
+            </div>
+
+            {/* Right Side / Bottom: The Content Area */}
+            <div className="flex-1 p-6 md:p-8 overflow-y-auto flex flex-col hide-scrollbar">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="px-3 py-1 bg-zinc-800 text-zinc-300 text-xs font-bold tracking-wider rounded-md border border-zinc-700">
+                  VENDOR TEAMARA
+                </span>
+              </div>
+
+              <h2 className="text-3xl font-extrabold text-white tracking-tight leading-tight mb-6">
+                {selectedVendor.name}
+              </h2>
+
+              <div className="space-y-4 mb-8">
+                <div className="flex items-start gap-3 text-gray-300">
+                  <MapPin className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm md:text-base leading-relaxed">{selectedVendor.address}</p>
+                </div>
+                {selectedVendor.phone && (
+                  <div className="flex items-center gap-3 text-gray-300">
+                    <Phone className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+                    <p className="text-sm md:text-base">{selectedVendor.phone}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-grow">
+                <h3 className="flex items-center gap-2 text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">
+                  <Sparkles className="w-4 h-4" /> Perks & Description
+                </h3>
+                <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-sm md:text-base">
+                  {selectedVendor.perks || "No detailed description provided for this vendor."}
+                </p>
+              </div>
+
+              <div className="mt-8 pt-4 border-t border-gray-800 space-y-3">
+                {selectedVendor.phone && (
+                  <a 
+                    href={`https://wa.me/${formatPhoneNumber(selectedVendor.phone)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 md:py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-colors shadow-lg shadow-green-900/20"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    WhatsApp Vendor
+                  </a>
+                )}
+                {selectedVendor.mapUrl && (
+                  <a 
+                    href={selectedVendor.mapUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 md:py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-colors shadow-lg shadow-blue-900/20"
+                  >
+                    <MapPin className="w-5 h-5" />
+                    Open in Google Maps
+                  </a>
+                )}
+                <button 
+                  onClick={() => setSelectedVendor(null)}
+                  className="w-full bg-gray-800 hover:bg-gray-700 text-white py-3 md:py-4 rounded-xl font-bold transition-all"
+                >
+                  Close / Kembali
+                </button>
               </div>
             </div>
           </div>

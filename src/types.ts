@@ -41,6 +41,21 @@ export interface Collaborator {
   imageUrl: string;
 }
 
+export interface Vendor {
+  id?: string;
+  name: string;
+  address: string;
+  phone: string;
+  mapUrl: string;
+  imageUrl: string;
+  perks: string;
+}
+
+export interface AppSettings {
+  vendorSubheading: string;
+  carouselOrder: string[];
+}
+
 export interface AdminUser {
   id?: string;
   email: string;
