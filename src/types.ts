@@ -41,6 +41,13 @@ export interface Collaborator {
   imageUrl: string;
 }
 
+export interface AdminUser {
+  id?: string;
+  email: string;
+  role: 'superadmin' | 'branchadmin';
+  branchId?: string;
+}
+
 export enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',

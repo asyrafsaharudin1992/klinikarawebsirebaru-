@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, addDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Service, Location, Panel, Collaborator, handleFirestoreError, OperationType } from '../types';
@@ -619,6 +620,17 @@ export default function PublicUI() {
         </section>
       )}
     </main>
+
+      <footer className="bg-zinc-950 border-t border-zinc-900 py-8 mt-12">
+        <div className="max-w-7xl mx-auto px-4 md:px-12 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-zinc-500 text-sm">
+            &copy; {new Date().getFullYear()} Klinik Ara 24 Jam. All rights reserved.
+          </p>
+          <Link to="/login" className="text-zinc-600 hover:text-zinc-400 text-sm transition-colors">
+            Staff Login
+          </Link>
+        </div>
+      </footer>
 
       {/* Interactive Modal */}
       {selectedService && (

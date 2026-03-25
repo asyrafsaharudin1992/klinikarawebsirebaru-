@@ -3,7 +3,7 @@ import { User, signOut } from 'firebase/auth';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, deleteDoc, writeBatch, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, auth, storage } from '../firebase';
-import { Service, Location, Panel, Collaborator, handleFirestoreError, OperationType } from '../types';
+import { Service, Location, Panel, Collaborator, AdminUser, handleFirestoreError, OperationType } from '../types';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -80,7 +80,10 @@ const SortableServiceItem: React.FC<{ service: Service, onDelete: (id: string) =
 }
 
 export default function AdminUI({ user }: { user: User }) {
-  const [activeTab, setActiveTab] = useState<'services' | 'locations' | 'panels' | 'collaborators' | 'leads'>('services');
+  const [activeTab, setActiveTab] = useState<'services' | 'locations' | 'panels' | 'collaborators' | 'leads' | 'staff'>('services');
+
+  const [currentAdminInfo, setCurrentAdminInfo] = useState<AdminUser | null>(null);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
 
   const [services, setServices] = useState<Service[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -88,6 +91,7 @@ export default function AdminUI({ user }: { user: User }) {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [adminLoading, setAdminLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -128,6 +132,14 @@ export default function AdminUI({ user }: { user: User }) {
   const [collabImageFile, setCollabImageFile] = useState<File | null>(null);
   const [collabImagePreview, setCollabImagePreview] = useState<string | null>(null);
 
+  // Staff Form state
+  const [staffForm, setStaffForm] = useState({
+    email: '',
+    role: 'branchadmin' as 'superadmin' | 'branchadmin',
+    branchId: ''
+  });
+  const [deleteStaffConfirmId, setDeleteStaffConfirmId] = useState<string | null>(null);
+
   // Service Form state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
@@ -167,6 +179,39 @@ export default function AdminUI({ user }: { user: User }) {
   );
 
   useEffect(() => {
+    if (!user || !user.email) return;
+
+    const qCurrentAdmin = query(collection(db, 'admins'));
+    const unsubscribeCurrentAdmin = onSnapshot(qCurrentAdmin, (snapshot) => {
+      const adminsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AdminUser[];
+      const current = adminsData.find(a => a.email === user.email);
+      
+      if (current) {
+        setCurrentAdminInfo(current);
+        if (current.role === 'branchadmin') {
+          setActiveTab('leads');
+        }
+        if (current.role === 'superadmin') {
+          setAdminUsers(adminsData);
+        }
+      } else {
+        // If no admin record exists at all in the DB, default the first user to superadmin
+        if (adminsData.length === 0) {
+          const defaultAdmin: AdminUser = { email: user.email, role: 'superadmin' };
+          setCurrentAdminInfo(defaultAdmin);
+          setAdminUsers([]);
+        } else {
+          // User is not an admin
+          setCurrentAdminInfo(null);
+        }
+      }
+      setAdminLoading(false);
+    }, (error) => {
+      console.error("Admin Fetch Error:", error);
+      handleFirestoreError(error, OperationType.LIST, 'admins', auth);
+      setAdminLoading(false);
+    });
+
     const qServices = query(collection(db, 'services'));
     const unsubscribeServices = onSnapshot(qServices, (snapshot) => {
       const servicesData = snapshot.docs.map(doc => ({
@@ -224,11 +269,15 @@ export default function AdminUI({ user }: { user: User }) {
 
     const qLeads = query(collection(db, 'leads'));
     const unsubscribeLeads = onSnapshot(qLeads, (snapshot) => {
-      const leadsData = snapshot.docs.map(doc => ({
+      let leadsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
       
+      if (currentAdminInfo?.role === 'branchadmin' && currentAdminInfo.branchId) {
+        leadsData = leadsData.filter((lead: any) => lead.branchId === currentAdminInfo.branchId);
+      }
+
       // Sort so newest ones are at the top based on timestamp
       leadsData.sort((a: any, b: any) => {
         const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
@@ -243,13 +292,14 @@ export default function AdminUI({ user }: { user: User }) {
     });
 
     return () => {
+      unsubscribeCurrentAdmin();
       unsubscribeServices();
       unsubscribeLocations();
       unsubscribePanels();
       unsubscribeCollaborators();
       unsubscribeLeads();
     };
-  }, []);
+  }, [user, currentAdminInfo?.role, currentAdminInfo?.branchId]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setErrorMsg(null);
@@ -916,10 +966,62 @@ export default function AdminUI({ user }: { user: User }) {
     }
   };
 
-  if (loading) {
+  const handleSaveStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg(null);
+
+    try {
+      const staffData = {
+        email: staffForm.email,
+        role: staffForm.role,
+        branchId: staffForm.role === 'branchadmin' ? (staffForm.branchId || null) : null
+      };
+
+      await addDoc(collection(db, 'admins'), staffData);
+      setSuccessMsg('Staff member added successfully!');
+      setStaffForm({ email: '', role: 'branchadmin', branchId: '' });
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (error: any) {
+      console.error('Save staff error:', error);
+      setErrorMsg(`Save failed: ${error.message || 'Unknown error'}.`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const confirmDeleteStaff = async () => {
+    if (!deleteStaffConfirmId) return;
+    try {
+      await deleteDoc(doc(db, 'admins', deleteStaffConfirmId));
+      setDeleteStaffConfirmId(null);
+      setSuccessMsg('Staff member deleted successfully');
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `admins/${deleteStaffConfirmId}`, auth);
+    }
+  };
+
+  if (loading || adminLoading) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+      </div>
+    );
+  }
+
+  if (!currentAdminInfo) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-white">
+        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+        <p className="text-zinc-400 mb-6">You do not have administrative privileges.</p>
+        <button 
+          onClick={() => signOut(auth)}
+          className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors"
+        >
+          Sign Out
+        </button>
       </div>
     );
   }
@@ -946,36 +1048,48 @@ export default function AdminUI({ user }: { user: User }) {
           </div>
         </div>
         <div className="max-w-6xl mx-auto px-4 flex items-center gap-6 border-t border-zinc-800">
-          <button
-            onClick={() => setActiveTab('services')}
-            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'services' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
-          >
-            Manage Promotions
-          </button>
-          <button
-            onClick={() => setActiveTab('locations')}
-            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'locations' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
-          >
-            Manage Locations
-          </button>
-          <button
-            onClick={() => setActiveTab('panels')}
-            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'panels' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
-          >
-            Manage Panels
-          </button>
-          <button
-            onClick={() => setActiveTab('collaborators')}
-            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'collaborators' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
-          >
-            Manage TeamAra
-          </button>
+          {currentAdminInfo?.role !== 'branchadmin' && (
+            <>
+              <button
+                onClick={() => setActiveTab('services')}
+                className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'services' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+              >
+                Manage Promotions
+              </button>
+              <button
+                onClick={() => setActiveTab('locations')}
+                className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'locations' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+              >
+                Manage Locations
+              </button>
+              <button
+                onClick={() => setActiveTab('panels')}
+                className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'panels' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+              >
+                Manage Panels
+              </button>
+              <button
+                onClick={() => setActiveTab('collaborators')}
+                className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'collaborators' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+              >
+                Manage TeamAra
+              </button>
+            </>
+          )}
           <button
             onClick={() => setActiveTab('leads')}
             className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'leads' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
             Patient Leads
           </button>
+          {currentAdminInfo?.role === 'superadmin' && (
+            <button
+              onClick={() => setActiveTab('staff')}
+              className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'staff' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+            >
+              Manage Staff
+            </button>
+          )}
         </div>
       </header>
 
@@ -1895,6 +2009,148 @@ export default function AdminUI({ user }: { user: User }) {
         </main>
       )}
 
+      {activeTab === 'staff' && currentAdminInfo?.role === 'superadmin' && (
+        <main className="max-w-6xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left Col: Form */}
+          <div className="lg:col-span-4">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sticky top-24">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-red-500" />
+                  Add Staff Access
+                </h2>
+              </div>
+              
+              <form onSubmit={handleSaveStaff} className="space-y-5">
+                {successMsg && (
+                  <div className="bg-green-500/10 border border-green-500/50 text-green-500 p-3 rounded-xl flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="w-4 h-4" />
+                    {successMsg}
+                  </div>
+                )}
+
+                {errorMsg && (
+                  <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-xl flex items-start gap-2 text-sm">
+                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    {errorMsg}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">Email Address *</label>
+                  <input 
+                    type="email"
+                    required
+                    value={staffForm.email}
+                    onChange={e => setStaffForm(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                    placeholder="staff@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">Role *</label>
+                  <select 
+                    required
+                    value={staffForm.role}
+                    onChange={e => setStaffForm(prev => ({ ...prev, role: e.target.value as 'superadmin' | 'branchadmin' }))}
+                    className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                  >
+                    <option value="branchadmin">Branch Admin</option>
+                    <option value="superadmin">Super Admin</option>
+                  </select>
+                </div>
+
+                {staffForm.role === 'branchadmin' && (
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-400 mb-1.5">Assigned Branch</label>
+                    <select 
+                      value={staffForm.branchId}
+                      onChange={e => setStaffForm(prev => ({ ...prev, branchId: e.target.value }))}
+                      className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                    >
+                      <option value="">All Branches (No Restriction)</option>
+                      {locations.map(loc => (
+                        <option key={loc.id} value={loc.id}>{loc.branchName}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Access'}
+                </button>
+              </form>
+            </div>
+          </div>
+
+          {/* Right Col: List */}
+          <div className="lg:col-span-8">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+              <div className="p-6 border-b border-zinc-800">
+                <h2 className="text-lg font-semibold text-white">Staff Directory</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-zinc-950/50 text-zinc-400">
+                    <tr>
+                      <th className="p-4 font-medium">Email</th>
+                      <th className="p-4 font-medium">Role</th>
+                      <th className="p-4 font-medium">Assigned Branch</th>
+                      <th className="p-4 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/50">
+                    {adminUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="p-8 text-center text-zinc-500">
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            <AlertCircle className="w-8 h-8 text-zinc-700" />
+                            <p>No staff members found</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      adminUsers.map(admin => {
+                        const branchName = admin.branchId ? locations.find(l => l.id === admin.branchId)?.branchName || 'Unknown Branch' : 'All Branches';
+                        return (
+                          <tr key={admin.id} className="hover:bg-zinc-800/30 transition-colors">
+                            <td className="p-4">
+                              <div className="font-medium text-white">{admin.email}</div>
+                            </td>
+                            <td className="p-4">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${admin.role === 'superadmin' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                                {admin.role === 'superadmin' ? 'Super Admin' : 'Branch Admin'}
+                              </span>
+                            </td>
+                            <td className="p-4 text-zinc-400">
+                              {admin.role === 'superadmin' ? '-' : branchName}
+                            </td>
+                            <td className="p-4 text-right">
+                              <button 
+                                onClick={() => setDeleteStaffConfirmId(admin.id!)}
+                                className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                                title="Delete Access"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </main>
+      )}
+
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -2056,6 +2312,40 @@ export default function AdminUI({ user }: { user: User }) {
               </button>
               <button 
                 onClick={confirmDeleteLead}
+                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Staff Confirmation Modal */}
+      {deleteStaffConfirmId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+            <div className="flex justify-between items-start mb-4">
+              <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <button onClick={() => setDeleteStaffConfirmId(null)} className="text-zinc-500 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Delete Staff Access?</h3>
+            <p className="text-zinc-400 text-sm mb-6">
+              This action cannot be undone. This user will lose admin access immediately.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setDeleteStaffConfirmId(null)}
+                className="flex-1 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDeleteStaff}
                 className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors"
               >
                 Delete
