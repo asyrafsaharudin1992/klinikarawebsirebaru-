@@ -27,6 +27,13 @@ export interface Location {
   landmark?: string;
 }
 
+export interface Panel {
+  id: string;
+  name: string;
+  imageUrl: string;
+  availableLocations: string[];
+}
+
 export enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',

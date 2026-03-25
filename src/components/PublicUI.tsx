@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Service, Location, handleFirestoreError, OperationType } from '../types';
+import { Service, Location, Panel, handleFirestoreError, OperationType } from '../types';
 import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -11,6 +11,8 @@ import SEO from './SEO';
 export default function PublicUI() {
   const [services, setServices] = useState<Service[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [panels, setPanels] = useState<Panel[]>([]);
+  const [selectedPanel, setSelectedPanel] = useState<Panel | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [modalImageIndex, setModalImageIndex] = useState(0);
@@ -49,9 +51,23 @@ export default function PublicUI() {
       handleFirestoreError(error, OperationType.LIST, 'locations', auth);
     });
 
+    const qPanels = query(collection(db, 'panels'), orderBy('name'));
+    const unsubscribePanels = onSnapshot(qPanels, (snapshot) => {
+      const panelData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Panel[];
+      
+      setPanels(panelData);
+    }, (error) => {
+      console.error("Panels Fetch Error:", error);
+      handleFirestoreError(error, OperationType.LIST, 'panels', auth);
+    });
+
     return () => {
       unsubscribeServices();
       unsubscribeLocations();
+      unsubscribePanels();
     };
   }, []);
 
@@ -294,6 +310,28 @@ export default function PublicUI() {
           </button>
         </div>
       </div>
+
+      {/* Panels Carousel Section */}
+      {panels.length > 0 && (
+        <div className="mt-8 px-4 md:px-12 max-w-7xl mx-auto w-full">
+          <div className="flex items-center gap-4 overflow-x-auto pb-4 no-scrollbar snap-x snap-mandatory">
+            {panels.map((panel) => (
+              <div 
+                key={panel.id} 
+                onClick={() => setSelectedPanel(panel)}
+                className="bg-white rounded-xl h-24 w-32 flex items-center justify-center p-2 cursor-pointer hover:scale-105 transition-transform flex-shrink-0 snap-center shadow-lg border border-zinc-800"
+              >
+                <img 
+                  src={panel.imageUrl} 
+                  alt={`${panel.name} logo`} 
+                  className="max-w-full max-h-full object-contain"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {isAiSearching ? (
         <section className="pt-16 pb-20 min-h-[40vh] flex flex-col items-center justify-center text-zinc-400">
@@ -610,6 +648,46 @@ export default function PublicUI() {
                   </svg>
                   Book via WhatsApp
                 </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Panel Details Modal */}
+      {selectedPanel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-gray-900 rounded-2xl w-full max-w-sm p-6 relative border border-gray-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <button 
+              onClick={() => setSelectedPanel(null)}
+              className="absolute top-4 right-4 p-2 bg-gray-800 hover:bg-gray-700 rounded-full text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex flex-col items-center">
+              <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center p-4 shadow-xl mb-4">
+                <img 
+                  src={selectedPanel.imageUrl} 
+                  alt={selectedPanel.name} 
+                  className="max-w-full max-h-full object-contain"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              
+              <h2 className="text-xl font-bold text-center text-white mt-4">{selectedPanel.name}</h2>
+              <p className="text-sm text-gray-400 text-center mt-2 mb-4">Accepted at these branches:</p>
+
+              <div className="w-full space-y-2">
+                {selectedPanel.availableLocations.map((loc, idx) => (
+                  <div key={idx} className="flex items-center gap-3 bg-gray-800 p-3 rounded-lg text-white font-medium">
+                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span>{loc}</span>
+                  </div>
+                ))}
+                {selectedPanel.availableLocations.length === 0 && (
+                  <p className="text-center text-gray-500 italic py-4">No locations listed.</p>
+                )}
               </div>
             </div>
           </div>

@@ -3,7 +3,7 @@ import { User, signOut } from 'firebase/auth';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, deleteDoc, writeBatch, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, auth, storage } from '../firebase';
-import { Service, Location, handleFirestoreError, OperationType } from '../types';
+import { Service, Location, Panel, handleFirestoreError, OperationType } from '../types';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -80,10 +80,11 @@ const SortableServiceItem: React.FC<{ service: Service, onDelete: (id: string) =
 }
 
 export default function AdminUI({ user }: { user: User }) {
-  const [activeTab, setActiveTab] = useState<'services' | 'locations'>('services');
+  const [activeTab, setActiveTab] = useState<'services' | 'locations' | 'panels'>('services');
 
   const [services, setServices] = useState<Service[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [panels, setPanels] = useState<Panel[]>([]);
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -91,6 +92,7 @@ export default function AdminUI({ user }: { user: User }) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleteLocConfirmId, setDeleteLocConfirmId] = useState<string | null>(null);
+  const [deletePanelConfirmId, setDeletePanelConfirmId] = useState<string | null>(null);
 
   // Location Form state
   const [editingLocId, setEditingLocId] = useState<string | null>(null);
@@ -101,6 +103,16 @@ export default function AdminUI({ user }: { user: User }) {
   });
   const [locImageFile, setLocImageFile] = useState<File | null>(null);
   const [locImagePreview, setLocImagePreview] = useState<string | null>(null);
+
+  // Panel Form state
+  const [editingPanelId, setEditingPanelId] = useState<string | null>(null);
+  const [panelForm, setPanelForm] = useState({
+    name: '',
+    imageUrl: '',
+    availableLocations: [] as string[]
+  });
+  const [panelImageFile, setPanelImageFile] = useState<File | null>(null);
+  const [panelImagePreview, setPanelImagePreview] = useState<string | null>(null);
 
   // Service Form state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -170,9 +182,23 @@ export default function AdminUI({ user }: { user: User }) {
       handleFirestoreError(error, OperationType.LIST, 'locations', auth);
     });
 
+    const qPanels = query(collection(db, 'panels'));
+    const unsubscribePanels = onSnapshot(qPanels, (snapshot) => {
+      const panelData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Panel[];
+      
+      setPanels(panelData);
+    }, (error) => {
+      console.error("Admin Panels Fetch Error:", error);
+      handleFirestoreError(error, OperationType.LIST, 'panels', auth);
+    });
+
     return () => {
       unsubscribeServices();
       unsubscribeLocations();
+      unsubscribePanels();
     };
   }, []);
 
@@ -283,6 +309,108 @@ export default function AdminUI({ user }: { user: User }) {
     });
     setLocImageFile(null);
     setLocImagePreview(null);
+  };
+
+  const handleEditPanel = (panel: Panel) => {
+    setEditingPanelId(panel.id);
+    setPanelForm({
+      name: panel.name || '',
+      imageUrl: panel.imageUrl || '',
+      availableLocations: panel.availableLocations || []
+    });
+    setPanelImagePreview(panel.imageUrl || null);
+    setPanelImageFile(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const resetPanelForm = () => {
+    setEditingPanelId(null);
+    setPanelForm({
+      name: '',
+      imageUrl: '',
+      availableLocations: []
+    });
+    setPanelImageFile(null);
+    setPanelImagePreview(null);
+  };
+
+  const handleSavePanel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      let finalImageUrl = panelForm.imageUrl || '';
+
+      if (panelImageFile) {
+        const options = {
+          maxSizeMB: 0.2,
+          maxWidthOrHeight: 800,
+          useWebWorker: true,
+        };
+        const compressedFile = await imageCompression(panelImageFile, options);
+        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${panelImageFile.name}`;
+        const storageRef = ref(storage, `panels/${uniqueFileName}`);
+        const uploadTask = uploadBytesResumable(storageRef, compressedFile);
+
+        finalImageUrl = await new Promise<string>((resolve, reject) => {
+          uploadTask.on(
+            'state_changed',
+            null,
+            (error) => reject(error),
+            async () => {
+              const url = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve(url);
+            }
+          );
+        });
+      }
+
+      if (!finalImageUrl) {
+        throw new Error('Please upload a logo for the panel.');
+      }
+
+      const panelData = { 
+        ...panelForm,
+        imageUrl: finalImageUrl
+      };
+      
+      if (editingPanelId) {
+        await updateDoc(doc(db, 'panels', editingPanelId), panelData);
+        setSuccessMsg('Panel updated successfully!');
+      } else {
+        await addDoc(collection(db, 'panels'), panelData);
+        setSuccessMsg('Panel added successfully!');
+      }
+      resetPanelForm();
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (error: any) {
+      setErrorMsg(error.message || 'Failed to save panel.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeletePanel = async (id: string) => {
+    setDeletePanelConfirmId(id);
+  };
+
+  const confirmDeletePanel = async () => {
+    if (!deletePanelConfirmId) return;
+    try {
+      const panelToDelete = panels.find(p => p.id === deletePanelConfirmId);
+      if (panelToDelete?.imageUrl) {
+        await deleteImageFromStorage(panelToDelete.imageUrl);
+      }
+      await deleteDoc(doc(db, 'panels', deletePanelConfirmId));
+      setSuccessMsg('Panel deleted successfully!');
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (error) {
+      setErrorMsg('Failed to delete panel.');
+    } finally {
+      setDeletePanelConfirmId(null);
+    }
   };
 
   const fillKajangLocation = () => {
@@ -654,6 +782,12 @@ export default function AdminUI({ user }: { user: User }) {
             className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'locations' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
             Manage Locations
+          </button>
+          <button
+            onClick={() => setActiveTab('panels')}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'panels' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          >
+            Manage Panels
           </button>
         </div>
       </header>
@@ -1187,6 +1321,152 @@ export default function AdminUI({ user }: { user: User }) {
       </main>
       )}
 
+      {activeTab === 'panels' && (
+      <main className="max-w-6xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left Col: Form */}
+        <div className="lg:col-span-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sticky top-32">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                {editingPanelId ? <Edit2 className="w-5 h-5 text-blue-400" /> : <Plus className="w-5 h-5 text-red-500" />}
+                {editingPanelId ? 'Edit Panel' : 'Add New Panel'}
+              </h2>
+              {editingPanelId && (
+                <button onClick={resetPanelForm} className="text-sm text-zinc-400 hover:text-white">Cancel</button>
+              )}
+            </div>
+            
+            <form onSubmit={handleSavePanel} className="space-y-4">
+              {successMsg && (
+                <div className="bg-green-500/10 border border-green-500/50 text-green-500 p-3 rounded-xl flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {successMsg}
+                </div>
+              )}
+              {errorMsg && (
+                <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-xl flex items-start gap-2 text-sm">
+                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <div>{errorMsg}</div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1 uppercase tracking-wider">Panel Name</label>
+                <input required type="text" value={panelForm.name} onChange={e => setPanelForm({...panelForm, name: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-red-500 transition-colors" placeholder="e.g. AIA, PMCare" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1 uppercase tracking-wider">Panel Logo</label>
+                <div className="mt-1 flex items-center gap-4">
+                  <div className="w-24 h-24 rounded-xl bg-white border border-zinc-800 overflow-hidden flex items-center justify-center p-2">
+                    {panelImagePreview ? (
+                      <img src={panelImagePreview} alt="Preview" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                    ) : (
+                      <ImageIcon className="w-8 h-8 text-zinc-300" />
+                    )}
+                  </div>
+                  <label className="flex-1 cursor-pointer">
+                    <div className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-lg border border-zinc-700 transition-colors flex items-center justify-center gap-2">
+                      <Plus className="w-4 h-4" />
+                      {panelImagePreview ? 'Change Logo' : 'Upload Logo'}
+                    </div>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setPanelImageFile(file);
+                          setPanelImagePreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-2 uppercase tracking-wider">Available Locations</label>
+                <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                  {locations.map(loc => (
+                    <label key={loc.id} className="flex items-center gap-3 p-2 bg-zinc-950 border border-zinc-800 rounded-lg cursor-pointer hover:border-zinc-700 transition-colors">
+                      <input 
+                        type="checkbox" 
+                        checked={panelForm.availableLocations.includes(loc.branchName)}
+                        onChange={(e) => {
+                          const updatedLocations = e.target.checked 
+                            ? [...panelForm.availableLocations, loc.branchName]
+                            : panelForm.availableLocations.filter(name => name !== loc.branchName);
+                          setPanelForm({...panelForm, availableLocations: updatedLocations});
+                        }}
+                        className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-red-500 focus:ring-red-500"
+                      />
+                      <span className="text-sm text-zinc-300">{loc.branchName}</span>
+                    </label>
+                  ))}
+                  {locations.length === 0 && <p className="text-xs text-zinc-500 italic">No locations added yet.</p>}
+                </div>
+              </div>
+
+              <button type="submit" disabled={loading} className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mt-6">
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                {editingPanelId ? 'Update Panel' : 'Save Panel'}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Right Col: List */}
+        <div className="lg:col-span-8">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+            <div className="p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
+              <h2 className="text-lg font-semibold text-white">Accepted Panels</h2>
+              <span className="px-3 py-1 bg-zinc-800 text-zinc-400 text-xs font-medium rounded-full border border-zinc-700">
+                {panels.length} Total
+              </span>
+            </div>
+            
+            <div className="divide-y divide-zinc-800">
+              {panels.length === 0 ? (
+                <div className="p-12 text-center text-zinc-500">
+                  <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <ImageIcon className="w-8 h-8" />
+                  </div>
+                  <p>No panels found.</p>
+                  <p className="text-sm mt-1">Add your first insurance panel using the form.</p>
+                </div>
+              ) : (
+                panels.map(panel => (
+                  <div key={panel.id} className="p-6 hover:bg-zinc-800/30 transition-colors group flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                    <div className="flex gap-4 items-center">
+                      <div className="w-16 h-16 rounded-lg bg-white overflow-hidden flex-shrink-0 border border-zinc-800 p-2">
+                        <img src={panel.imageUrl} alt="" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-white mb-1">{panel.name}</h3>
+                        <p className="text-xs text-zinc-400 mb-2">
+                          Accepted at: {panel.availableLocations.length > 0 ? panel.availableLocations.join(', ') : 'No locations specified'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => handleEditPanel(panel)} className="p-2 text-zinc-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all" title="Edit">
+                        <Edit2 className="w-5 h-5" />
+                      </button>
+                      <button onClick={() => handleDeletePanel(panel.id)} className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all" title="Delete">
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+      )}
+
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -1212,6 +1492,40 @@ export default function AdminUI({ user }: { user: User }) {
               </button>
               <button 
                 onClick={confirmDelete}
+                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Panel Confirmation Modal */}
+      {deletePanelConfirmId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+            <div className="flex justify-between items-start mb-4">
+              <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <button onClick={() => setDeletePanelConfirmId(null)} className="text-zinc-500 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Delete Panel?</h3>
+            <p className="text-zinc-400 text-sm mb-6">
+              This action cannot be undone. This panel will be removed from the public website immediately.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setDeletePanelConfirmId(null)}
+                className="flex-1 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDeletePanel}
                 className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors"
               >
                 Delete
