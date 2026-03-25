@@ -301,7 +301,7 @@ export default function PublicUI() {
     <div className="min-h-screen bg-zinc-950 text-white overflow-x-hidden font-sans">
       <SEO 
         title="Klinik Ara 24 Jam"
-        description="Top-rated 24-hour medical clinic in Selangor. View our latest AraSihat and AraVax packages."
+        description="Top-rated 24-hour medical clinic in Selangor. View our latest services and packages."
       />
       {/* Navbar */}
       <nav className="fixed top-0 w-full z-50 bg-black/60 backdrop-blur-md px-4 md:px-12 py-4 flex items-center justify-between border-b border-white/5">
@@ -661,6 +661,7 @@ export default function PublicUI() {
                       src={urls[modalImageIndex]} 
                       alt={selectedService.title} 
                       className="w-full h-full object-cover object-top"
+                      style={{ imageRendering: 'high-quality', WebkitFontSmoothing: 'antialiased' }}
                       referrerPolicy="no-referrer"
                     />
                     {urls.length > 1 && (
@@ -726,6 +727,10 @@ export default function PublicUI() {
                   <span className="text-xl font-medium text-zinc-400">Price available upon request</span>
                 )}
               </div>
+
+              <p className="text-xs text-gray-400 mt-3 leading-relaxed">
+                Harga TeamAra hanya untuk ahli TeamAra sahaja. Keahlian TeamAra boleh dilakukan di klinik secara percuma, harga TeamAra boleh digunakan secara terus selepas pendaftaran ahli dibuat.
+              </p>
 
               <div className="flex-grow">
                 <h3 className="flex items-center gap-2 text-sm font-bold text-gray-400 uppercase tracking-wider mt-8 mb-3">
