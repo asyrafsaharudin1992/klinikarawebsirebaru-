@@ -106,7 +106,7 @@ export default function PublicUI() {
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [modalImageIndex, setModalImageIndex] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [heroIndex, setHeroIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAiSearching, setIsAiSearching] = useState(false);
@@ -278,7 +278,6 @@ export default function PublicUI() {
 
   const handleOpenModal = (service: Service) => {
     setSelectedService(service);
-    setModalImageIndex(0);
   };
 
   const handleCloseModal = () => {
@@ -317,6 +316,10 @@ export default function PublicUI() {
   };
 
   useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [selectedService]);
+
+  useEffect(() => {
     if (selectedService || bookingModalService) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -326,20 +329,6 @@ export default function PublicUI() {
       document.body.style.overflow = 'auto';
     };
   }, [selectedService, bookingModalService]);
-
-  const nextModalImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!selectedService) return;
-    const urls = selectedService.imageUrls || (selectedService.imageUrl ? [selectedService.imageUrl] : []);
-    setModalImageIndex(prev => (prev + 1) % urls.length);
-  };
-
-  const prevModalImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!selectedService) return;
-    const urls = selectedService.imageUrls || (selectedService.imageUrl ? [selectedService.imageUrl] : []);
-    setModalImageIndex(prev => (prev - 1 + urls.length) % urls.length);
-  };
 
   if (loading) {
     return (
@@ -757,35 +746,45 @@ export default function PublicUI() {
             </button>
 
             {/* Left Side / Top: The Hero Image */}
-            <div className="w-full h-64 md:h-auto md:w-1/2 flex-shrink-0 bg-gray-950 relative">
+            <div className="relative w-full md:w-1/2 min-h-[300px] md:min-h-[500px] bg-zinc-950 flex-shrink-0 group">
               {(() => {
-                const urls = selectedService.imageUrls || (selectedService.imageUrl ? [selectedService.imageUrl] : []);
-                if (urls.length === 0) return <div className="w-full h-full flex items-center justify-center text-zinc-600">No Image</div>;
+                const carouselImages = selectedService 
+                  ? [selectedService.heroImageUrl, ...(selectedService.imageUrls || [])].filter(Boolean) as string[]
+                  : [];
+                if (carouselImages.length === 0) return <div className="w-full h-full flex items-center justify-center text-zinc-600">No Image</div>;
                 
                 return (
                   <>
                     <img 
-                      src={selectedService.heroImageUrl || urls[modalImageIndex]} 
-                      alt={selectedService.title}
-                      className="w-full h-full object-cover object-top"
-                      style={{ 
-                        imageRendering: '-webkit-optimize-contrast',
-                        WebkitTransform: 'translateZ(0)',
-                        backfaceVisibility: 'hidden' 
-                      }}
+                      src={carouselImages[currentImageIndex]} 
+                      alt={`${selectedService.title} - Image ${currentImageIndex + 1}`}
+                      className="absolute inset-0 w-full h-full object-contain object-center transition-all duration-300"
                       referrerPolicy="no-referrer"
                     />
-                    {urls.length > 1 && (
+
+                    {/* Only show navigation if there is more than 1 image */}
+                    {carouselImages.length > 1 && (
                       <>
-                        <button onClick={prevModalImage} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors">
-                          <ChevronLeft className="w-6 h-6" />
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev === 0 ? carouselImages.length - 1 : prev - 1)); }}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-sm transition-all"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
                         </button>
-                        <button onClick={nextModalImage} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors">
-                          <ChevronRight className="w-6 h-6" />
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % carouselImages.length); }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-sm transition-all"
+                        >
+                          <ChevronRight className="w-5 h-5" />
                         </button>
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                          {urls.map((_, i) => (
-                            <div key={i} className={`w-2 h-2 rounded-full ${i === modalImageIndex ? 'bg-white' : 'bg-white/30'}`} />
+
+                        {/* Image Dots Indicator */}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                          {carouselImages.map((_, idx) => (
+                            <div 
+                              key={idx} 
+                              className={`h-1.5 rounded-full transition-all ${idx === currentImageIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
+                            />
                           ))}
                         </div>
                       </>
