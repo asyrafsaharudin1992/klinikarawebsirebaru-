@@ -3,11 +3,11 @@ import { User, signOut } from 'firebase/auth';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, deleteDoc, writeBatch, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, auth, storage } from '../firebase';
-import { Service, Location, Panel, handleFirestoreError, OperationType } from '../types';
+import { Service, Location, Panel, Collaborator, handleFirestoreError, OperationType } from '../types';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { LogOut, Plus, GripVertical, Image as ImageIcon, Trash2, Loader2, AlertCircle, CheckCircle2, X, Edit2, Sparkles } from 'lucide-react';
+import { LogOut, Plus, GripVertical, Image as ImageIcon, Trash2, Loader2, AlertCircle, CheckCircle2, X, Edit2, Sparkles, MapPin } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { GoogleGenAI } from '@google/genai';
 
@@ -80,11 +80,12 @@ const SortableServiceItem: React.FC<{ service: Service, onDelete: (id: string) =
 }
 
 export default function AdminUI({ user }: { user: User }) {
-  const [activeTab, setActiveTab] = useState<'services' | 'locations' | 'panels'>('services');
+  const [activeTab, setActiveTab] = useState<'services' | 'locations' | 'panels' | 'collaborators'>('services');
 
   const [services, setServices] = useState<Service[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [panels, setPanels] = useState<Panel[]>([]);
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -93,6 +94,7 @@ export default function AdminUI({ user }: { user: User }) {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleteLocConfirmId, setDeleteLocConfirmId] = useState<string | null>(null);
   const [deletePanelConfirmId, setDeletePanelConfirmId] = useState<string | null>(null);
+  const [deleteCollabConfirmId, setDeleteCollabConfirmId] = useState<string | null>(null);
 
   // Location Form state
   const [editingLocId, setEditingLocId] = useState<string | null>(null);
@@ -113,6 +115,16 @@ export default function AdminUI({ user }: { user: User }) {
   });
   const [panelImageFile, setPanelImageFile] = useState<File | null>(null);
   const [panelImagePreview, setPanelImagePreview] = useState<string | null>(null);
+
+  // Collaborator Form state
+  const [editingCollabId, setEditingCollabId] = useState<string | null>(null);
+  const [collabForm, setCollabForm] = useState({
+    name: '',
+    location: '',
+    imageUrl: ''
+  });
+  const [collabImageFile, setCollabImageFile] = useState<File | null>(null);
+  const [collabImagePreview, setCollabImagePreview] = useState<string | null>(null);
 
   // Service Form state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -195,10 +207,24 @@ export default function AdminUI({ user }: { user: User }) {
       handleFirestoreError(error, OperationType.LIST, 'panels', auth);
     });
 
+    const qCollaborators = query(collection(db, 'collaborators'));
+    const unsubscribeCollaborators = onSnapshot(qCollaborators, (snapshot) => {
+      const collabData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Collaborator[];
+      
+      setCollaborators(collabData);
+    }, (error) => {
+      console.error("Admin Collaborators Fetch Error:", error);
+      handleFirestoreError(error, OperationType.LIST, 'collaborators', auth);
+    });
+
     return () => {
       unsubscribeServices();
       unsubscribeLocations();
       unsubscribePanels();
+      unsubscribeCollaborators();
     };
   }, []);
 
@@ -410,6 +436,108 @@ export default function AdminUI({ user }: { user: User }) {
       setErrorMsg('Failed to delete panel.');
     } finally {
       setDeletePanelConfirmId(null);
+    }
+  };
+
+  const handleEditCollab = (collab: Collaborator) => {
+    setEditingCollabId(collab.id);
+    setCollabForm({
+      name: collab.name || '',
+      location: collab.location || '',
+      imageUrl: collab.imageUrl || ''
+    });
+    setCollabImagePreview(collab.imageUrl || null);
+    setCollabImageFile(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const resetCollabForm = () => {
+    setEditingCollabId(null);
+    setCollabForm({
+      name: '',
+      location: '',
+      imageUrl: ''
+    });
+    setCollabImageFile(null);
+    setCollabImagePreview(null);
+  };
+
+  const handleSaveCollab = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      let finalImageUrl = collabForm.imageUrl || '';
+
+      if (collabImageFile) {
+        const options = {
+          maxSizeMB: 0.5,
+          maxWidthOrHeight: 1200,
+          useWebWorker: true,
+        };
+        const compressedFile = await imageCompression(collabImageFile, options);
+        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${collabImageFile.name}`;
+        const storageRef = ref(storage, `collaborators/${uniqueFileName}`);
+        const uploadTask = uploadBytesResumable(storageRef, compressedFile);
+
+        finalImageUrl = await new Promise<string>((resolve, reject) => {
+          uploadTask.on(
+            'state_changed',
+            null,
+            (error) => reject(error),
+            async () => {
+              const url = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve(url);
+            }
+          );
+        });
+      }
+
+      if (!finalImageUrl) {
+        throw new Error('Please upload an image for the collaborator.');
+      }
+
+      const collabData = { 
+        ...collabForm,
+        imageUrl: finalImageUrl
+      };
+      
+      if (editingCollabId) {
+        await updateDoc(doc(db, 'collaborators', editingCollabId), collabData);
+        setSuccessMsg('Collaborator updated successfully!');
+      } else {
+        await addDoc(collection(db, 'collaborators'), collabData);
+        setSuccessMsg('Collaborator added successfully!');
+      }
+      resetCollabForm();
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (error: any) {
+      setErrorMsg(error.message || 'Failed to save collaborator.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteCollab = async (id: string) => {
+    setDeleteCollabConfirmId(id);
+  };
+
+  const confirmDeleteCollab = async () => {
+    if (!deleteCollabConfirmId) return;
+    try {
+      const collabToDelete = collaborators.find(c => c.id === deleteCollabConfirmId);
+      if (collabToDelete?.imageUrl) {
+        await deleteImageFromStorage(collabToDelete.imageUrl);
+      }
+      await deleteDoc(doc(db, 'collaborators', deleteCollabConfirmId));
+      setSuccessMsg('Collaborator deleted successfully!');
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (error) {
+      setErrorMsg('Failed to delete collaborator.');
+    } finally {
+      setDeleteCollabConfirmId(null);
     }
   };
 
@@ -788,6 +916,12 @@ export default function AdminUI({ user }: { user: User }) {
             className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'panels' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
             Manage Panels
+          </button>
+          <button
+            onClick={() => setActiveTab('collaborators')}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'collaborators' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          >
+            Manage TeamAra
           </button>
         </div>
       </header>
@@ -1467,6 +1601,134 @@ export default function AdminUI({ user }: { user: User }) {
       </main>
       )}
 
+      {activeTab === 'collaborators' && (
+      <main className="max-w-6xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left Col: Form */}
+        <div className="lg:col-span-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sticky top-32">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                {editingCollabId ? <Edit2 className="w-5 h-5 text-blue-400" /> : <Plus className="w-5 h-5 text-red-500" />}
+                {editingCollabId ? 'Edit Collaborator' : 'Add Collaborator'}
+              </h2>
+              {editingCollabId && (
+                <button onClick={resetCollabForm} className="text-sm text-zinc-400 hover:text-white">Cancel</button>
+              )}
+            </div>
+            
+            <form onSubmit={handleSaveCollab} className="space-y-4">
+              {successMsg && (
+                <div className="bg-green-500/10 border border-green-500/50 text-green-500 p-3 rounded-xl flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {successMsg}
+                </div>
+              )}
+              {errorMsg && (
+                <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-xl flex items-start gap-2 text-sm">
+                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <div>{errorMsg}</div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1 uppercase tracking-wider">Name</label>
+                <input required type="text" value={collabForm.name} onChange={e => setCollabForm({...collabForm, name: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-red-500 transition-colors" placeholder="e.g. Dr. Jane Doe, Klinik XYZ" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1 uppercase tracking-wider">Location / Area</label>
+                <input required type="text" value={collabForm.location} onChange={e => setCollabForm({...collabForm, location: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-red-500 transition-colors" placeholder="e.g. Bangi, Selangor" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1 uppercase tracking-wider">Image</label>
+                <div className="mt-1 flex items-center gap-4">
+                  <div className="w-24 h-24 rounded-xl bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center">
+                    {collabImagePreview ? (
+                      <img src={collabImagePreview} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      <ImageIcon className="w-8 h-8 text-zinc-500" />
+                    )}
+                  </div>
+                  <label className="flex-1 cursor-pointer">
+                    <div className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-lg border border-zinc-700 transition-colors flex items-center justify-center gap-2">
+                      <Plus className="w-4 h-4" />
+                      {collabImagePreview ? 'Change Image' : 'Upload Image'}
+                    </div>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setCollabImageFile(file);
+                          setCollabImagePreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <button type="submit" disabled={loading} className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mt-6">
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                {editingCollabId ? 'Update Collaborator' : 'Save Collaborator'}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Right Col: List */}
+        <div className="lg:col-span-8">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+            <div className="p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
+              <h2 className="text-lg font-semibold text-white">Keluarga TeamAra</h2>
+              <span className="px-3 py-1 bg-zinc-800 text-zinc-400 text-xs font-medium rounded-full border border-zinc-700">
+                {collaborators.length} Total
+              </span>
+            </div>
+            
+            <div className="divide-y divide-zinc-800">
+              {collaborators.length === 0 ? (
+                <div className="p-12 text-center text-zinc-500">
+                  <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <ImageIcon className="w-8 h-8" />
+                  </div>
+                  <p>No collaborators found.</p>
+                  <p className="text-sm mt-1">Add your first TeamAra member using the form.</p>
+                </div>
+              ) : (
+                collaborators.map(collab => (
+                  <div key={collab.id} className="p-6 hover:bg-zinc-800/30 transition-colors group flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                    <div className="flex gap-4 items-center">
+                      <div className="w-16 h-16 rounded-lg bg-zinc-800 overflow-hidden flex-shrink-0 border border-zinc-700">
+                        <img src={collab.imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-white mb-1">{collab.name}</h3>
+                        <p className="text-xs text-zinc-400 mb-2 flex items-center gap-1">
+                          <MapPin className="w-3 h-3" /> {collab.location}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => handleEditCollab(collab)} className="p-2 text-zinc-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all" title="Edit">
+                        <Edit2 className="w-5 h-5" />
+                      </button>
+                      <button onClick={() => handleDeleteCollab(collab.id)} className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all" title="Delete">
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+      )}
+
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -1526,6 +1788,40 @@ export default function AdminUI({ user }: { user: User }) {
               </button>
               <button 
                 onClick={confirmDeletePanel}
+                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Collaborator Confirmation Modal */}
+      {deleteCollabConfirmId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+            <div className="flex justify-between items-start mb-4">
+              <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <button onClick={() => setDeleteCollabConfirmId(null)} className="text-zinc-500 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Delete Collaborator?</h3>
+            <p className="text-zinc-400 text-sm mb-6">
+              This action cannot be undone. This collaborator will be removed from the public website immediately.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setDeleteCollabConfirmId(null)}
+                className="flex-1 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDeleteCollab}
                 className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors"
               >
                 Delete

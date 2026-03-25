@@ -28,6 +28,28 @@
         "landmark": { "type": "string" }
       },
       "required": ["branchName", "address", "phone", "whatsapp", "operatingHours", "googleMapsUrl", "wazeUrl"]
+    },
+    "Panel": {
+      "title": "Panel",
+      "description": "An insurance or corporate panel",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "availableLocations": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["name", "imageUrl", "availableLocations"]
+    },
+    "Collaborator": {
+      "title": "Collaborator",
+      "description": "A Keluarga TeamAra collaborator",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "location": { "type": "string" },
+        "imageUrl": { "type": "string", "format": "uri" }
+      },
+      "required": ["name", "location", "imageUrl"]
     }
   },
   "firestore": {
@@ -38,6 +60,14 @@
     "/locations/{locationId}": {
       "schema": "Location",
       "description": "List of clinic locations"
+    },
+    "/panels/{panelId}": {
+      "schema": "Panel",
+      "description": "List of accepted panels"
+    },
+    "/collaborators/{collabId}": {
+      "schema": "Collaborator",
+      "description": "List of Keluarga TeamAra collaborators"
     }
   }
 }

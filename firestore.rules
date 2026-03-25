@@ -52,6 +52,22 @@ service cloud.firestore {
              (!('landmark' in data) || (data.landmark is string && data.landmark.size() < 500));
     }
 
+    function isValidPanel() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['name', 'imageUrl', 'availableLocations']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.imageUrl is string && data.imageUrl.size() > 0 && data.imageUrl.size() < 1000 &&
+             data.availableLocations is list && data.availableLocations.size() <= 50;
+    }
+
+    function isValidCollaborator() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['name', 'location', 'imageUrl']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.location is string && data.location.size() > 0 && data.location.size() < 200 &&
+             data.imageUrl is string && data.imageUrl.size() > 0 && data.imageUrl.size() < 1000;
+    }
+
     match /services/{serviceId} {
       allow read: if true;
       allow create: if isAdmin() && isValidService();
@@ -63,6 +79,20 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isAdmin() && isValidLocation();
       allow update: if isAdmin() && isValidLocation();
+      allow delete: if isAdmin();
+    }
+
+    match /panels/{panelId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidPanel();
+      allow update: if isAdmin() && isValidPanel();
+      allow delete: if isAdmin();
+    }
+
+    match /collaborators/{collabId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidCollaborator();
+      allow update: if isAdmin() && isValidCollaborator();
       allow delete: if isAdmin();
     }
   }

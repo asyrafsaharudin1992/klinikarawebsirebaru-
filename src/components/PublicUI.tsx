@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Service, Location, Panel, handleFirestoreError, OperationType } from '../types';
+import { Service, Location, Panel, Collaborator, handleFirestoreError, OperationType } from '../types';
 import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -12,6 +12,7 @@ export default function PublicUI() {
   const [services, setServices] = useState<Service[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [panels, setPanels] = useState<Panel[]>([]);
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [selectedPanel, setSelectedPanel] = useState<Panel | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -64,10 +65,24 @@ export default function PublicUI() {
       handleFirestoreError(error, OperationType.LIST, 'panels', auth);
     });
 
+    const qCollaborators = query(collection(db, 'collaborators'));
+    const unsubscribeCollaborators = onSnapshot(qCollaborators, (snapshot) => {
+      const collabData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Collaborator[];
+      
+      setCollaborators(collabData);
+    }, (error) => {
+      console.error("Collaborators Fetch Error:", error);
+      handleFirestoreError(error, OperationType.LIST, 'collaborators', auth);
+    });
+
     return () => {
       unsubscribeServices();
       unsubscribeLocations();
       unsubscribePanels();
+      unsubscribeCollaborators();
     };
   }, []);
 
@@ -453,6 +468,35 @@ export default function PublicUI() {
 
           {/* Google Reviews Section */}
           <GoogleReviews />
+
+          {/* Keluarga TeamAra Section */}
+          {collaborators.length > 0 && (
+            <section className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
+              <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Keluarga TeamAra</h2>
+              <p className="text-sm text-gray-400 mb-6">Meet our trusted collaborators</p>
+              <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pb-6 hide-scrollbar">
+                {collaborators.map(collab => (
+                  <div key={collab.id} className="w-[280px] sm:w-[300px] flex-shrink-0 flex flex-col bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden snap-center group">
+                    <div className="h-48 w-full overflow-hidden bg-zinc-800">
+                      <img 
+                        src={collab.imageUrl} 
+                        alt={`${collab.name} - TeamAra Collaborator`} 
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    <div className="p-5 flex flex-col flex-1">
+                      <h4 className="text-lg font-bold text-white mb-2">{collab.name}</h4>
+                      <div className="flex items-start gap-2 text-sm text-zinc-400 mt-auto">
+                        <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <p className="line-clamp-2">{collab.location}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Locations Section */}
           <section id="locations" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">

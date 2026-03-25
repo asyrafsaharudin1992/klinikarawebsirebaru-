@@ -34,6 +34,13 @@ export interface Panel {
   availableLocations: string[];
 }
 
+export interface Collaborator {
+  id: string;
+  name: string;
+  location: string;
+  imageUrl: string;
+}
+
 export enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',
