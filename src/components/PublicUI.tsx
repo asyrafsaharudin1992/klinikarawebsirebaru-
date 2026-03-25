@@ -6,6 +6,7 @@ import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, Chec
 import Fuse from 'fuse.js';
 import { GoogleGenAI, Type } from '@google/genai';
 import GoogleReviews from './GoogleReviews';
+import SEO from './SEO';
 
 export default function PublicUI() {
   const [services, setServices] = useState<Service[]>([]);
@@ -190,10 +191,14 @@ export default function PublicUI() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white overflow-x-hidden font-sans">
+      <SEO 
+        title="Klinik Ara 24 Jam"
+        description="Top-rated 24-hour medical clinic in Selangor. View our latest AraSihat and AraVax packages."
+      />
       {/* Navbar */}
       <nav className="fixed top-0 w-full z-50 bg-black/60 backdrop-blur-md px-4 md:px-12 py-4 flex items-center justify-between border-b border-white/5">
         <div className="flex items-center gap-8">
-          <h1 className="text-red-600 text-2xl md:text-3xl font-bold tracking-tighter">KLINIK ARA</h1>
+          <div className="text-red-600 text-2xl md:text-3xl font-bold tracking-tighter">KLINIK ARA</div>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-300">
             <a href="#" className="text-white font-semibold">Home</a>
             <a href="#services" className="hover:text-white transition">Services</a>
@@ -203,64 +208,65 @@ export default function PublicUI() {
         <a href="/admin" className="text-sm font-medium text-zinc-300 hover:text-white transition hidden sm:block">Admin Login</a>
       </nav>
 
-      {/* Hero Banner */}
-      <div className="relative h-[70vh] md:h-[85vh] w-full transition-all duration-1000 ease-in-out">
-        <div className="absolute inset-0">
-          <img 
-            key={heroImage}
-            src={heroImage} 
-            alt="Hero" 
-            className="w-full h-full object-cover animate-fade-in"
-            referrerPolicy="no-referrer"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/70 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
-        </div>
-        
-        <div className="absolute bottom-[15%] left-4 md:left-12 max-w-2xl z-10">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-red-600 font-bold tracking-widest text-sm drop-shadow-md">
-              {(currentHero?.category || defaultHero.category).toUpperCase()}
-            </span>
-            {currentHero?.isFeatured && (
-              <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">FEATURED</span>
-            )}
+      <main>
+        {/* Hero Banner */}
+        <section className="relative h-[70vh] md:h-[85vh] w-full transition-all duration-1000 ease-in-out">
+          <div className="absolute inset-0">
+            <img 
+              key={heroImage}
+              src={heroImage} 
+              alt={currentHero?.title ? `${currentHero.title} - Klinik Ara 24 Jam` : "Klinik Ara 24 Jam Hero Banner"} 
+              className="w-full h-full object-cover animate-fade-in"
+              referrerPolicy="no-referrer"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/70 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
           </div>
-          <h2 className="text-5xl md:text-7xl font-bold mb-4 tracking-tight drop-shadow-lg">
-            {currentHero?.title || defaultHero.title}
-          </h2>
-          <p className="text-lg md:text-xl text-zinc-300 mb-8 max-w-xl drop-shadow-md line-clamp-3">
-            {currentHero?.description || defaultHero.description}
-          </p>
-          <div className="flex items-center gap-4">
-            {currentHero ? (
-              <button 
-                onClick={() => handleOpenModal(currentHero)}
-                className="bg-white text-black px-6 md:px-8 py-2 md:py-3 rounded md:rounded-md font-bold flex items-center gap-2 hover:bg-white/90 transition"
-              >
-                <Play className="w-5 h-5 md:w-6 md:h-6 fill-black" />
-                View Details
-              </button>
-            ) : (
+          
+          <div className="absolute bottom-[15%] left-4 md:left-12 max-w-2xl z-10">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-red-600 font-bold tracking-widest text-sm drop-shadow-md">
+                {(currentHero?.category || defaultHero.category).toUpperCase()}
+              </span>
+              {currentHero?.isFeatured && (
+                <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">FEATURED</span>
+              )}
+            </div>
+            <h1 className="text-5xl md:text-7xl font-bold mb-4 tracking-tight drop-shadow-lg">
+              {currentHero?.title || defaultHero.title}
+            </h1>
+            <p className="text-lg md:text-xl text-zinc-300 mb-8 max-w-xl drop-shadow-md line-clamp-3">
+              {currentHero?.description || defaultHero.description}
+            </p>
+            <div className="flex items-center gap-4">
+              {currentHero ? (
+                <button 
+                  onClick={() => handleOpenModal(currentHero)}
+                  className="bg-white text-black px-6 md:px-8 py-2 md:py-3 rounded md:rounded-md font-bold flex items-center gap-2 hover:bg-white/90 transition"
+                >
+                  <Play className="w-5 h-5 md:w-6 md:h-6 fill-black" />
+                  View Details
+                </button>
+              ) : (
+                <a 
+                  href="/admin"
+                  className="bg-white text-black px-6 md:px-8 py-2 md:py-3 rounded md:rounded-md font-bold flex items-center gap-2 hover:bg-white/90 transition"
+                >
+                  Get Started (Admin)
+                </a>
+              )}
               <a 
-                href="/admin"
-                className="bg-white text-black px-6 md:px-8 py-2 md:py-3 rounded md:rounded-md font-bold flex items-center gap-2 hover:bg-white/90 transition"
+                href="https://wa.me/60182194392"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-zinc-500/50 text-white px-6 md:px-8 py-2 md:py-3 rounded md:rounded-md font-bold flex items-center gap-2 hover:bg-zinc-500/70 transition backdrop-blur-sm"
               >
-                Get Started (Admin)
+                <MessageCircle className="w-5 h-5 md:w-6 md:h-6" />
+                Contact Us
               </a>
-            )}
-            <a 
-              href="https://wa.me/60182194392"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-zinc-500/50 text-white px-6 md:px-8 py-2 md:py-3 rounded md:rounded-md font-bold flex items-center gap-2 hover:bg-zinc-500/70 transition backdrop-blur-sm"
-            >
-              <MessageCircle className="w-5 h-5 md:w-6 md:h-6" />
-              Contact Us
-            </a>
+            </div>
           </div>
-        </div>
-      </div>
+        </section>
 
       {/* Floating Search Bar */}
       <div className="-mt-8 relative z-20 mx-auto max-w-4xl px-4 w-full">
@@ -290,12 +296,12 @@ export default function PublicUI() {
       </div>
 
       {isAiSearching ? (
-        <div className="pt-16 pb-20 min-h-[40vh] flex flex-col items-center justify-center text-zinc-400">
+        <section className="pt-16 pb-20 min-h-[40vh] flex flex-col items-center justify-center text-zinc-400">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mb-4"></div>
           <p className="text-xl animate-pulse">AI is analyzing your symptoms...</p>
-        </div>
+        </section>
       ) : searchQuery || aiResults.length > 0 ? (
-        <div className="pt-16 px-4 md:px-12 pb-20 min-h-[40vh]">
+        <section className="pt-16 px-4 md:px-12 pb-20 min-h-[40vh]">
           <h2 className="text-2xl md:text-3xl font-bold mb-6">
             {aiResults.length > 0 ? "AI Recommendations" : `Search Results for "${searchQuery}"`}
           </h2>
@@ -312,7 +318,7 @@ export default function PublicUI() {
                     {displayImage ? (
                       <img 
                         src={displayImage} 
-                        alt={service.title} 
+                        alt={`${service.title} - Klinik Ara 24 Jam Service`} 
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
                       />
@@ -340,9 +346,9 @@ export default function PublicUI() {
               <p className="mt-2">Try adjusting your keywords.</p>
             </div>
           )}
-        </div>
+        </section>
       ) : (
-        <div id="services" className="pt-16 pb-20 relative z-10">
+        <section id="services" className="pt-16 pb-20 relative z-10">
           {/* Carousels */}
           {hasContent ? (displayCategories || []).map(category => {
             const categoryServices = servicesByCategory[category];
@@ -350,10 +356,10 @@ export default function PublicUI() {
 
             return (
               <div key={category} className="mb-8 md:mb-12">
-                <h3 className="text-xl md:text-2xl font-bold px-4 md:px-12 mb-2 md:mb-4 flex items-center gap-2 group cursor-pointer">
+                <h2 className="text-xl md:text-2xl font-bold px-4 md:px-12 mb-2 md:mb-4 flex items-center gap-2 group cursor-pointer">
                   {category}
                   <ChevronRight className="w-5 h-5 text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </h3>
+                </h2>
                 <div className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar px-4 md:px-12 gap-2 md:gap-4 pb-4">
                   {categoryServices.map(service => {
                     const displayImage = service.imageUrls?.[0] || service.imageUrl;
@@ -366,7 +372,7 @@ export default function PublicUI() {
                         {displayImage ? (
                           <img 
                             src={displayImage} 
-                            alt={service.title} 
+                            alt={`${service.title} Poster - Klinik Ara 24 Jam`} 
                             className="w-full h-full object-cover"
                             referrerPolicy="no-referrer"
                           />
@@ -407,8 +413,8 @@ export default function PublicUI() {
           <GoogleReviews />
 
           {/* Locations Section */}
-          <div id="locations" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
-            <h3 className="text-xl md:text-2xl font-bold text-white mb-6">Our Locations</h3>
+          <section id="locations" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
+            <h2 className="text-xl md:text-2xl font-bold text-white mb-6">Our Locations</h2>
             <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-6 hide-scrollbar">
               {locations?.length > 0 ? (
                 locations?.map(loc => (
@@ -417,7 +423,7 @@ export default function PublicUI() {
                       <div className="h-52 w-full overflow-hidden">
                         <img 
                           src={loc.imageUrl} 
-                          alt={loc.branchName} 
+                          alt={`${loc.branchName} - Klinik Ara 24 Jam Branch`} 
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
                           referrerPolicy="no-referrer"
                         />
@@ -483,9 +489,10 @@ export default function PublicUI() {
                 </div>
               )}
             </div>
-          </div>
-        </div>
+          </section>
+        </section>
       )}
+    </main>
 
       {/* Interactive Modal */}
       {selectedService && (
