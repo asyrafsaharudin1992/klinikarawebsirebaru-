@@ -313,7 +313,11 @@ export default function PublicUI() {
 
       {/* Panels Carousel Section */}
       {panels.length > 0 && (
-        <div className="mt-8 px-4 md:px-12 max-w-7xl mx-auto w-full">
+        <div className="mt-12 px-4 md:px-12 max-w-7xl mx-auto w-full">
+          <div className="max-w-4xl mx-auto mb-4">
+            <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Panels</h2>
+            <p className="text-sm text-gray-400">Click to see branch availability</p>
+          </div>
           <div className="flex items-center gap-4 overflow-x-auto pb-4 no-scrollbar snap-x snap-mandatory">
             {panels.map((panel) => (
               <div 
