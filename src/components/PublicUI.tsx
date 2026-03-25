@@ -514,7 +514,7 @@ export default function PublicUI() {
           {collaborators.length > 0 && (
             <section className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
               <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Keluarga TeamAra</h2>
-              <p className="text-sm text-gray-400 mb-6">Meet our trusted collaborators</p>
+              <p className="text-sm text-gray-400 mb-6">Keluarga TeamAra ialah entiti atau organisasi yang ahli/murid/pekerjanya dapat menikmati manfaat TeamAra secara automatik</p>
               <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pb-6 hide-scrollbar">
                 {collaborators.map(collab => (
                   <div key={collab.id} className="w-[280px] sm:w-[300px] flex-shrink-0 flex flex-col bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden snap-center group">
