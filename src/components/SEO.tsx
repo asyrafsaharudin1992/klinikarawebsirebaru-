@@ -10,9 +10,9 @@ interface SEOProps {
 }
 
 const SEO: React.FC<SEOProps> = ({
-  title = "Klinik Ara 24 Jam | 24 hours Medical Clinic",
-  description = "Klinik Ara 24 Jam provides comprehensive medical services in Kajang, Seri Kembangan, Semenyih Selangor. Open 24 hours for your health needs, including AraMommy, AraVax, and AraSihat services.",
-  keywords = "Klinik Ara, 24 hour clinic Kajang, medical clinic Selangor, AraMommy, AraVax, AraSihat, healthcare Kajang",
+  title = "Klinik Ara 24 Jam",
+  description = "Klinik Ara 24 Jam Selamat datang ke laman sesawang Klinik Ara 24 Jam, Ayuh sertai TeamAra untuk menikmati pelbagai manfaat.",
+  keywords = "Klinik Ara, 24 hour clinic Kajang, 24 hour clinic Seri Kembangan, 24 hour clinic Semenyih, buka buku pink, vaksin influenza, klinik 24 jam, clinic near me, medical clinic Selangor, AraMommy, AraVax, AraSihat, healthcare Kajang",
   image = "https://ais-dev-hsvhfigpeqkxawqym2ax4s-499672742043.asia-southeast1.run.app/og-image.jpg", // Replace with actual OG image if available
   url = "https://ais-dev-hsvhfigpeqkxawqym2ax4s-499672742043.asia-southeast1.run.app",
 }) => {
