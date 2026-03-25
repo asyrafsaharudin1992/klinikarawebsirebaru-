@@ -859,7 +859,7 @@ export default function PublicUI() {
               </div>
               
               <h2 className="text-xl font-bold text-center text-white mt-4">{selectedPanel.name}</h2>
-              <p className="text-sm text-gray-400 text-center mt-2 mb-4">Accepted at these branches:</p>
+              <p className="text-sm text-gray-400 text-center mt-2 mb-4">Panel ini ada di cawangan:</p>
 
               <div className="w-full space-y-2">
                 {selectedPanel.availableLocations.map((loc, idx) => (
