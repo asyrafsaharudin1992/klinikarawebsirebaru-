@@ -5,14 +5,14 @@ import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebas
 import { db, auth, storage } from '../firebase';
 import { Service, Location, Panel, Collaborator, AdminUser, Vendor, AppSettings, handleFirestoreError, OperationType } from '../types';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { LogOut, Plus, GripVertical, Image as ImageIcon, Trash2, Loader2, AlertCircle, CheckCircle2, X, Edit2, Sparkles, MapPin, Phone, ArrowUp, ArrowDown } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { GoogleGenAI } from '@google/genai';
 
-// Sortable Item Component (Row-based)
-const SortableServiceItem: React.FC<{ service: Service, onDelete: (id: string) => void, onEdit: (service: Service) => void }> = ({ service, onDelete, onEdit }) => {
+// Sortable Card Component (Horizontal Swimlane)
+const SortableServiceCard: React.FC<{ service: Service, onDelete: (id: string) => void, onEdit: (service: Service) => void, isHighlighted?: boolean }> = ({ service, onDelete, onEdit, isHighlighted }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: service.id });
 
   const style = {
@@ -24,58 +24,67 @@ const SortableServiceItem: React.FC<{ service: Service, onDelete: (id: string) =
   const displayImage = service.heroImageUrl || service.imageUrls?.[0] || service.imageUrl;
 
   return (
-    <tr 
+    <div 
       ref={setNodeRef} 
       style={style} 
-      className={`${isDragging ? 'bg-zinc-800 shadow-2xl z-10' : 'bg-zinc-900/50 hover:bg-zinc-800/50'} border-b border-zinc-800 transition-colors group`}
+      className={`flex-shrink-0 w-64 rounded-xl overflow-hidden border transition-all group relative flex flex-col ${
+        isDragging ? 'bg-zinc-800 shadow-2xl z-10 border-zinc-600 scale-105' : 
+        isHighlighted ? 'bg-green-500/10 border-green-500 ring-2 ring-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)]' :
+        'bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/50'
+      }`}
     >
-      <td className="p-4 w-12">
-        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-2 hover:bg-zinc-700 rounded-lg text-zinc-500 hover:text-white transition-colors">
-          <GripVertical className="w-4 h-4" />
+      {/* Drag Handle */}
+      <div 
+        {...attributes} 
+        {...listeners} 
+        className="absolute top-2 left-2 z-20 p-1.5 bg-black/50 backdrop-blur-md rounded-md text-white/70 hover:text-white cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <GripVertical className="w-4 h-4" />
+      </div>
+
+      {/* Image */}
+      <div className="h-32 w-full bg-zinc-800 relative overflow-hidden">
+        {displayImage ? (
+          <img src={displayImage} alt={service.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-zinc-600">
+            <ImageIcon className="w-8 h-8" />
+          </div>
+        )}
+        {service.isFeatured && (
+          <div className="absolute top-2 right-2 px-2 py-1 rounded text-[10px] font-bold bg-amber-500 text-white shadow-lg">
+            FEATURED
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-4 flex flex-col flex-grow">
+        <h4 className="font-medium text-white text-sm line-clamp-2 mb-1">{service.title}</h4>
+        <div className="text-xs text-zinc-400 mt-auto">
+          {service.price && <div className="font-semibold text-zinc-300">RM{service.price}</div>}
+          {service.teamAraPrice && <div>TeamAra: RM{service.teamAraPrice}</div>}
         </div>
-      </td>
-      <td className="p-4 w-20">
-        <div className="w-12 h-12 rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0 border border-zinc-700">
-          {displayImage ? (
-            <img src={displayImage} alt={service.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-zinc-600"><ImageIcon className="w-5 h-5" /></div>
-          )}
-        </div>
-      </td>
-      <td className="p-4">
-        <div className="font-medium text-white flex items-center gap-2">
-          {service.title}
-          {service.isFeatured && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30">FEATURED</span>}
-        </div>
-        <div className="text-xs text-zinc-500 mt-1">
-          {service.price && `RM${service.price}`} {service.teamAraPrice && `(TeamAra: RM${service.teamAraPrice})`}
-        </div>
-      </td>
-      <td className="p-4">
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-800 text-zinc-400 border border-zinc-700">
-          {service.category}
-        </span>
-      </td>
-      <td className="p-4 text-right">
-        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button 
-            onClick={() => onEdit(service)}
-            className="p-2 text-zinc-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all"
-            title="Edit Service"
-          >
-            <Edit2 className="w-4 h-4" />
-          </button>
-          <button 
-            onClick={() => onDelete(service.id)}
-            className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
-            title="Delete Service"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </td>
-    </tr>
+      </div>
+
+      {/* Actions */}
+      <div className="px-4 py-3 border-t border-zinc-800/50 bg-black/20 flex justify-end gap-2">
+        <button 
+          onClick={() => onEdit(service)}
+          className="p-1.5 text-zinc-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-md transition-all"
+          title="Edit Service"
+        >
+          <Edit2 className="w-4 h-4" />
+        </button>
+        <button 
+          onClick={() => onDelete(service.id)}
+          className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-md transition-all"
+          title="Delete Service"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -101,6 +110,7 @@ export default function AdminUI({ user }: { user: User }) {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleteLocConfirmId, setDeleteLocConfirmId] = useState<string | null>(null);
   const [deletePanelConfirmId, setDeletePanelConfirmId] = useState<string | null>(null);
+  const [highlightedServiceId, setHighlightedServiceId] = useState<string | null>(null);
   const [deleteCollabConfirmId, setDeleteCollabConfirmId] = useState<string | null>(null);
   const [deleteLeadConfirmId, setDeleteLeadConfirmId] = useState<string | null>(null);
 
@@ -763,7 +773,7 @@ export default function AdminUI({ user }: { user: User }) {
       await updateDoc(doc(db, 'settings', 'homepage'), {
         vendorSubheading: settings.vendorSubheading || '',
         carouselOrder: settings.carouselOrder || ['services', 'teamAra', 'vendors', 'panels'],
-        servicesSub: settings.servicesSub || '',
+        categorySubheadings: settings.categorySubheadings || {},
         teamAraSub: settings.teamAraSub || '',
         panelsSub: settings.panelsSub || '',
         vendorsSub: settings.vendorsSub || ''
@@ -1062,17 +1072,22 @@ export default function AdminUI({ user }: { user: User }) {
       if (editingId) {
         await updateDoc(doc(db, 'services', editingId), serviceData);
         setSuccessMsg('Service updated successfully!');
+        setHighlightedServiceId(editingId);
       } else {
         const newRankOrder = (services || []).length > 0 ? Math.max(...(services || []).map(s => s.rankOrder)) + 1 : 0;
-        await addDoc(collection(db, 'services'), {
+        const docRef = await addDoc(collection(db, 'services'), {
           ...serviceData,
           rankOrder: newRankOrder
         });
         setSuccessMsg('Service added successfully!');
+        setHighlightedServiceId(docRef.id);
       }
 
       resetForm();
-      setTimeout(() => setSuccessMsg(null), 3000);
+      setTimeout(() => {
+        setSuccessMsg(null);
+        setHighlightedServiceId(null);
+      }, 3000);
     } catch (error: any) {
       console.error('Save error:', error);
       setErrorMsg(`Save failed: ${error.message || 'Unknown error'}.`);
@@ -1109,19 +1124,39 @@ export default function AdminUI({ user }: { user: User }) {
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      const oldIndex = services.findIndex(s => s.id === active.id);
-      const newIndex = services.findIndex(s => s.id === over.id);
-      const newServices = arrayMove(services, oldIndex, newIndex) as Service[];
-      setServices(newServices);
-      try {
+      const draggedService = services.find(s => s.id === active.id);
+      if (!draggedService) return;
+
+      const category = draggedService.category;
+      
+      const categoryServices = services.filter(s => s.category === category).sort((a, b) => a.rankOrder - b.rankOrder);
+      
+      const oldIndex = categoryServices.findIndex(s => s.id === active.id);
+      const newIndex = categoryServices.findIndex(s => s.id === over.id);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newCategoryServices = arrayMove(categoryServices, oldIndex, newIndex) as Service[];
+        
+        const updatedServices = [...services];
         const batch = writeBatch(db);
-        newServices.forEach((service, index) => {
+        
+        newCategoryServices.forEach((service, index) => {
+          const serviceIndex = updatedServices.findIndex(s => s.id === service.id);
+          if (serviceIndex !== -1) {
+            updatedServices[serviceIndex] = { ...service, rankOrder: index };
+          }
+          
           const docRef = doc(db, 'services', service.id);
           batch.update(docRef, { rankOrder: index });
         });
-        await batch.commit();
-      } catch (error) {
-        handleFirestoreError(error, OperationType.UPDATE, 'services', auth);
+        
+        setServices(updatedServices);
+        
+        try {
+          await batch.commit();
+        } catch (error) {
+          handleFirestoreError(error, OperationType.UPDATE, 'services', auth);
+        }
       }
     }
   };
@@ -1286,11 +1321,11 @@ export default function AdminUI({ user }: { user: User }) {
       </header>
 
       {activeTab === 'services' && (
-      <main className="max-w-6xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <main className="max-w-6xl mx-auto px-4 mt-8 flex flex-col gap-8">
         
-        {/* Left Col: Form */}
-        <div className="lg:col-span-5">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar">
+        {/* Top: Form */}
+        <div className="w-full max-w-3xl mx-auto">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                 {editingId ? <Edit2 className="w-5 h-5 text-blue-400" /> : <Plus className="w-5 h-5 text-red-500" />}
@@ -1598,53 +1633,51 @@ export default function AdminUI({ user }: { user: User }) {
           </div>
         </div>
 
-        {/* Right Col: Active Services List */}
-        <div className="lg:col-span-7">
+        {/* Bottom: Active Services List */}
+        <div className="w-full">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-white">Active Services</h2>
             <div className="flex items-center gap-2 text-sm text-zinc-500">
               <AlertCircle className="w-4 h-4" />
-              <span>Drag to reorder</span>
+              <span>Drag to reorder within categories</span>
             </div>
           </div>
 
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-zinc-950/50 border-b border-zinc-800">
-                  <th className="p-4 w-12"></th>
-                  <th className="p-4 w-20 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Image</th>
-                  <th className="p-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Details</th>
-                  <th className="p-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Category</th>
-                  <th className="p-4 w-24"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {services.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="p-12 text-center">
-                      <ImageIcon className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-                      <h3 className="text-zinc-300 font-medium mb-1">No services yet</h3>
-                      <p className="text-zinc-500 text-sm">Add your first service using the form.</p>
-                    </td>
-                  </tr>
-                ) : (
-                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                    <SortableContext items={(services || []).map(s => s.id)} strategy={verticalListSortingStrategy}>
-                      {(services || []).map(service => (
-                        <SortableServiceItem 
-                          key={service.id} 
-                          service={service} 
-                          onDelete={(id) => setDeleteConfirmId(id)} 
-                          onEdit={handleEdit}
-                        />
-                      ))}
-                    </SortableContext>
-                  </DndContext>
-                )}
-              </tbody>
-            </table>
-          </div>
+          {services.length === 0 ? (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-12 text-center">
+              <ImageIcon className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+              <h3 className="text-zinc-300 font-medium mb-1">No services yet</h3>
+              <p className="text-zinc-500 text-sm">Add your first service using the form above.</p>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {existingCategories.map(category => {
+                const categoryServices = services.filter(s => s.category === category).sort((a, b) => a.rankOrder - b.rankOrder);
+                if (categoryServices.length === 0) return null;
+                
+                return (
+                  <div key={category} className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+                    <h3 className="text-xl font-bold text-white mb-4 capitalize">{category}</h3>
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                      <SortableContext items={categoryServices.map(s => s.id)} strategy={horizontalListSortingStrategy}>
+                        <div className="flex overflow-x-auto gap-4 pb-4 hide-scrollbar">
+                          {categoryServices.map(service => (
+                            <SortableServiceCard 
+                              key={service.id} 
+                              service={service} 
+                              onDelete={(id) => setDeleteConfirmId(id)} 
+                              onEdit={handleEdit}
+                              isHighlighted={highlightedServiceId === service.id}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </main>
       )}
@@ -2275,16 +2308,21 @@ export default function AdminUI({ user }: { user: User }) {
             <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 space-y-6">
               <h3 className="text-lg font-medium text-white mb-4 border-b border-zinc-800 pb-2">Subheadings</h3>
               
-              <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Services Subheading</label>
-                <input
-                  type="text"
-                  value={settings.servicesSub || ''}
-                  onChange={e => setSettings({...settings, servicesSub: e.target.value})}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
-                  placeholder="e.g., Swipe to explore our available packages"
-                />
-              </div>
+              {Array.from(new Set(services.map(s => s.category))).map(category => (
+                <div key={String(category)}>
+                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">{String(category)} Subheading</label>
+                  <input
+                    type="text"
+                    value={settings.categorySubheadings?.[String(category)] || ''}
+                    onChange={e => setSettings(prev => ({
+                      ...prev,
+                      categorySubheadings: { ...(prev?.categorySubheadings || {}), [String(category)]: e.target.value }
+                    }))}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                    placeholder={`e.g., Explore our ${String(category)} packages`}
+                  />
+                </div>
+              ))}
 
               <div>
                 <label className="block text-sm font-medium text-zinc-400 mb-1.5">TeamAra Subheading</label>

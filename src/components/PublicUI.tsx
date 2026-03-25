@@ -524,7 +524,7 @@ export default function PublicUI() {
                         services={categoryServices as Service[]} 
                         onSelect={handleOpenModal}
                         lang={lang}
-                        subheading={settings?.servicesSub}
+                        subheading={settings?.categorySubheadings?.[String(category)] || ''}
                       />
                     );
                   }) : (

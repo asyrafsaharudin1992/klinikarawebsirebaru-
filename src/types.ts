@@ -54,7 +54,7 @@ export interface Vendor {
 export interface AppSettings {
   vendorSubheading: string;
   carouselOrder: string[];
-  servicesSub?: string;
+  categorySubheadings?: Record<string, string>;
   teamAraSub?: string;
   panelsSub?: string;
   vendorsSub?: string;
