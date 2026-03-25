@@ -307,7 +307,7 @@ export default function PublicUI() {
     }
 
     const formattedClinicPhone = formatPhoneNumber(leadData.locationPhone);
-    const message = encodeURIComponent(`Hi I'm ${leadData.name}, I would like to book a slot for ${bookingModalService.title}.`);
+    const message = encodeURIComponent(`Hai, nama saya ${leadData.name}. Saya berminat dengan ${bookingModalService.title}.`);
     const waUrl = `https://wa.me/${formattedClinicPhone}?text=${message}`;
 
     window.open(waUrl, '_blank');
@@ -1044,7 +1044,7 @@ export default function PublicUI() {
             
             <form onSubmit={handleWhatsAppBooking} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Select Branch</label>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Pilih Cawangan</label>
                 <select 
                   required
                   value={leadData.locationId}
@@ -1058,7 +1058,7 @@ export default function PublicUI() {
                   }}
                   className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all"
                 >
-                  <option value="" disabled className="bg-gray-900 text-white">Select a branch...</option>
+                  <option value="" disabled className="bg-gray-900 text-white">Pilih cawangan...</option>
                   {locations.map(loc => (
                     <option key={loc.id} value={loc.id} className="bg-gray-900 text-white">{loc.branchName}</option>
                   ))}
@@ -1066,26 +1066,26 @@ export default function PublicUI() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Your Name</label>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Nama Anda</label>
                 <input 
                   type="text" 
                   required
                   value={leadData.name}
                   onChange={(e) => setLeadData({...leadData, name: e.target.value})}
                   className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all"
-                  placeholder="e.g. Ali bin Abu"
+                  placeholder="cth. Ali bin Abu"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Phone Number</label>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Nombor Telefon</label>
                 <input 
                   type="tel" 
                   required
                   value={leadData.phone}
                   onChange={(e) => setLeadData({...leadData, phone: e.target.value})}
                   className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all"
-                  placeholder="e.g. 0123456789"
+                  placeholder="cth. 0123456789"
                 />
               </div>
               
@@ -1100,7 +1100,7 @@ export default function PublicUI() {
               </button>
               
               <p className="text-[10px] text-gray-500 text-center mt-3 leading-tight">
-                By clicking continue, you agree to our terms and conditions, which include allowing Klinik Ara to save your phone number and granting us permission to contact you regarding your inquiry.
+                Dengan menekan teruskan, anda bersetuju dengan terma dan syarat kami, termasuk membenarkan Klinik Ara menyimpan nombor telefon anda dan memberi kebenaran kepada kami untuk menghubungi anda berkenaan pertanyaan anda.
               </p>
             </form>
           </div>
