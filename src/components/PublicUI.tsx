@@ -361,7 +361,18 @@ export default function PublicUI() {
       {/* Navbar */}
       <nav className="fixed top-0 w-full z-50 bg-black/60 backdrop-blur-md px-4 md:px-12 py-4 flex items-center justify-between border-b border-white/5">
         <div className="flex items-center gap-8">
-          <div className="text-white-255 text-2xl md:text-3xl font-bold tracking-tighter">KLINIK ARA 24 JAM</div>
+          <a 
+            href="/" 
+            onClick={(e) => {
+              if (window.location.pathname === '/') {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+            className="text-white-255 text-2xl md:text-3xl font-bold tracking-tighter hover:opacity-80 transition-opacity cursor-pointer flex items-center gap-2"
+          >
+            KLINIK ARA 24 JAM
+          </a>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-300">
             <a href="#" className="text-white font-semibold">Laman Utama</a>
             <a href="#services" className="hover:text-white transition">Perkhidmatan</a>
