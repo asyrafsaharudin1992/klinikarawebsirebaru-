@@ -188,9 +188,6 @@ export default function AdminUI({ user }: { user: User }) {
       
       if (current) {
         setCurrentAdminInfo(current);
-        if (current.role === 'branchadmin') {
-          setActiveTab('leads');
-        }
         if (current.role === 'superadmin') {
           setAdminUsers(adminsData);
         }
@@ -1048,34 +1045,30 @@ export default function AdminUI({ user }: { user: User }) {
           </div>
         </div>
         <div className="max-w-6xl mx-auto px-4 flex items-center gap-6 border-t border-zinc-800">
-          {currentAdminInfo?.role !== 'branchadmin' && (
-            <>
-              <button
-                onClick={() => setActiveTab('services')}
-                className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'services' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
-              >
-                Manage Promotions
-              </button>
-              <button
-                onClick={() => setActiveTab('locations')}
-                className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'locations' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
-              >
-                Manage Locations
-              </button>
-              <button
-                onClick={() => setActiveTab('panels')}
-                className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'panels' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
-              >
-                Manage Panels
-              </button>
-              <button
-                onClick={() => setActiveTab('collaborators')}
-                className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'collaborators' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
-              >
-                Manage TeamAra
-              </button>
-            </>
-          )}
+          <button
+            onClick={() => setActiveTab('services')}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'services' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          >
+            Manage Promotions
+          </button>
+          <button
+            onClick={() => setActiveTab('locations')}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'locations' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          >
+            Manage Locations
+          </button>
+          <button
+            onClick={() => setActiveTab('panels')}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'panels' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          >
+            Manage Panels
+          </button>
+          <button
+            onClick={() => setActiveTab('collaborators')}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'collaborators' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          >
+            Manage TeamAra
+          </button>
           <button
             onClick={() => setActiveTab('leads')}
             className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'leads' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
