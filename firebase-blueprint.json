@@ -11,12 +11,33 @@
         "rankOrder": { "type": "number" }
       },
       "required": ["title", "category", "imageUrl", "rankOrder"]
+    },
+    "Location": {
+      "title": "Location",
+      "description": "A clinic branch location",
+      "type": "object",
+      "properties": {
+        "branchName": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "operatingHours": { "type": "string" },
+        "googleMapsUrl": { "type": "string", "format": "uri" },
+        "wazeUrl": { "type": "string", "format": "uri" },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "landmark": { "type": "string" }
+      },
+      "required": ["branchName", "address", "phone", "whatsapp", "operatingHours", "googleMapsUrl", "wazeUrl"]
     }
   },
   "firestore": {
     "/services/{serviceId}": {
       "schema": "Service",
       "description": "List of services"
+    },
+    "/locations/{locationId}": {
+      "schema": "Location",
+      "description": "List of clinic locations"
     }
   }
 }

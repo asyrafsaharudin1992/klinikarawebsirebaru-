@@ -14,6 +14,19 @@ export interface Service {
   rankOrder: number;
 }
 
+export interface Location {
+  id: string;
+  branchName: string;
+  address: string;
+  phone: string;
+  whatsapp: string;
+  operatingHours: string;
+  googleMapsUrl: string;
+  wazeUrl: string;
+  imageUrl?: string;
+  landmark?: string;
+}
+
 export enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',

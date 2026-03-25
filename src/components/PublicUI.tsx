@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Service, handleFirestoreError, OperationType } from '../types';
-import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles } from 'lucide-react';
+import { Service, Location, handleFirestoreError, OperationType } from '../types';
+import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { GoogleGenAI, Type } from '@google/genai';
+import GoogleReviews from './GoogleReviews';
 
 export default function PublicUI() {
   const [services, setServices] = useState<Service[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [modalImageIndex, setModalImageIndex] = useState(0);
@@ -17,39 +19,62 @@ export default function PublicUI() {
   const [aiResults, setAiResults] = useState<string[]>([]);
 
   useEffect(() => {
-    const q = query(collection(db, 'services'), orderBy('rankOrder', 'asc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const qServices = query(collection(db, 'services'));
+    const unsubscribeServices = onSnapshot(qServices, (snapshot) => {
       const servicesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Service[];
-      setServices(servicesData);
+      
+      // Sort in memory to handle documents without rankOrder
+      const sortedServices = [...servicesData].sort((a, b) => (a.rankOrder || 0) - (b.rankOrder || 0));
+      setServices(sortedServices);
       setLoading(false);
     }, (error) => {
+      console.error("Services Fetch Error:", error);
       handleFirestoreError(error, OperationType.LIST, 'services', auth);
     });
 
-    return () => unsubscribe();
+    const qLocations = query(collection(db, 'locations'));
+    const unsubscribeLocations = onSnapshot(qLocations, (snapshot) => {
+      const locData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Location[];
+      
+      setLocations(locData);
+    }, (error) => {
+      console.error("Locations Fetch Error:", error);
+      handleFirestoreError(error, OperationType.LIST, 'locations', auth);
+    });
+
+    return () => {
+      unsubscribeServices();
+      unsubscribeLocations();
+    };
   }, []);
 
-  // Filter expired promos
-  const today = new Date().toISOString().split('T')[0];
-  const validServices = services.filter(s => {
-    if (!s.endDate) return true; // No end date means it doesn't expire
-    return s.endDate >= today;
-  });
-
-  const featuredServices = validServices.filter(s => s.isFeatured);
   const categories = ['AraMommy', 'AraVax', 'AraSihat', 'Other'];
+  
+  // Group services by category, including a "General" category for unmatched ones
+  const servicesByCategory = (services || []).reduce((acc, s) => {
+    const cat = categories.includes(s.category) ? s.category : 'General';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(s);
+    return acc;
+  }, {} as Record<string, Service[]>);
+
+  const displayCategories = [...categories, 'General'].filter(cat => servicesByCategory[cat]?.length > 0);
+  const featuredServices = (services || []).filter(s => s.isFeatured);
 
   // Initialize Fuse
-  const fuse = new Fuse(validServices, {
+  const fuse = new Fuse(services || [], {
     keys: ['title', 'category', 'description'],
     threshold: 0.3,
   });
 
   const searchResults = aiResults.length > 0 
-    ? validServices.filter(s => aiResults.includes(s.id))
+    ? (services || []).filter(s => aiResults.includes(s.id))
     : searchQuery ? fuse.search(searchQuery).map(result => result.item) : [];
 
   const handleAskAI = async () => {
@@ -66,7 +91,7 @@ export default function PublicUI() {
       }
       
       const ai = new GoogleGenAI({ apiKey });
-      const simplifiedServices = validServices.map(s => ({ id: s.id, title: s.title, description: s.description }));
+      const simplifiedServices = (services || []).map(s => ({ id: s.id, title: s.title, description: s.description }));
       
       const prompt = `You are a medical triage assistant. Patient says: '${searchQuery}'. Review this list of services: ${JSON.stringify(simplifiedServices)}. Return a JSON array containing ONLY the string IDs of the top 1 to 4 most relevant services.`;
       
@@ -112,13 +137,22 @@ export default function PublicUI() {
   const handleOpenModal = (service: Service) => {
     setSelectedService(service);
     setModalImageIndex(0);
-    document.body.style.overflow = 'hidden';
   };
 
   const handleCloseModal = () => {
     setSelectedService(null);
-    document.body.style.overflow = 'auto';
   };
+
+  useEffect(() => {
+    if (selectedService) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [selectedService]);
 
   const nextModalImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -142,54 +176,64 @@ export default function PublicUI() {
     );
   }
 
-  const currentHero = featuredServices[heroIndex] || validServices[0];
-  const heroImage = currentHero?.heroImageUrl || currentHero?.imageUrls?.[0] || currentHero?.imageUrl || "https://images.unsplash.com/photo-1584515933487-779824d29309?q=80&w=2070&auto=format&fit=crop";
+  const currentHero = featuredServices[heroIndex] || (services || [])[0];
+  const hasContent = (services || []).length > 0;
+  
+  const defaultHero = {
+    title: "Your Health, Our Priority",
+    description: "Welcome to Klinik Ara 24 Jam. We provide comprehensive healthcare services for you and your family, available around the clock.",
+    category: "Welcome",
+    image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2053&auto=format&fit=crop"
+  };
+
+  const heroImage = currentHero?.heroImageUrl || currentHero?.imageUrls?.[0] || currentHero?.imageUrl || defaultHero.image;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white overflow-x-hidden font-sans">
       {/* Navbar */}
-      <nav className="fixed top-0 w-full z-50 bg-gradient-to-b from-black/80 to-transparent px-4 md:px-12 py-4 flex items-center justify-between">
+      <nav className="fixed top-0 w-full z-50 bg-black/60 backdrop-blur-md px-4 md:px-12 py-4 flex items-center justify-between border-b border-white/5">
         <div className="flex items-center gap-8">
           <h1 className="text-red-600 text-2xl md:text-3xl font-bold tracking-tighter">KLINIK ARA</h1>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-300">
             <a href="#" className="text-white font-semibold">Home</a>
-            <a href="#" className="hover:text-white transition">Services</a>
-            <a href="#" className="hover:text-white transition">Doctors</a>
-            <a href="#" className="hover:text-white transition">Locations</a>
+            <a href="#services" className="hover:text-white transition">Services</a>
+            <a href="#locations" className="hover:text-white transition">Locations</a>
           </div>
         </div>
-        <a href="/admin" className="text-sm font-medium text-zinc-300 hover:text-white transition hidden sm:block">Admin</a>
+        <a href="/admin" className="text-sm font-medium text-zinc-300 hover:text-white transition hidden sm:block">Admin Login</a>
       </nav>
 
-      {/* Dynamic Hero Banner */}
-      {currentHero && (
-        <div className="relative h-[70vh] md:h-[85vh] w-full transition-all duration-1000 ease-in-out">
-          <div className="absolute inset-0">
-            <img 
-              key={heroImage}
-              src={heroImage} 
-              alt={currentHero.title} 
-              className="w-full h-full object-cover animate-fade-in"
-              referrerPolicy="no-referrer"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/70 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
+      {/* Hero Banner */}
+      <div className="relative h-[70vh] md:h-[85vh] w-full transition-all duration-1000 ease-in-out">
+        <div className="absolute inset-0">
+          <img 
+            key={heroImage}
+            src={heroImage} 
+            alt="Hero" 
+            className="w-full h-full object-cover animate-fade-in"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
+        </div>
+        
+        <div className="absolute bottom-[15%] left-4 md:left-12 max-w-2xl z-10">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-red-600 font-bold tracking-widest text-sm drop-shadow-md">
+              {(currentHero?.category || defaultHero.category).toUpperCase()}
+            </span>
+            {currentHero?.isFeatured && (
+              <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">FEATURED</span>
+            )}
           </div>
-          
-          <div className="absolute bottom-[15%] left-4 md:left-12 max-w-2xl z-10">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-red-600 font-bold tracking-widest text-sm drop-shadow-md">
-                {currentHero.category.toUpperCase()}
-              </span>
-              {currentHero.isFeatured && (
-                <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">FEATURED</span>
-              )}
-            </div>
-            <h2 className="text-5xl md:text-7xl font-bold mb-4 tracking-tight drop-shadow-lg">{currentHero.title}</h2>
-            <p className="text-lg md:text-xl text-zinc-300 mb-8 max-w-xl drop-shadow-md line-clamp-3">
-              {currentHero.description || "Protect yourself and your loved ones. Available 24/7 at Klinik Ara. Walk-ins welcome, or book your slot today."}
-            </p>
-            <div className="flex items-center gap-4">
+          <h2 className="text-5xl md:text-7xl font-bold mb-4 tracking-tight drop-shadow-lg">
+            {currentHero?.title || defaultHero.title}
+          </h2>
+          <p className="text-lg md:text-xl text-zinc-300 mb-8 max-w-xl drop-shadow-md line-clamp-3">
+            {currentHero?.description || defaultHero.description}
+          </p>
+          <div className="flex items-center gap-4">
+            {currentHero ? (
               <button 
                 onClick={() => handleOpenModal(currentHero)}
                 className="bg-white text-black px-6 md:px-8 py-2 md:py-3 rounded md:rounded-md font-bold flex items-center gap-2 hover:bg-white/90 transition"
@@ -197,19 +241,26 @@ export default function PublicUI() {
                 <Play className="w-5 h-5 md:w-6 md:h-6 fill-black" />
                 View Details
               </button>
+            ) : (
               <a 
-                href={`https://wa.me/60123456789?text=I'm interested in ${encodeURIComponent(currentHero.title)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-zinc-500/50 text-white px-6 md:px-8 py-2 md:py-3 rounded md:rounded-md font-bold flex items-center gap-2 hover:bg-zinc-500/70 transition backdrop-blur-sm"
+                href="/admin"
+                className="bg-white text-black px-6 md:px-8 py-2 md:py-3 rounded md:rounded-md font-bold flex items-center gap-2 hover:bg-white/90 transition"
               >
-                <Info className="w-5 h-5 md:w-6 md:h-6" />
-                Book via WhatsApp
+                Get Started (Admin)
               </a>
-            </div>
+            )}
+            <a 
+              href="https://wa.me/60182194392"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-zinc-500/50 text-white px-6 md:px-8 py-2 md:py-3 rounded md:rounded-md font-bold flex items-center gap-2 hover:bg-zinc-500/70 transition backdrop-blur-sm"
+            >
+              <MessageCircle className="w-5 h-5 md:w-6 md:h-6" />
+              Contact Us
+            </a>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Floating Search Bar */}
       <div className="-mt-8 relative z-20 mx-auto max-w-4xl px-4 w-full">
@@ -291,11 +342,11 @@ export default function PublicUI() {
           )}
         </div>
       ) : (
-        <div className="pt-16 pb-20 relative z-10">
+        <div id="services" className="pt-16 pb-20 relative z-10">
           {/* Carousels */}
-          {categories.map(category => {
-            const categoryServices = validServices.filter(s => s.category === category);
-            if (categoryServices.length === 0) return null;
+          {hasContent ? (displayCategories || []).map(category => {
+            const categoryServices = servicesByCategory[category];
+            if (!categoryServices || categoryServices.length === 0) return null;
 
             return (
               <div key={category} className="mb-8 md:mb-12">
@@ -339,7 +390,100 @@ export default function PublicUI() {
                 </div>
               </div>
             );
-          })}
+          }) : (
+            <div className="px-4 md:px-12 py-12 text-center">
+              <div className="bg-zinc-900/50 rounded-2xl p-12 border border-zinc-800 border-dashed max-w-2xl mx-auto">
+                <Sparkles className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+                <h3 className="text-xl font-bold mb-2">No Services Added Yet</h3>
+                <p className="text-zinc-500 mb-6">Log in to the Admin panel to start adding your clinic's services and promotions.</p>
+                <a href="/admin" className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-bold transition inline-block">
+                  Go to Admin Panel
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* Google Reviews Section */}
+          <GoogleReviews />
+
+          {/* Locations Section */}
+          <div id="locations" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
+            <h3 className="text-xl md:text-2xl font-bold text-white mb-6">Our Locations</h3>
+            <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-6 hide-scrollbar">
+              {locations?.length > 0 ? (
+                locations?.map(loc => (
+                  <div key={loc.id} className="w-[300px] sm:w-[320px] flex-shrink-0 flex flex-col bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden min-h-[450px] snap-center group">
+                    {loc.imageUrl && (
+                      <div className="h-52 w-full overflow-hidden">
+                        <img 
+                          src={loc.imageUrl} 
+                          alt={loc.branchName} 
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    )}
+                    <div className="flex-1 p-5 flex flex-col">
+                      <h4 className="text-lg font-bold text-white mb-1">{loc.branchName}</h4>
+                      <div className="inline-block bg-zinc-900 text-zinc-300 text-[10px] font-medium px-2 py-0.5 rounded border border-zinc-800 mb-3 w-fit">
+                        {loc.operatingHours}
+                      </div>
+                      <p className="text-sm text-gray-400 line-clamp-3 mb-2">
+                        {loc.address}
+                      </p>
+                      {loc.landmark && (
+                        <p className="text-zinc-500 text-[10px] italic mb-4">
+                          Remark: {loc.landmark}
+                        </p>
+                      )}
+                      
+                      <div className="mt-auto">
+                        {loc.whatsapp && (
+                          <a 
+                            href={`https://wa.me/${loc.whatsapp.replace(/[^0-9]/g, '')}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-2 rounded-lg flex justify-center items-center mb-2 transition-colors"
+                          >
+                            <MessageCircle className="w-4 h-4 mr-2" />
+                            WhatsApp
+                          </a>
+                        )}
+                        <div className="grid grid-cols-2 gap-2">
+                          {loc.googleMapsUrl && (
+                            <a 
+                              href={loc.googleMapsUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 rounded-lg font-medium text-center flex items-center justify-center gap-2 transition-colors"
+                            >
+                              <MapPin className="w-4 h-4" />
+                              Maps
+                            </a>
+                          )}
+                          {loc.wazeUrl && (
+                            <a 
+                              href={loc.wazeUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 rounded-lg font-medium text-center flex items-center justify-center gap-2 transition-colors"
+                            >
+                              <Navigation className="w-4 h-4" />
+                              Waze
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="w-full text-center py-12 text-zinc-500 bg-zinc-900/50 rounded-xl border border-zinc-800 border-dashed">
+                  <p>Locations are currently being updated.</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

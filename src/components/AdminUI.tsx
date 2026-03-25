@@ -3,7 +3,7 @@ import { User, signOut } from 'firebase/auth';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, deleteDoc, writeBatch, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, auth, storage } from '../firebase';
-import { Service, handleFirestoreError, OperationType } from '../types';
+import { Service, Location, handleFirestoreError, OperationType } from '../types';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -80,15 +80,29 @@ const SortableServiceItem: React.FC<{ service: Service, onDelete: (id: string) =
 }
 
 export default function AdminUI({ user }: { user: User }) {
+  const [activeTab, setActiveTab] = useState<'services' | 'locations'>('services');
+
   const [services, setServices] = useState<Service[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleteLocConfirmId, setDeleteLocConfirmId] = useState<string | null>(null);
 
-  // Form state
+  // Location Form state
+  const [editingLocId, setEditingLocId] = useState<string | null>(null);
+  const [locForm, setLocForm] = useState({
+    branchName: '', address: '', phone: '', whatsapp: '',
+    operatingHours: '', googleMapsUrl: '', wazeUrl: '',
+    landmark: '', imageUrl: ''
+  });
+  const [locImageFile, setLocImageFile] = useState<File | null>(null);
+  const [locImagePreview, setLocImagePreview] = useState<string | null>(null);
+
+  // Service Form state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<'AraMommy' | 'AraVax' | 'AraSihat' | 'Other'>('AraMommy');
@@ -127,25 +141,45 @@ export default function AdminUI({ user }: { user: User }) {
   );
 
   useEffect(() => {
-    const q = query(collection(db, 'services'), orderBy('rankOrder', 'asc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const qServices = query(collection(db, 'services'));
+    const unsubscribeServices = onSnapshot(qServices, (snapshot) => {
       const servicesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Service[];
-      setServices(servicesData);
+      
+      // Sort in memory to avoid query issues with missing fields
+      const sortedServices = [...servicesData].sort((a, b) => (a.rankOrder || 0) - (b.rankOrder || 0));
+      setServices(sortedServices);
       setLoading(false);
     }, (error) => {
+      console.error("Admin Services Fetch Error:", error);
       handleFirestoreError(error, OperationType.LIST, 'services', auth);
     });
 
-    return () => unsubscribe();
+    const qLocations = query(collection(db, 'locations'));
+    const unsubscribeLocations = onSnapshot(qLocations, (snapshot) => {
+      const locData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Location[];
+      
+      setLocations(locData);
+    }, (error) => {
+      console.error("Admin Locations Fetch Error:", error);
+      handleFirestoreError(error, OperationType.LIST, 'locations', auth);
+    });
+
+    return () => {
+      unsubscribeServices();
+      unsubscribeLocations();
+    };
   }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setErrorMsg(null);
     if (e.target.files && e.target.files.length > 0) {
-      const files = Array.from(e.target.files);
+      const files = Array.from(e.target.files) as File[];
       
       const validFiles = files.filter(file => file.size <= 10 * 1024 * 1024);
       if (validFiles.length < files.length) {
@@ -220,6 +254,126 @@ export default function AdminUI({ user }: { user: User }) {
     setHeroImageUrl('');
     setAiPrompt('');
     setGeneratedImageBase64(null);
+  };
+
+  const handleEditLocation = (loc: Location) => {
+    setEditingLocId(loc.id);
+    setLocForm({
+      branchName: loc.branchName || '',
+      address: loc.address || '',
+      phone: loc.phone || '',
+      whatsapp: loc.whatsapp || '',
+      operatingHours: loc.operatingHours || '',
+      googleMapsUrl: loc.googleMapsUrl || '',
+      wazeUrl: loc.wazeUrl || '',
+      landmark: loc.landmark || '',
+      imageUrl: loc.imageUrl || ''
+    });
+    setLocImagePreview(loc.imageUrl || null);
+    setLocImageFile(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const resetLocForm = () => {
+    setEditingLocId(null);
+    setLocForm({
+      branchName: '', address: '', phone: '', whatsapp: '',
+      operatingHours: '', googleMapsUrl: '', wazeUrl: '',
+      landmark: '', imageUrl: ''
+    });
+    setLocImageFile(null);
+    setLocImagePreview(null);
+  };
+
+  const fillKajangLocation = () => {
+    setLocForm({
+      branchName: 'KLINIK ARA 24 JAM KAJANG',
+      address: 'D-13-GA, Jalan Prima Saujana 2/F, Taman Prima Saujana, 43000 Kajang, Selangor',
+      phone: '0182194392',
+      whatsapp: '0182194392',
+      operatingHours: '24 Hours',
+      googleMapsUrl: 'https://www.google.com/maps/dir//KLINIK+ARA+24+JAM+%7C+PRIMA+SAUJANA+KAJANG+%7C+KLINIK+PEMERIKSAAN+HAJI+%7C+PANEL+AIA,+D-13-GA,+Jalan+Prima+Saujana+2%2FF,+Taman+Prima+Saujana,+43000+Kajang,+Selangor/@3.0015488,101.810176,15z/data=!3m1!4b1!4m8!4m7!1m0!1m5!1m1!1s0x31cdcdc60d37356b:0xfec7288d53391815!2m2!1d101.8037656!2d3.0090361?entry=ttu&g_ep=EgoyMDI2MDMyMi4wIKXMDSoASAFQAw%3D%3D',
+      wazeUrl: 'https://www.waze.com/live-map/directions/klinik-ara-24-jam-jalan-prima-saujana-2f-13-kajang?to=place.w.66715678.667156781.26624734',
+      landmark: 'Econsave Prima Saujana',
+      imageUrl: ''
+    });
+    setLocImagePreview(null);
+    setLocImageFile(null);
+    setSuccessMsg('Kajang location details filled! Please upload an image if needed and click Save.');
+    setTimeout(() => setSuccessMsg(null), 5000);
+  };
+
+  const handleSaveLocation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      let finalImageUrl = locForm.imageUrl || '';
+
+      if (locImageFile) {
+        const options = {
+          maxSizeMB: 0.2,
+          maxWidthOrHeight: 1200,
+          useWebWorker: true,
+        };
+        const compressedFile = await imageCompression(locImageFile, options);
+        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${locImageFile.name}`;
+        const storageRef = ref(storage, `locations/${uniqueFileName}`);
+        const uploadTask = uploadBytesResumable(storageRef, compressedFile);
+
+        finalImageUrl = await new Promise<string>((resolve, reject) => {
+          uploadTask.on(
+            'state_changed',
+            null,
+            (error) => reject(error),
+            async () => {
+              const url = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve(url);
+            }
+          );
+        });
+      }
+
+      const locData = { 
+        ...locForm,
+        imageUrl: finalImageUrl
+      };
+      
+      if (editingLocId) {
+        await updateDoc(doc(db, 'locations', editingLocId), locData);
+        setSuccessMsg('Location updated successfully!');
+      } else {
+        await addDoc(collection(db, 'locations'), locData);
+        setSuccessMsg('Location added successfully!');
+      }
+      resetLocForm();
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (error) {
+      handleFirestoreError(error, editingLocId ? OperationType.UPDATE : OperationType.CREATE, 'locations', auth);
+      setErrorMsg('Failed to save location.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteLocation = async (id: string) => {
+    setDeleteLocConfirmId(id);
+  };
+
+  const confirmDeleteLocation = async () => {
+    if (!deleteLocConfirmId) return;
+    try {
+      await deleteDoc(doc(db, 'locations', deleteLocConfirmId));
+      setSuccessMsg('Location deleted successfully!');
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `locations/${deleteLocConfirmId}`, auth);
+      setErrorMsg('Failed to delete location.');
+    } finally {
+      setDeleteLocConfirmId(null);
+    }
   };
 
   const base64ToBlob = (base64: string) => {
@@ -396,7 +550,7 @@ export default function AdminUI({ user }: { user: User }) {
         await updateDoc(doc(db, 'services', editingId), serviceData);
         setSuccessMsg('Service updated successfully!');
       } else {
-        const newRankOrder = services.length > 0 ? Math.max(...services.map(s => s.rankOrder)) + 1 : 0;
+        const newRankOrder = (services || []).length > 0 ? Math.max(...(services || []).map(s => s.rankOrder)) + 1 : 0;
         await addDoc(collection(db, 'services'), {
           ...serviceData,
           rankOrder: newRankOrder
@@ -488,8 +642,23 @@ export default function AdminUI({ user }: { user: User }) {
             </button>
           </div>
         </div>
+        <div className="max-w-6xl mx-auto px-4 flex items-center gap-6 border-t border-zinc-800">
+          <button
+            onClick={() => setActiveTab('services')}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'services' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          >
+            Manage Promotions
+          </button>
+          <button
+            onClick={() => setActiveTab('locations')}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'locations' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          >
+            Manage Locations
+          </button>
+        </div>
       </header>
 
+      {activeTab === 'services' && (
       <main className="max-w-6xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Left Col: Form */}
@@ -830,8 +999,8 @@ export default function AdminUI({ user }: { user: User }) {
                   </tr>
                 ) : (
                   <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                    <SortableContext items={services.map(s => s.id)} strategy={verticalListSortingStrategy}>
-                      {services.map(service => (
+                    <SortableContext items={(services || []).map(s => s.id)} strategy={verticalListSortingStrategy}>
+                      {(services || []).map(service => (
                         <SortableServiceItem 
                           key={service.id} 
                           service={service} 
@@ -847,6 +1016,176 @@ export default function AdminUI({ user }: { user: User }) {
           </div>
         </div>
       </main>
+      )}
+
+      {activeTab === 'locations' && (
+      <main className="max-w-6xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left Col: Form */}
+        <div className="lg:col-span-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sticky top-32">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                {editingLocId ? <Edit2 className="w-5 h-5 text-blue-400" /> : <Plus className="w-5 h-5 text-red-500" />}
+                {editingLocId ? 'Edit Location' : 'Add New Location'}
+              </h2>
+              <div className="flex items-center gap-3">
+                {!editingLocId && (
+                  <button 
+                    type="button"
+                    onClick={fillKajangLocation}
+                    className="text-xs bg-red-600/20 text-red-400 hover:bg-red-600/30 px-2 py-1 rounded border border-red-500/30 transition-colors"
+                  >
+                    Quick Add Kajang
+                  </button>
+                )}
+                {(editingLocId || locForm.branchName) && (
+                  <button onClick={resetLocForm} className="text-sm text-zinc-400 hover:text-white">Cancel</button>
+                )}
+              </div>
+            </div>
+            
+            <form onSubmit={handleSaveLocation} className="space-y-4">
+              {successMsg && (
+                <div className="bg-green-500/10 border border-green-500/50 text-green-500 p-3 rounded-xl flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {successMsg}
+                </div>
+              )}
+              {errorMsg && (
+                <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-xl flex items-start gap-2 text-sm">
+                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <div>{errorMsg}</div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1 uppercase tracking-wider">Branch Name</label>
+                <input required type="text" value={locForm.branchName} onChange={e => setLocForm({...locForm, branchName: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-red-500 transition-colors" placeholder="e.g. Klinik Ara 24 Jam (Shah Alam)" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1 uppercase tracking-wider">Branch Image</label>
+                <div className="mt-1 flex items-center gap-4">
+                  <div className="w-24 h-24 rounded-xl bg-zinc-950 border border-zinc-800 overflow-hidden flex items-center justify-center">
+                    {locImagePreview ? (
+                      <img src={locImagePreview} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      <ImageIcon className="w-8 h-8 text-zinc-700" />
+                    )}
+                  </div>
+                  <label className="flex-1 cursor-pointer">
+                    <div className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-lg border border-zinc-700 transition-colors flex items-center justify-center gap-2">
+                      <Plus className="w-4 h-4" />
+                      {locImagePreview ? 'Change Image' : 'Upload Image'}
+                    </div>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setLocImageFile(file);
+                          setLocImagePreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1 uppercase tracking-wider">Address</label>
+                <textarea required value={locForm.address} onChange={e => setLocForm({...locForm, address: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-red-500 transition-colors min-h-[80px]" placeholder="Full address..." />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1 uppercase tracking-wider">Landmark Remark</label>
+                <input type="text" value={locForm.landmark} onChange={e => setLocForm({...locForm, landmark: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-red-500 transition-colors" placeholder="e.g. Next to Petronas, Opposite McDonalds" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1 uppercase tracking-wider">Phone</label>
+                  <input required type="text" value={locForm.phone} onChange={e => setLocForm({...locForm, phone: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-red-500 transition-colors" placeholder="e.g. 03-1234 5678" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1 uppercase tracking-wider">WhatsApp</label>
+                  <input required type="text" value={locForm.whatsapp} onChange={e => setLocForm({...locForm, whatsapp: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-red-500 transition-colors" placeholder="e.g. 60123456789" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1 uppercase tracking-wider">Operating Hours</label>
+                <input required type="text" value={locForm.operatingHours} onChange={e => setLocForm({...locForm, operatingHours: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-red-500 transition-colors" placeholder="e.g. Open 24 Hours" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1 uppercase tracking-wider">Google Maps URL</label>
+                <input required type="url" value={locForm.googleMapsUrl} onChange={e => setLocForm({...locForm, googleMapsUrl: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-red-500 transition-colors" placeholder="https://maps.google.com/..." />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1 uppercase tracking-wider">Waze URL</label>
+                <input required type="url" value={locForm.wazeUrl} onChange={e => setLocForm({...locForm, wazeUrl: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-red-500 transition-colors" placeholder="https://waze.com/ul/..." />
+              </div>
+
+              <button type="submit" disabled={loading} className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mt-6">
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                {editingLocId ? 'Update Location' : 'Save Location'}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Right Col: List */}
+        <div className="lg:col-span-8">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+            <div className="p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
+              <h2 className="text-lg font-semibold text-white">Active Locations</h2>
+              <span className="px-3 py-1 bg-zinc-800 text-zinc-400 text-xs font-medium rounded-full border border-zinc-700">
+                {locations.length} Total
+              </span>
+            </div>
+            
+            <div className="divide-y divide-zinc-800">
+              {locations?.length === 0 ? (
+                <div className="p-12 text-center text-zinc-500">
+                  <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <AlertCircle className="w-8 h-8" />
+                  </div>
+                  <p>No locations found.</p>
+                  <p className="text-sm mt-1">Add your first clinic branch using the form.</p>
+                </div>
+              ) : (
+                locations?.map(loc => (
+                  <div key={loc.id} className="p-6 hover:bg-zinc-800/30 transition-colors group flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                    <div className="flex gap-4 items-start">
+                      {loc.imageUrl && (
+                        <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border border-zinc-800">
+                          <img src={loc.imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        </div>
+                      )}
+                      <div>
+                        <h3 className="text-lg font-bold text-white mb-1">{loc.branchName}</h3>
+                        <p className="text-sm text-zinc-400 mb-2 max-w-md">{loc.address}</p>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="px-2 py-1 bg-zinc-800 text-zinc-300 text-xs rounded border border-zinc-700">{loc.operatingHours}</span>
+                          <span className="px-2 py-1 bg-zinc-800 text-zinc-300 text-xs rounded border border-zinc-700">{loc.phone}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => handleEditLocation(loc)} className="p-2 text-zinc-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all" title="Edit">
+                        <Edit2 className="w-5 h-5" />
+                      </button>
+                      <button onClick={() => handleDeleteLocation(loc.id)} className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all" title="Delete">
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+      )}
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
@@ -873,6 +1212,40 @@ export default function AdminUI({ user }: { user: User }) {
               </button>
               <button 
                 onClick={confirmDelete}
+                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Location Confirmation Modal */}
+      {deleteLocConfirmId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+            <div className="flex justify-between items-start mb-4">
+              <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <button onClick={() => setDeleteLocConfirmId(null)} className="text-zinc-500 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Delete Location?</h3>
+            <p className="text-zinc-400 text-sm mb-6">
+              This action cannot be undone. This location will be removed from the public website immediately.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setDeleteLocConfirmId(null)}
+                className="flex-1 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDeleteLocation}
                 className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors"
               >
                 Delete

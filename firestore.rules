@@ -38,10 +38,31 @@ service cloud.firestore {
              data.rankOrder is number;
     }
 
+    function isValidLocation() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['branchName', 'address', 'phone', 'whatsapp', 'operatingHours', 'googleMapsUrl', 'wazeUrl']) &&
+             data.branchName is string && data.branchName.size() > 0 && data.branchName.size() < 100 &&
+             data.address is string && data.address.size() > 0 && data.address.size() < 500 &&
+             data.phone is string && data.phone.size() < 50 &&
+             data.whatsapp is string && data.whatsapp.size() < 50 &&
+             data.operatingHours is string && data.operatingHours.size() < 200 &&
+             data.googleMapsUrl is string && data.googleMapsUrl.size() < 1000 &&
+             data.wazeUrl is string && data.wazeUrl.size() < 1000 &&
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() < 1000)) &&
+             (!('landmark' in data) || (data.landmark is string && data.landmark.size() < 500));
+    }
+
     match /services/{serviceId} {
       allow read: if true;
       allow create: if isAdmin() && isValidService();
       allow update: if isAdmin() && isValidService();
+      allow delete: if isAdmin();
+    }
+
+    match /locations/{locationId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidLocation();
+      allow update: if isAdmin() && isValidLocation();
       allow delete: if isAdmin();
     }
   }
