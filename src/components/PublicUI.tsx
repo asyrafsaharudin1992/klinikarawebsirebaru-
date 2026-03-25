@@ -765,10 +765,14 @@ export default function PublicUI() {
                 return (
                   <>
                     <img 
-                      src={urls[modalImageIndex]} 
-                      alt={selectedService.title} 
+                      src={selectedService.heroImageUrl || urls[modalImageIndex]} 
+                      alt={selectedService.title}
                       className="w-full h-full object-cover object-top"
-                      style={{ imageRendering: 'high-quality', WebkitFontSmoothing: 'antialiased' }}
+                      style={{ 
+                        imageRendering: '-webkit-optimize-contrast',
+                        WebkitTransform: 'translateZ(0)',
+                        backfaceVisibility: 'hidden' 
+                      }}
                       referrerPolicy="no-referrer"
                     />
                     {urls.length > 1 && (
