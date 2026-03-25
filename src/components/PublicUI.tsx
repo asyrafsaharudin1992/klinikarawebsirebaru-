@@ -12,15 +12,13 @@ import SEO from './SEO';
 const ServiceCarouselRow = ({ title, services, onSelect, lang, subheading }: { title: string, services: Service[], onSelect: (s: Service) => void, key?: string | number, lang: 'BM' | 'EN', subheading?: string }) => {
   if (!services || services.length === 0) return null;
   return (
-    <div className="mb-8 md:mb-12">
-      <div className="px-4 md:px-12 mb-2 md:mb-4">
-        <h2 className="text-xl md:text-2xl font-bold flex items-center gap-2 group cursor-pointer">
-          {title}
-          <ChevronRight className="w-5 h-5 text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-        </h2>
-        <p className="text-sm text-gray-400">{subheading || t[lang].servicesSub}</p>
-      </div>
-      <div className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar px-4 md:px-12 gap-2 md:gap-4 pb-4">
+    <section className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
+      <h2 className="text-xl md:text-2xl font-bold text-white mb-1 flex items-center gap-2 group cursor-pointer">
+        {title}
+        <ChevronRight className="w-5 h-5 text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+      </h2>
+      {subheading && <p className="text-sm text-gray-400 mb-6">{subheading}</p>}
+      <div className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-4 md:gap-6 pb-6">
         {services.map(service => {
           const displayImage = service.imageUrls?.[0] || service.imageUrl;
           return (
@@ -54,7 +52,7 @@ const ServiceCarouselRow = ({ title, services, onSelect, lang, subheading }: { t
           );
         })}
       </div>
-    </div>
+    </section>
   );
 };
 
@@ -188,7 +186,11 @@ export default function PublicUI() {
         const data = docSnap.data() as AppSettings;
         setSettings({
           vendorSubheading: data.vendorSubheading || '',
-          carouselOrder: data.carouselOrder || ['services', 'teamAra', 'vendors', 'panels']
+          carouselOrder: data.carouselOrder || ['services', 'teamAra', 'vendors', 'panels'],
+          categorySubheadings: data.categorySubheadings || {},
+          teamAraSub: data.teamAraSub || '',
+          panelsSub: data.panelsSub || '',
+          vendorsSub: data.vendorsSub || ''
         });
       }
     }, (error) => {
@@ -206,7 +208,7 @@ export default function PublicUI() {
     };
   }, []);
 
-  const uniqueCategories = Array.from(new Set((services || []).map(s => s.category).filter(Boolean)));
+  const uniqueCategories = Array.from(new Set((services || []).map(s => s.category).filter(Boolean))) as string[];
   const featuredServices = (services || []).filter(s => s.isFeatured);
 
   // Initialize Fuse
@@ -519,12 +521,12 @@ export default function PublicUI() {
                     const categoryServices = (services || []).filter(s => s.category === category);
                     return (
                       <ServiceCarouselRow 
-                        key={String(category)} 
-                        title={String(category)} 
+                        key={category} 
+                        title={category} 
                         services={categoryServices as Service[]} 
                         onSelect={handleOpenModal}
                         lang={lang}
-                        subheading={settings?.categorySubheadings?.[String(category)] || ''}
+                        subheading={settings?.categorySubheadings?.[category] || ""}
                       />
                     );
                   }) : (
