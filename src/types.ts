@@ -1,7 +1,7 @@
 export interface Service {
   id: string;
   title: string;
-  category: 'AraMommy' | 'AraVax' | 'AraSihat' | 'Other';
+  category: string;
   imageUrl?: string; // Legacy support
   imageUrls: string[];
   heroImageUrl?: string;

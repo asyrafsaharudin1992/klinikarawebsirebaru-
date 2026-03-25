@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Service, Location, Panel, Collaborator, handleFirestoreError, OperationType } from '../types';
 import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle } from 'lucide-react';
@@ -7,6 +7,59 @@ import Fuse from 'fuse.js';
 import { GoogleGenAI, Type } from '@google/genai';
 import GoogleReviews from './GoogleReviews';
 import SEO from './SEO';
+
+const ServiceCarouselRow = ({ title, services, onSelect }: { title: string, services: Service[], onSelect: (s: Service) => void, key?: string | number }) => {
+  if (!services || services.length === 0) return null;
+  return (
+    <div className="mb-8 md:mb-12">
+      <h2 className="text-xl md:text-2xl font-bold px-4 md:px-12 mb-2 md:mb-4 flex items-center gap-2 group cursor-pointer">
+        {title}
+        <ChevronRight className="w-5 h-5 text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+      </h2>
+      <div className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar px-4 md:px-12 gap-2 md:gap-4 pb-4">
+        {services.map(service => {
+          const displayImage = service.imageUrls?.[0] || service.imageUrl;
+          return (
+            <div 
+              key={service.id} 
+              onClick={() => onSelect(service)}
+              className="flex-none w-[140px] md:w-[240px] aspect-[2/3] snap-start relative group rounded-md overflow-hidden cursor-pointer transition-transform duration-300 md:hover:scale-105 md:hover:z-20"
+            >
+              {displayImage ? (
+                <img 
+                  src={displayImage} 
+                  alt={`${service.title} Poster - Klinik Ara 24 Jam`} 
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-full h-full bg-zinc-800 flex items-center justify-center">No Image</div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                <h4 className="font-bold text-sm md:text-base mb-1 line-clamp-2">{service.title}</h4>
+                <div className="flex items-center gap-2 text-xs font-medium">
+                  {service.teamAraPrice ? (
+                    <span className="text-green-500">RM{service.teamAraPrice}</span>
+                  ) : (
+                    <span className="text-green-500">Available</span>
+                  )}
+                  <span className="border border-zinc-600 px-1 text-zinc-300">24/7</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const formatPhoneNumber = (phone: string) => {
+  let cleaned = phone.replace(/\D/g, ''); // Remove all non-digits
+  if (cleaned.startsWith('0')) { cleaned = '60' + cleaned.substring(1); }
+  if (!cleaned.startsWith('60')) { cleaned = '60' + cleaned; }
+  return cleaned;
+};
 
 export default function PublicUI() {
   const [services, setServices] = useState<Service[]>([]);
@@ -21,6 +74,8 @@ export default function PublicUI() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [aiResults, setAiResults] = useState<string[]>([]);
+  const [bookingModalService, setBookingModalService] = useState<Service | null>(null);
+  const [leadData, setLeadData] = useState({ name: '', phone: '', locationId: '', locationPhone: '' });
 
   useEffect(() => {
     const qServices = query(collection(db, 'services'));
@@ -86,17 +141,7 @@ export default function PublicUI() {
     };
   }, []);
 
-  const categories = ['AraMommy', 'AraVax', 'AraSihat', 'Other'];
-  
-  // Group services by category, including a "General" category for unmatched ones
-  const servicesByCategory = (services || []).reduce((acc, s) => {
-    const cat = categories.includes(s.category) ? s.category : 'General';
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(s);
-    return acc;
-  }, {} as Record<string, Service[]>);
-
-  const displayCategories = [...categories, 'General'].filter(cat => servicesByCategory[cat]?.length > 0);
+  const uniqueCategories = Array.from(new Set((services || []).map(s => s.category).filter(Boolean)));
   const featuredServices = (services || []).filter(s => s.isFeatured);
 
   // Initialize Fuse
@@ -175,8 +220,39 @@ export default function PublicUI() {
     setSelectedService(null);
   };
 
+  const handleWhatsAppBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bookingModalService || !leadData.locationId || !leadData.name || !leadData.phone) return;
+
+    const formattedUserPhone = formatPhoneNumber(leadData.phone);
+    
+    try {
+      await addDoc(collection(db, 'leads'), {
+        name: leadData.name,
+        phone: formattedUserPhone,
+        branchId: leadData.locationId,
+        service: bookingModalService.title,
+        timestamp: new Date(),
+        status: 'new'
+      });
+    } catch (error) {
+      console.error("Error saving lead:", error);
+      // Continue to WhatsApp anyway
+    }
+
+    const formattedClinicPhone = formatPhoneNumber(leadData.locationPhone);
+    const message = encodeURIComponent(`Hi I'm ${leadData.name}, I would like to book a slot for ${bookingModalService.title}.`);
+    const waUrl = `https://wa.me/${formattedClinicPhone}?text=${message}`;
+
+    window.open(waUrl, '_blank');
+
+    setBookingModalService(null);
+    setSelectedService(null);
+    setLeadData({ name: '', phone: '', locationId: '', locationPhone: '' });
+  };
+
   useEffect(() => {
-    if (selectedService) {
+    if (selectedService || bookingModalService) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'auto';
@@ -184,7 +260,7 @@ export default function PublicUI() {
     return () => {
       document.body.style.overflow = 'auto';
     };
-  }, [selectedService]);
+  }, [selectedService, bookingModalService]);
 
   const nextModalImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -407,51 +483,15 @@ export default function PublicUI() {
       ) : (
         <section id="services" className="pt-16 pb-20 relative z-10">
           {/* Carousels */}
-          {hasContent ? (displayCategories || []).map(category => {
-            const categoryServices = servicesByCategory[category];
-            if (!categoryServices || categoryServices.length === 0) return null;
-
+          {hasContent ? uniqueCategories.map(category => {
+            const categoryServices = (services || []).filter(s => s.category === category);
             return (
-              <div key={category} className="mb-8 md:mb-12">
-                <h2 className="text-xl md:text-2xl font-bold px-4 md:px-12 mb-2 md:mb-4 flex items-center gap-2 group cursor-pointer">
-                  {category}
-                  <ChevronRight className="w-5 h-5 text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </h2>
-                <div className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar px-4 md:px-12 gap-2 md:gap-4 pb-4">
-                  {categoryServices.map(service => {
-                    const displayImage = service.imageUrls?.[0] || service.imageUrl;
-                    return (
-                      <div 
-                        key={service.id} 
-                        onClick={() => handleOpenModal(service)}
-                        className="flex-none w-[140px] md:w-[240px] aspect-[2/3] snap-start relative group rounded-md overflow-hidden cursor-pointer transition-transform duration-300 md:hover:scale-105 md:hover:z-20"
-                      >
-                        {displayImage ? (
-                          <img 
-                            src={displayImage} 
-                            alt={`${service.title} Poster - Klinik Ara 24 Jam`} 
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center">No Image</div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                          <h4 className="font-bold text-sm md:text-base mb-1 line-clamp-2">{service.title}</h4>
-                          <div className="flex items-center gap-2 text-xs font-medium">
-                            {service.teamAraPrice ? (
-                              <span className="text-green-500">RM{service.teamAraPrice}</span>
-                            ) : (
-                              <span className="text-green-500">Available</span>
-                            )}
-                            <span className="border border-zinc-600 px-1 text-zinc-300">24/7</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <ServiceCarouselRow 
+                key={String(category)} 
+                title={String(category)} 
+                services={categoryServices as Service[]} 
+                onSelect={handleOpenModal}
+              />
             );
           }) : (
             <div className="px-4 md:px-12 py-12 text-center">
@@ -685,17 +725,15 @@ export default function PublicUI() {
               </div>
 
               <div className="mt-8 pt-4 border-t border-gray-800">
-                <a 
-                  href={`https://wa.me/60123456789?text=Hi Klinik Ara, I would like to book or inquire about: *${encodeURIComponent(selectedService.title)}*`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button 
+                  onClick={() => setBookingModalService(selectedService)}
                   className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 md:py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-colors shadow-lg shadow-green-900/20 mb-3"
                 >
                   <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current" xmlns="http://www.w3.org/2000/svg">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                   </svg>
-                  Book via WhatsApp
-                </a>
+                  Proceed booking
+                </button>
                 <button 
                   onClick={() => setSelectedService(null)}
                   className="w-full bg-gray-800 hover:bg-gray-700 text-white py-3 md:py-4 rounded-xl font-bold transition-all"
@@ -744,6 +782,85 @@ export default function PublicUI() {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* WhatsApp Booking Modal */}
+      {bookingModalService && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+          <div className="bg-gray-900 w-full max-w-md rounded-2xl p-6 border border-gray-800 relative">
+            <button 
+              onClick={() => setBookingModalService(null)}
+              className="absolute top-4 right-4 z-50 bg-black/40 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-md transition-all cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            <h2 className="text-2xl font-bold text-white mb-1">Proceed</h2>
+            <p className="text-green-400 font-medium mb-6">{bookingModalService.title}</p>
+            
+            <form onSubmit={handleWhatsAppBooking} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Select Branch</label>
+                <select 
+                  required
+                  value={leadData.locationId}
+                  onChange={(e) => {
+                    const loc = locations.find(l => l.id === e.target.value);
+                    setLeadData({
+                      ...leadData,
+                      locationId: e.target.value,
+                      locationPhone: loc?.phone || ''
+                    });
+                  }}
+                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all"
+                >
+                  <option value="" disabled className="bg-gray-900 text-white">Select a branch...</option>
+                  {locations.map(loc => (
+                    <option key={loc.id} value={loc.id} className="bg-gray-900 text-white">{loc.branchName}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Your Name</label>
+                <input 
+                  type="text" 
+                  required
+                  value={leadData.name}
+                  onChange={(e) => setLeadData({...leadData, name: e.target.value})}
+                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all"
+                  placeholder="e.g. Ali bin Abu"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Phone Number</label>
+                <input 
+                  type="tel" 
+                  required
+                  value={leadData.phone}
+                  onChange={(e) => setLeadData({...leadData, phone: e.target.value})}
+                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all"
+                  placeholder="e.g. 0123456789"
+                />
+              </div>
+              
+              <button 
+                type="submit"
+                className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl mt-4 flex justify-center items-center gap-2 transition-colors shadow-lg shadow-green-900/20"
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                Proceed
+              </button>
+              
+              <p className="text-[10px] text-gray-500 text-center mt-3 leading-tight">
+                By clicking continue, you agree to our terms and conditions, which include allowing Klinik Ara to save your phone number and granting us permission to contact you regarding your inquiry.
+              </p>
+            </form>
           </div>
         </div>
       )}
