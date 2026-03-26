@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview } from '../types';
 import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle, Phone, Share2, Check } from 'lucide-react';
@@ -9,7 +9,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import GoogleReviews from './GoogleReviews';
 import SEO from './SEO';
 
-const ServiceCarouselRow = ({ title, services, onSelect, lang, subheading }: { title: string, services: Service[], onSelect: (s: Service) => void, key?: string | number, lang: 'BM' | 'EN', subheading?: string }) => {
+const ServiceCarouselRow = ({ title, services, onSelect, subheading }: { title: string, services: Service[], onSelect: (s: Service) => void, key?: string | number, subheading?: string }) => {
   if (!services || services.length === 0) return null;
   return (
     <section className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
@@ -63,37 +63,7 @@ const formatPhoneNumber = (phone: string) => {
   return cleaned;
 };
 
-const t = {
-  BM: {
-    readMore: 'Baca Lanjut',
-    featured: 'PILIHAN UTAMA',
-    panelsTitle: 'Panel Kesihatan',
-    panelsSub: 'Klik untuk melihat cawangan',
-    vendorsTitle: 'Rakan Vendor',
-    vendorsSub: 'Entiti perniagaan yang memberi keistimewaan kepada ahli TeamAra',
-    teamAraTitle: 'Keluarga TeamAra',
-    teamAraSub: 'Pelan kesihatan eksklusif untuk keluarga anda',
-    servicesSub: 'Tatal untuk melihat pakej kami',
-    close: 'Tutup / Kembali',
-    proceed: 'Teruskan tempahan',
-  },
-  EN: {
-    readMore: 'Read More',
-    featured: 'FEATURED',
-    panelsTitle: 'Health Panels',
-    panelsSub: 'Click to see branch availability',
-    vendorsTitle: 'Vendor Partners',
-    vendorsSub: 'Business entities providing perks to TeamAra members',
-    teamAraTitle: 'TeamAra Family',
-    teamAraSub: 'Exclusive health plans for your whole family',
-    servicesSub: 'Swipe to explore our packages',
-    close: 'Close / Return',
-    proceed: 'Proceed booking',
-  }
-};
-
 export default function PublicUI() {
-  const [lang, setLang] = useState<'BM' | 'EN'>('BM');
   const [services, setServices] = useState<Service[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [panels, setPanels] = useState<Panel[]>([]);
@@ -142,124 +112,140 @@ export default function PublicUI() {
   };
 
   useEffect(() => {
-    const qServices = query(collection(db, 'services'));
-    const unsubscribeServices = onSnapshot(qServices, (snapshot) => {
-      const servicesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Service[];
-      
-      // Sort in memory to handle documents without rankOrder
-      const sortedServices = [...servicesData].sort((a, b) => (a.rankOrder || 0) - (b.rankOrder || 0));
-      setServices(sortedServices);
-      setLoading(false);
+    const loadAllData = async () => {
+      setLoading(true);
 
-      const urlParams = new URLSearchParams(window.location.search);
-      const serviceIdFromUrl = urlParams.get('service');
+      const fetchServices = async () => {
+        try {
+          const q = query(collection(db, 'services'));
+          const snapshot = await getDocs(q);
+          const servicesData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Service[];
+          
+          const sortedServices = [...servicesData].sort((a, b) => (a.rankOrder || 0) - (b.rankOrder || 0));
+          setServices(sortedServices);
 
-      if (serviceIdFromUrl) {
-        const serviceToOpen = sortedServices.find(s => s.id === serviceIdFromUrl);
-        if (serviceToOpen) {
-          setSelectedService(serviceToOpen);
-          window.history.replaceState({}, '', window.location.pathname);
+          const urlParams = new URLSearchParams(window.location.search);
+          const serviceIdFromUrl = urlParams.get('service');
+
+          if (serviceIdFromUrl) {
+            const serviceToOpen = sortedServices.find(s => s.id === serviceIdFromUrl);
+            if (serviceToOpen) {
+              setSelectedService(serviceToOpen);
+              window.history.replaceState({}, '', window.location.pathname);
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch services:", error);
         }
-      }
-    }, (error) => {
-      console.error("Services Fetch Error:", error);
-      handleFirestoreError(error, OperationType.LIST, 'services', auth);
-    });
+      };
 
-    const qLocations = query(collection(db, 'locations'));
-    const unsubscribeLocations = onSnapshot(qLocations, (snapshot) => {
-      const locData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Location[];
-      
-      setLocations(locData);
-    }, (error) => {
-      console.error("Locations Fetch Error:", error);
-      handleFirestoreError(error, OperationType.LIST, 'locations', auth);
-    });
+      const fetchLocations = async () => {
+        try {
+          const q = query(collection(db, 'locations'));
+          const snapshot = await getDocs(q);
+          const locData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Location[];
+          setLocations(locData);
+        } catch (error) {
+          console.error("Failed to fetch locations:", error);
+        }
+      };
 
-    const qPanels = query(collection(db, 'panels'), orderBy('name'));
-    const unsubscribePanels = onSnapshot(qPanels, (snapshot) => {
-      const panelData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Panel[];
-      
-      setPanels(panelData);
-    }, (error) => {
-      console.error("Panels Fetch Error:", error);
-      handleFirestoreError(error, OperationType.LIST, 'panels', auth);
-    });
+      const fetchPanels = async () => {
+        try {
+          const q = query(collection(db, 'panels'), orderBy('name'));
+          const snapshot = await getDocs(q);
+          const panelData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Panel[];
+          setPanels(panelData);
+        } catch (error) {
+          console.error("Failed to fetch panels:", error);
+        }
+      };
 
-    const qCollaborators = query(collection(db, 'collaborators'));
-    const unsubscribeCollaborators = onSnapshot(qCollaborators, (snapshot) => {
-      const collabData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Collaborator[];
-      
-      setCollaborators(collabData);
-    }, (error) => {
-      console.error("Collaborators Fetch Error:", error);
-      handleFirestoreError(error, OperationType.LIST, 'collaborators', auth);
-    });
+      const fetchCollaborators = async () => {
+        try {
+          const q = query(collection(db, 'collaborators'));
+          const snapshot = await getDocs(q);
+          const collabData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Collaborator[];
+          setCollaborators(collabData);
+        } catch (error) {
+          console.error("Failed to fetch collaborators:", error);
+        }
+      };
 
-    const qVendors = query(collection(db, 'vendors'));
-    const unsubscribeVendors = onSnapshot(qVendors, (snapshot) => {
-      const vendorData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Vendor[];
-      
-      setVendors(vendorData);
-    }, (error) => {
-      console.error("Vendors Fetch Error:", error);
-      handleFirestoreError(error, OperationType.LIST, 'vendors', auth);
-    });
+      const fetchVendors = async () => {
+        try {
+          const q = query(collection(db, 'vendors'));
+          const snapshot = await getDocs(q);
+          const vendorData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Vendor[];
+          setVendors(vendorData);
+        } catch (error) {
+          console.error("Failed to fetch vendors:", error);
+        }
+      };
 
-    const qReviews = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'));
-    const unsubscribeReviews = onSnapshot(qReviews, (snapshot) => {
-      const reviewData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as GoogleReview[];
-      setReviews(reviewData);
-    }, (error) => {
-      console.error("Reviews Fetch Error:", error);
-      handleFirestoreError(error, OperationType.LIST, 'reviews', auth);
-    });
+      const fetchReviews = async () => {
+        try {
+          const q = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'));
+          const snapshot = await getDocs(q);
+          const reviewData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as GoogleReview[];
+          setReviews(reviewData);
+        } catch (error) {
+          console.error("Failed to fetch reviews:", error);
+        }
+      };
 
-    const unsubscribeSettings = onSnapshot(doc(db, 'settings', 'homepage'), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data() as AppSettings;
-        setSettings({
-          vendorSubheading: data.vendorSubheading || '',
-          carouselOrder: data.carouselOrder || ['services', 'teamAra', 'vendors', 'panels'],
-          categorySubheadings: data.categorySubheadings || {},
-          teamAraSub: data.teamAraSub || '',
-          panelsSub: data.panelsSub || '',
-          vendorsSub: data.vendorsSub || '',
-          reviewsSub: data.reviewsSub || ''
-        });
-      }
-    }, (error) => {
-      console.error("Settings Fetch Error:", error);
-      handleFirestoreError(error, OperationType.GET, 'settings/homepage', auth);
-    });
+      const fetchSettings = async () => {
+        try {
+          const docSnap = await getDoc(doc(db, 'settings', 'homepage'));
+          if (docSnap.exists()) {
+            const data = docSnap.data() as AppSettings;
+            setSettings({
+              vendorSubheading: data.vendorSubheading || '',
+              carouselOrder: data.carouselOrder || ['services', 'teamAra', 'vendors', 'panels'],
+              categorySubheadings: data.categorySubheadings || {},
+              teamAraSub: data.teamAraSub || '',
+              panelsSub: data.panelsSub || '',
+              vendorsSub: data.vendorsSub || '',
+              reviewsSub: data.reviewsSub || ''
+            });
+          }
+        } catch (error) {
+          console.error("Failed to fetch settings:", error);
+        }
+      };
 
-    return () => {
-      unsubscribeServices();
-      unsubscribeLocations();
-      unsubscribePanels();
-      unsubscribeCollaborators();
-      unsubscribeVendors();
-      unsubscribeReviews();
-      unsubscribeSettings();
+      await Promise.all([
+        fetchServices(),
+        fetchLocations(),
+        fetchPanels(),
+        fetchCollaborators(),
+        fetchVendors(),
+        fetchReviews(),
+        fetchSettings()
+      ]);
+
+      setLoading(false);
     };
+
+    loadAllData();
   }, []);
 
   const uniqueCategories = Array.from(new Set((services || []).map(s => s.category).filter(Boolean))) as string[];
@@ -434,14 +420,6 @@ export default function PublicUI() {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button 
-            onClick={() => setLang(lang === 'BM' ? 'EN' : 'BM')}
-            className="flex items-center gap-1 text-xs font-bold bg-zinc-800 text-white px-3 py-1.5 rounded-full border border-zinc-700 hover:bg-zinc-700 transition-colors"
-          >
-            <span className={lang === 'BM' ? 'text-white' : 'text-zinc-500'}>BM</span>
-            <span className="text-zinc-500">|</span>
-            <span className={lang === 'EN' ? 'text-white' : 'text-zinc-500'}>EN</span>
-          </button>
           <a href="/admin" className="text-sm font-medium text-zinc-300 hover:text-white transition hidden sm:block">Admin Login</a>
         </div>
       </nav>
@@ -467,7 +445,7 @@ export default function PublicUI() {
                 {(currentHero?.category || defaultHero.category).toUpperCase()}
               </span>
               {currentHero?.isFeatured && (
-                <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">{t[lang].featured}</span>
+                <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">PILIHAN UTAMA</span>
               )}
             </div>
             <h1 className="text-5xl md:text-7xl font-bold mb-4 tracking-tight drop-shadow-lg">
@@ -483,7 +461,7 @@ export default function PublicUI() {
                   className="bg-white text-black px-6 md:px-8 py-2 md:py-3 rounded md:rounded-md font-bold flex items-center gap-2 hover:bg-white/90 transition"
                 >
                   <Play className="w-5 h-5 md:w-6 md:h-6 fill-black" />
-                  {t[lang].readMore}
+                  Baca Lanjut
                 </button>
               ) : (
                 <a 
@@ -590,7 +568,6 @@ export default function PublicUI() {
                         title={category} 
                         services={categoryServices as Service[]} 
                         onSelect={handleOpenModal}
-                        lang={lang}
                         subheading={settings?.categorySubheadings?.[category] || ""}
                       />
                     );
@@ -612,8 +589,8 @@ export default function PublicUI() {
             if (section === 'teamAra') {
               return collaborators.length > 0 ? (
                 <section key="teamAra" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
-                  <h2 className="text-xl md:text-2xl font-bold text-white mb-1">{t[lang].teamAraTitle}</h2>
-                  <p className="text-sm text-gray-400 mb-6">{settings?.teamAraSub || t[lang].teamAraSub}</p>
+                  <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Keluarga TeamAra</h2>
+                  <p className="text-sm text-gray-400 mb-6">{settings?.teamAraSub || 'Pelan kesihatan eksklusif untuk keluarga anda'}</p>
                   <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pb-6 hide-scrollbar">
                     {collaborators.map(collab => (
                       <div key={collab.id} className="w-[280px] sm:w-[300px] flex-shrink-0 flex flex-col bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden snap-center group">
@@ -641,8 +618,8 @@ export default function PublicUI() {
             if (section === 'vendors') {
               return vendors.length > 0 ? (
                 <section key="vendors" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
-                  <h2 className="text-xl md:text-2xl font-bold text-white mb-1">{t[lang].vendorsTitle}</h2>
-                  <p className="text-sm text-gray-400 mb-6">{settings?.vendorsSub || settings?.vendorSubheading || t[lang].vendorsSub}</p>
+                  <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Rakan Vendor</h2>
+                  <p className="text-sm text-gray-400 mb-6">{settings?.vendorsSub || settings?.vendorSubheading || 'Entiti perniagaan yang memberi keistimewaan kepada ahli TeamAra'}</p>
                   <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pb-6 hide-scrollbar">
                     {vendors.map(vendor => (
                       <div 
@@ -675,8 +652,8 @@ export default function PublicUI() {
               return panels.length > 0 ? (
                 <div key="panels" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12 max-w-7xl mx-auto w-full">
                   <div className="max-w-4xl mx-auto mb-4">
-                    <h2 className="text-xl md:text-2xl font-bold text-white mb-1">{t[lang].panelsTitle}</h2>
-                    <p className="text-sm text-gray-400">{settings?.panelsSub || t[lang].panelsSub}</p>
+                    <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Panel Kesihatan</h2>
+                    <p className="text-sm text-gray-400">{settings?.panelsSub || 'Klik untuk melihat cawangan'}</p>
                   </div>
                   <div className="flex items-center gap-4 overflow-x-auto pb-4 no-scrollbar snap-x snap-mandatory">
                     {panels.map((panel) => (
@@ -935,13 +912,13 @@ export default function PublicUI() {
                   <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current" xmlns="http://www.w3.org/2000/svg">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                   </svg>
-                  {t[lang].proceed}
+                  Teruskan tempahan
                 </button>
                 <button 
                   onClick={() => setSelectedService(null)}
                   className="w-full bg-gray-800 hover:bg-gray-700 text-white py-3 md:py-4 rounded-xl font-bold transition-all"
                 >
-                  {t[lang].close}
+                  Tutup / Kembali
                 </button>
               </div>
             </div>
@@ -1082,7 +1059,7 @@ export default function PublicUI() {
                   onClick={() => setSelectedVendor(null)}
                   className="w-full bg-gray-800 hover:bg-gray-700 text-white py-3 md:py-4 rounded-xl font-bold transition-all"
                 >
-                  {t[lang].close}
+                  Tutup / Kembali
                 </button>
               </div>
             </div>
@@ -1101,7 +1078,7 @@ export default function PublicUI() {
               <X className="w-5 h-5" />
             </button>
             
-            <h2 className="text-2xl font-bold text-white mb-1">{t[lang].proceed}</h2>
+            <h2 className="text-2xl font-bold text-white mb-1">Teruskan tempahan</h2>
             <p className="text-green-400 font-medium mb-6">{bookingModalService.title}</p>
             
             <form onSubmit={handleWhatsAppBooking} className="space-y-4">
@@ -1158,7 +1135,7 @@ export default function PublicUI() {
                 <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                 </svg>
-                {t[lang].proceed}
+                Teruskan tempahan
               </button>
               
               <p className="text-[10px] text-gray-500 text-center mt-3 leading-tight">
