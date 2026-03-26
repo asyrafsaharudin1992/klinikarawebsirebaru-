@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType } from '../types';
+import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview } from '../types';
 import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle, Phone } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -99,6 +99,7 @@ export default function PublicUI() {
   const [panels, setPanels] = useState<Panel[]>([]);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [reviews, setReviews] = useState<GoogleReview[]>([]);
   const [settings, setSettings] = useState<AppSettings>({ vendorSubheading: '', carouselOrder: ['services', 'teamAra', 'vendors', 'panels'] });
   const [selectedPanel, setSelectedPanel] = useState<Panel | null>(null);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
@@ -181,6 +182,18 @@ export default function PublicUI() {
       handleFirestoreError(error, OperationType.LIST, 'vendors', auth);
     });
 
+    const qReviews = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'));
+    const unsubscribeReviews = onSnapshot(qReviews, (snapshot) => {
+      const reviewData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as GoogleReview[];
+      setReviews(reviewData);
+    }, (error) => {
+      console.error("Reviews Fetch Error:", error);
+      handleFirestoreError(error, OperationType.LIST, 'reviews', auth);
+    });
+
     const unsubscribeSettings = onSnapshot(doc(db, 'settings', 'homepage'), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data() as AppSettings;
@@ -190,7 +203,8 @@ export default function PublicUI() {
           categorySubheadings: data.categorySubheadings || {},
           teamAraSub: data.teamAraSub || '',
           panelsSub: data.panelsSub || '',
-          vendorsSub: data.vendorsSub || ''
+          vendorsSub: data.vendorsSub || '',
+          reviewsSub: data.reviewsSub || ''
         });
       }
     }, (error) => {
@@ -204,6 +218,7 @@ export default function PublicUI() {
       unsubscribePanels();
       unsubscribeCollaborators();
       unsubscribeVendors();
+      unsubscribeReviews();
       unsubscribeSettings();
     };
   }, []);
@@ -647,7 +662,7 @@ export default function PublicUI() {
           })}
 
           {/* Google Reviews Section */}
-          <GoogleReviews />
+          <GoogleReviews reviews={reviews} subheading={settings?.reviewsSub} />
 
           {/* Locations Section */}
           <section id="locations" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">

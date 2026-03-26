@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { User, signOut } from 'firebase/auth';
-import { collection, onSnapshot, query, orderBy, addDoc, doc, deleteDoc, writeBatch, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, doc, deleteDoc, writeBatch, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, auth, storage } from '../firebase';
-import { Service, Location, Panel, Collaborator, AdminUser, Vendor, AppSettings, handleFirestoreError, OperationType } from '../types';
+import { Service, Location, Panel, Collaborator, AdminUser, Vendor, AppSettings, GoogleReview, handleFirestoreError, OperationType } from '../types';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -89,7 +89,7 @@ const SortableServiceCard: React.FC<{ service: Service, onDelete: (id: string) =
 }
 
 export default function AdminUI({ user }: { user: User }) {
-  const [activeTab, setActiveTab] = useState<'services' | 'locations' | 'panels' | 'collaborators' | 'leads' | 'staff' | 'vendors' | 'layout'>('services');
+  const [activeTab, setActiveTab] = useState<'services' | 'locations' | 'panels' | 'collaborators' | 'leads' | 'staff' | 'vendors' | 'layout' | 'reviews'>('services');
 
   const [currentAdminInfo, setCurrentAdminInfo] = useState<AdminUser | null>(null);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
@@ -99,6 +99,7 @@ export default function AdminUI({ user }: { user: User }) {
   const [panels, setPanels] = useState<Panel[]>([]);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [reviews, setReviews] = useState<GoogleReview[]>([]);
   const [settings, setSettings] = useState<AppSettings>({ vendorSubheading: '', carouselOrder: ['services', 'teamAra', 'vendors', 'panels'] });
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,6 +114,7 @@ export default function AdminUI({ user }: { user: User }) {
   const [highlightedServiceId, setHighlightedServiceId] = useState<string | null>(null);
   const [deleteCollabConfirmId, setDeleteCollabConfirmId] = useState<string | null>(null);
   const [deleteLeadConfirmId, setDeleteLeadConfirmId] = useState<string | null>(null);
+  const [deleteReviewConfirmId, setDeleteReviewConfirmId] = useState<string | null>(null);
 
   // Location Form state
   const [editingLocId, setEditingLocId] = useState<string | null>(null);
@@ -165,6 +167,15 @@ export default function AdminUI({ user }: { user: User }) {
     branchId: ''
   });
   const [deleteStaffConfirmId, setDeleteStaffConfirmId] = useState<string | null>(null);
+
+  // Review Form state
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [reviewForm, setReviewForm] = useState({
+    reviewerName: '',
+    reviewText: '',
+    branchName: '',
+    reviewUrl: ''
+  });
 
   // Service Form state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -315,6 +326,18 @@ export default function AdminUI({ user }: { user: User }) {
       handleFirestoreError(error, OperationType.GET, 'settings/homepage', auth);
     });
 
+    const qReviews = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'));
+    const unsubscribeReviews = onSnapshot(qReviews, (snapshot) => {
+      const reviewData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as GoogleReview[];
+      setReviews(reviewData);
+    }, (error) => {
+      console.error("Admin Reviews Fetch Error:", error);
+      handleFirestoreError(error, OperationType.LIST, 'reviews', auth);
+    });
+
     const qLeads = query(collection(db, 'leads'));
     const unsubscribeLeads = onSnapshot(qLeads, (snapshot) => {
       let leadsData = snapshot.docs.map(doc => ({
@@ -347,6 +370,7 @@ export default function AdminUI({ user }: { user: User }) {
       unsubscribeCollaborators();
       unsubscribeVendors();
       unsubscribeSettings();
+      unsubscribeReviews();
       unsubscribeLeads();
     };
   }, [user, currentAdminInfo?.role, currentAdminInfo?.branchId]);
@@ -559,6 +583,79 @@ export default function AdminUI({ user }: { user: User }) {
       setErrorMsg('Failed to delete panel.');
     } finally {
       setDeletePanelConfirmId(null);
+    }
+  };
+
+  const handleSaveReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      if (!reviewForm.reviewerName || !reviewForm.reviewText || !reviewForm.reviewUrl) {
+        alert('Please fill in all required fields.');
+        setLoading(false);
+        return;
+      }
+
+      const newReviewData = {
+        reviewerName: reviewForm.reviewerName,
+        reviewText: reviewForm.reviewText,
+        branchName: reviewForm.branchName || 'General',
+        reviewUrl: reviewForm.reviewUrl,
+        createdAt: serverTimestamp()
+      };
+
+      if (editingReviewId) {
+        await updateDoc(doc(db, 'reviews', editingReviewId), newReviewData);
+        // Update UI immediately (optimistic update)
+        setReviews(prev => prev.map(r => r.id === editingReviewId ? { id: editingReviewId, ...newReviewData } : r));
+        alert('Review updated successfully!');
+      } else {
+        const docRef = await addDoc(collection(db, 'reviews'), newReviewData);
+        // Update UI immediately
+        setReviews(prev => [{ id: docRef.id, ...newReviewData }, ...prev]);
+        alert('Review saved successfully!');
+      }
+
+      setReviewForm({ reviewerName: '', reviewText: '', branchName: '', reviewUrl: '' });
+      setEditingReviewId(null);
+    } catch (error: any) {
+      console.error("Error saving review: ", error);
+      alert(`Failed to save review. Error: ${error.message}`);
+      setErrorMsg(`Save failed: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditReview = (review: GoogleReview) => {
+    setEditingReviewId(review.id!);
+    setReviewForm({
+      reviewerName: review.reviewerName,
+      reviewText: review.reviewText,
+      branchName: review.branchName,
+      reviewUrl: review.reviewUrl
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeleteReview = async (id: string) => {
+    setDeleteReviewConfirmId(id);
+  };
+
+  const confirmDeleteReview = async () => {
+    if (!deleteReviewConfirmId) return;
+    try {
+      await deleteDoc(doc(db, 'reviews', deleteReviewConfirmId));
+      setSuccessMsg('Review deleted successfully!');
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `reviews/${deleteReviewConfirmId}`, auth);
+      setErrorMsg('Failed to delete review.');
+    } finally {
+      setDeleteReviewConfirmId(null);
     }
   };
 
@@ -776,7 +873,8 @@ export default function AdminUI({ user }: { user: User }) {
         categorySubheadings: settings.categorySubheadings || {},
         teamAraSub: settings.teamAraSub || '',
         panelsSub: settings.panelsSub || '',
-        vendorsSub: settings.vendorsSub || ''
+        vendorsSub: settings.vendorsSub || '',
+        reviewsSub: settings.reviewsSub || ''
       });
       setSuccessMsg('Layout saved successfully!');
       setTimeout(() => setSuccessMsg(null), 3000);
@@ -1302,6 +1400,12 @@ export default function AdminUI({ user }: { user: User }) {
             className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'layout' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
             Manage Layout
+          </button>
+          <button
+            onClick={() => setActiveTab('reviews')}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'reviews' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          >
+            Manage Reviews
           </button>
           <button
             onClick={() => setActiveTab('leads')}
@@ -2356,6 +2460,17 @@ export default function AdminUI({ user }: { user: User }) {
                   placeholder="e.g., Click to see branch availability"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Reviews Subheading</label>
+                <input
+                  type="text"
+                  value={settings.reviewsSub || ''}
+                  onChange={e => setSettings({...settings, reviewsSub: e.target.value})}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                  placeholder="e.g., Apa kata pesakit kami..."
+                />
+              </div>
             </div>
 
             <div>
@@ -2392,6 +2507,148 @@ export default function AdminUI({ user }: { user: User }) {
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Layout'}
             </button>
+          </div>
+        </div>
+      </main>
+      )}
+
+      {activeTab === 'reviews' && (
+      <main className="max-w-6xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-5">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl sticky top-24">
+            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              {editingReviewId ? <Edit2 className="w-5 h-5 text-blue-400" /> : <Plus className="w-5 h-5 text-red-500" />}
+              {editingReviewId ? 'Edit Review' : 'Add New Review'}
+            </h2>
+            
+            <form onSubmit={handleSaveReview} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Reviewer Name</label>
+                <input 
+                  type="text" 
+                  required
+                  value={reviewForm.reviewerName}
+                  onChange={e => setReviewForm({...reviewForm, reviewerName: e.target.value})}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                  placeholder="e.g. John Doe"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Branch Name</label>
+                <select 
+                  required
+                  value={reviewForm.branchName}
+                  onChange={e => setReviewForm({...reviewForm, branchName: e.target.value})}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                >
+                  <option value="">Select a branch...</option>
+                  {locations.map(loc => (
+                    <option key={loc.id} value={loc.branchName}>{loc.branchName}</option>
+                  ))}
+                  <option value="General">General</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Review Text</label>
+                <textarea 
+                  required
+                  rows={4}
+                  value={reviewForm.reviewText}
+                  onChange={e => setReviewForm({...reviewForm, reviewText: e.target.value})}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all resize-none"
+                  placeholder="Paste the review text here..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Google Review URL</label>
+                <input 
+                  type="url" 
+                  required
+                  value={reviewForm.reviewUrl}
+                  onChange={e => setReviewForm({...reviewForm, reviewUrl: e.target.value})}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                  placeholder="https://maps.app.goo.gl/..."
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                {editingReviewId && (
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setEditingReviewId(null);
+                      setReviewForm({ reviewerName: '', reviewText: '', branchName: '', reviewUrl: '' });
+                    }}
+                    className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3.5 rounded-xl transition-all"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button 
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 bg-white hover:bg-zinc-200 text-black font-bold py-3.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (editingReviewId ? 'Update Review' : 'Add Review')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div className="lg:col-span-7">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
+            <div className="p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
+              <h2 className="text-lg font-semibold text-white">Google Reviews</h2>
+              <span className="px-3 py-1 bg-zinc-800 text-zinc-400 text-xs font-medium rounded-full border border-zinc-700">
+                {reviews.length} Total
+              </span>
+            </div>
+            
+            <div className="divide-y divide-zinc-800">
+              {reviews.length === 0 ? (
+                <div className="p-12 text-center text-zinc-500">
+                  <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Sparkles className="w-8 h-8" />
+                  </div>
+                  <p>No reviews found.</p>
+                  <p className="text-sm mt-1">Add your first review using the form.</p>
+                </div>
+              ) : (
+                reviews.map(review => (
+                  <div key={review.id} className="p-6 hover:bg-zinc-800/30 transition-colors group">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h3 className="text-lg font-bold text-white">{review.reviewerName}</h3>
+                        <span className="text-xs px-2 py-0.5 bg-zinc-800 text-zinc-400 rounded-full border border-zinc-700">
+                          {review.branchName}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => handleEditReview(review)} className="p-2 text-zinc-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all">
+                          <Edit2 className="w-5 h-5" />
+                        </button>
+                        <button onClick={() => handleDeleteReview(review.id!)} className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all">
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-zinc-400 line-clamp-3 italic">"{review.reviewText}"</p>
+                    <a 
+                      href={review.reviewUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-400 hover:underline mt-2 inline-block"
+                    >
+                      View on Google Maps
+                    </a>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </main>
@@ -2843,6 +3100,40 @@ export default function AdminUI({ user }: { user: User }) {
               </button>
               <button 
                 onClick={confirmDeleteStaff}
+                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Review Confirmation Modal */}
+      {deleteReviewConfirmId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+            <div className="flex justify-between items-start mb-4">
+              <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <button onClick={() => setDeleteReviewConfirmId(null)} className="text-zinc-500 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Delete Review?</h3>
+            <p className="text-zinc-400 text-sm mb-6">
+              This action cannot be undone. This review will be removed from the public website immediately.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setDeleteReviewConfirmId(null)}
+                className="flex-1 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDeleteReview}
                 className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors"
               >
                 Delete

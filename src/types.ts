@@ -58,6 +58,16 @@ export interface AppSettings {
   teamAraSub?: string;
   panelsSub?: string;
   vendorsSub?: string;
+  reviewsSub?: string;
+}
+
+export interface GoogleReview {
+  id?: string;
+  reviewerName: string;
+  reviewText: string;
+  branchName: string; // e.g., "Kajang" or "Semenyih"
+  reviewUrl: string; // The actual Google Maps review link
+  createdAt?: any;
 }
 
 export interface AdminUser {
