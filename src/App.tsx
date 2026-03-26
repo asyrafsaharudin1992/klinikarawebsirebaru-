@@ -4,14 +4,21 @@
  */
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { getDoc, doc } from 'firebase/firestore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import PublicUI from './components/PublicUI';
-import AdminUI from './components/AdminUI';
-import Login from './components/Login';
+
+const AdminUI = lazy(() => import('./components/AdminUI'));
+const Login = lazy(() => import('./components/Login'));
+
+const LoadingSpinner = () => (
+  <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+  </div>
+);
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -82,17 +89,19 @@ export default function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<PublicUI />} />
-          <Route 
-            path="/admin" 
-            element={user ? <AdminUI user={user} /> : <Navigate to="/login" replace />} 
-          />
-          <Route 
-            path="/login" 
-            element={!user ? <Login /> : <Navigate to="/admin" replace />} 
-          />
-        </Routes>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            <Route path="/" element={<PublicUI />} />
+            <Route 
+              path="/admin" 
+              element={user ? <AdminUI user={user} /> : <Navigate to="/login" replace />} 
+            />
+            <Route 
+              path="/login" 
+              element={!user ? <Login /> : <Navigate to="/admin" replace />} 
+            />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </ErrorBoundary>
   );

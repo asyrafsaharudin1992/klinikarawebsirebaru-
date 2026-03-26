@@ -33,6 +33,7 @@ const ServiceCarouselRow = ({ title, services, onSelect, subheading }: { title: 
                   alt={`${service.title} Poster - Klinik Ara 24 Jam`} 
                   className="w-full h-full object-contain bg-zinc-900"
                   referrerPolicy="no-referrer"
+                  loading="lazy"
                 />
               ) : (
                 <div className="w-full h-full bg-zinc-800 flex items-center justify-center">No Image</div>
@@ -529,6 +530,7 @@ export default function PublicUI() {
                         alt={`${service.title} - Klinik Ara 24 Jam Service`} 
                         className="w-full h-full object-contain bg-zinc-900"
                         referrerPolicy="no-referrer"
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-full h-full bg-zinc-800 flex items-center justify-center">No Image</div>
@@ -601,6 +603,7 @@ export default function PublicUI() {
                             alt={`${collab.name} - TeamAra Collaborator`} 
                             className="w-full h-full object-contain bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
                             referrerPolicy="no-referrer"
+                            loading="lazy"
                           />
                         </div>
                         <div className="p-5 flex flex-col flex-1">
@@ -634,6 +637,7 @@ export default function PublicUI() {
                             alt={`${vendor.name} - Vendor TeamAra`} 
                             className="w-full h-full object-contain bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
                             referrerPolicy="no-referrer"
+                            loading="lazy"
                           />
                         </div>
                         <div className="p-5 flex flex-col flex-1">
@@ -668,6 +672,7 @@ export default function PublicUI() {
                           alt={`${panel.name} logo`} 
                           className="max-w-full max-h-full object-contain"
                           referrerPolicy="no-referrer"
+                          loading="lazy"
                         />
                       </div>
                     ))}
@@ -695,6 +700,7 @@ export default function PublicUI() {
                           alt={`${loc.branchName} - Klinik Ara 24 Jam Branch`} 
                           className="w-full h-full object-contain bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
                           referrerPolicy="no-referrer"
+                          loading="lazy"
                         />
                       </div>
                     )}
@@ -814,6 +820,7 @@ export default function PublicUI() {
                       alt={`${selectedService.title} - Image ${currentImageIndex + 1}`}
                       className="absolute inset-0 w-full h-full object-scale-down bg-zinc-950"
                       referrerPolicy="no-referrer"
+                      loading="lazy"
                     />
 
                     {/* Only show navigation if there is more than 1 image */}
@@ -945,6 +952,7 @@ export default function PublicUI() {
                   alt={selectedPanel.name} 
                   className="max-w-full max-h-full object-contain"
                   referrerPolicy="no-referrer"
+                  loading="lazy"
                 />
               </div>
               
@@ -992,6 +1000,7 @@ export default function PublicUI() {
                   alt={selectedVendor.name} 
                   className="w-full h-full object-scale-down bg-zinc-950"
                   referrerPolicy="no-referrer"
+                  loading="lazy"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-zinc-600">No Image</div>
