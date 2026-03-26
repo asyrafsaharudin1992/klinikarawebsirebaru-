@@ -31,13 +31,13 @@ const ServiceCarouselRow = ({ title, services, onSelect, subheading }: { title: 
                 <img 
                   src={displayImage} 
                   alt={`${service.title} Poster - Klinik Ara 24 Jam`} 
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain bg-zinc-900"
                   referrerPolicy="no-referrer"
                 />
               ) : (
                 <div className="w-full h-full bg-zinc-800 flex items-center justify-center">No Image</div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
                 <h4 className="font-bold text-sm md:text-base mb-1 line-clamp-2">{service.title}</h4>
                 <div className="flex items-center gap-2 text-xs font-medium">
                   {service.teamAraPrice ? (
@@ -427,7 +427,7 @@ export default function PublicUI() {
       <main>
         {/* Hero Banner */}
         <section className="relative h-[70vh] md:h-[85vh] w-full transition-all duration-1000 ease-in-out">
-          <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-zinc-950">
             <img 
               key={heroImage}
               src={heroImage} 
@@ -435,8 +435,9 @@ export default function PublicUI() {
               className="w-full h-full object-cover animate-fade-in"
               referrerPolicy="no-referrer"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/70 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
+            {/* Gradient overlays restricted to bottom and left for text readability */}
+            <div className="absolute inset-y-0 left-0 w-full md:w-2/3 bg-gradient-to-r from-zinc-950/90 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-zinc-950/90 to-transparent" />
           </div>
           
           <div className="absolute bottom-[15%] left-4 md:left-12 max-w-2xl z-10">
@@ -526,13 +527,13 @@ export default function PublicUI() {
                       <img 
                         src={displayImage} 
                         alt={`${service.title} - Klinik Ara 24 Jam Service`} 
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-zinc-900"
                         referrerPolicy="no-referrer"
                       />
                     ) : (
                       <div className="w-full h-full bg-zinc-800 flex items-center justify-center">No Image</div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
                       <h4 className="font-bold text-sm md:text-base mb-1 line-clamp-2">{service.title}</h4>
                       <div className="flex items-center gap-2 text-xs font-medium">
                         {service.teamAraPrice ? (
@@ -598,7 +599,7 @@ export default function PublicUI() {
                           <img 
                             src={collab.imageUrl} 
                             alt={`${collab.name} - TeamAra Collaborator`} 
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                            className="w-full h-full object-contain bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
                             referrerPolicy="no-referrer"
                           />
                         </div>
@@ -631,7 +632,7 @@ export default function PublicUI() {
                           <img 
                             src={vendor.imageUrl} 
                             alt={`${vendor.name} - Vendor TeamAra`} 
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                            className="w-full h-full object-contain bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
                             referrerPolicy="no-referrer"
                           />
                         </div>
@@ -688,11 +689,11 @@ export default function PublicUI() {
                 locations?.map(loc => (
                   <div key={loc.id} className="w-[300px] sm:w-[320px] flex-shrink-0 flex flex-col bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden min-h-[450px] snap-center group">
                     {loc.imageUrl && (
-                      <div className="h-52 w-full overflow-hidden">
+                      <div className="h-52 w-full overflow-hidden bg-zinc-800">
                         <img 
                           src={loc.imageUrl} 
                           alt={`${loc.branchName} - Klinik Ara 24 Jam Branch`} 
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                          className="w-full h-full object-contain bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
                           referrerPolicy="no-referrer"
                         />
                       </div>
@@ -776,7 +777,7 @@ export default function PublicUI() {
       {/* Interactive Modal */}
       {selectedService && (
         <div 
-          className="fixed inset-0 z-50 flex flex-col md:flex-row md:items-center md:justify-center bg-black/80 backdrop-blur-sm p-0 md:p-6 transition-opacity"
+          className="fixed inset-0 z-50 flex flex-col md:flex-row md:items-center md:justify-center bg-black/80 p-0 md:p-6"
           onClick={handleCloseModal}
         >
           <div 
@@ -786,13 +787,13 @@ export default function PublicUI() {
             <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
               <button 
                 onClick={() => handleShare(selectedService)}
-                className="bg-zinc-900/80 backdrop-blur p-2 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all border border-zinc-700/50"
+                className="bg-zinc-900/80 p-2 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all border border-zinc-700/50"
               >
                 {isCopied ? <Check className="w-5 h-5 text-green-400" /> : <Share2 className="w-5 h-5" />}
               </button>
               <button 
                 onClick={() => setSelectedService(null)}
-                className="bg-black/40 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-md transition-all cursor-pointer"
+                className="bg-black/40 hover:bg-black/80 text-white p-2 rounded-full transition-all cursor-pointer"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -811,7 +812,7 @@ export default function PublicUI() {
                     <img 
                       src={carouselImages[currentImageIndex]} 
                       alt={`${selectedService.title} - Image ${currentImageIndex + 1}`}
-                      className="absolute inset-0 w-full h-full object-contain object-center transition-all duration-300"
+                      className="absolute inset-0 w-full h-full object-scale-down bg-zinc-950"
                       referrerPolicy="no-referrer"
                     />
 
@@ -820,13 +821,13 @@ export default function PublicUI() {
                       <>
                         <button 
                           onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev === 0 ? carouselImages.length - 1 : prev - 1)); }}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-sm transition-all"
+                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-2 rounded-full transition-all"
                         >
                           <ChevronLeft className="w-5 h-5" />
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % carouselImages.length); }}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-sm transition-all"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-2 rounded-full transition-all"
                         >
                           <ChevronRight className="w-5 h-5" />
                         </button>
@@ -892,7 +893,7 @@ export default function PublicUI() {
               </div>
 
               <p className="text-xs text-gray-400 mt-3 leading-relaxed">
-                Harga TeamAra hanya untuk ahli TeamAra sahaja. Keahlian TeamAra boleh dilakukan di klinik secara percuma, harga TeamAra boleh digunakan secara terus selepas pendaftaran ahli dibuat.
+                Harga TeamAra hanya untuk ahli TeamAra sahaja. Pendaftaran keahlian TeamAra boleh dilakukan di klinik secara percuma, harga TeamAra boleh dinikmati secara terus selepas pendaftaran keahlian dibuat.
               </p>
 
               <div className="flex-grow">
@@ -969,7 +970,7 @@ export default function PublicUI() {
       {/* Vendor Modal */}
       {selectedVendor && (
         <div 
-          className="fixed inset-0 z-50 flex flex-col md:flex-row md:items-center md:justify-center bg-black/80 backdrop-blur-sm p-0 md:p-6 transition-opacity"
+          className="fixed inset-0 z-50 flex flex-col md:flex-row md:items-center md:justify-center bg-black/80 p-0 md:p-6"
           onClick={() => setSelectedVendor(null)}
         >
           <div 
@@ -978,19 +979,18 @@ export default function PublicUI() {
           >
             <button 
               onClick={() => setSelectedVendor(null)}
-              className="absolute top-4 right-4 z-50 bg-black/40 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-md transition-all cursor-pointer"
+              className="absolute top-4 right-4 z-50 bg-black/40 hover:bg-black/80 text-white p-2 rounded-full transition-all cursor-pointer"
             >
               <X className="w-6 h-6" />
             </button>
 
             {/* Left Side / Top: The Hero Image */}
-            <div className="w-full h-64 md:h-auto md:w-1/2 flex-shrink-0 bg-gray-950 relative">
+            <div className="w-full h-64 md:h-auto md:w-1/2 flex-shrink-0 bg-zinc-950 relative">
               {selectedVendor.imageUrl ? (
                 <img 
                   src={selectedVendor.imageUrl} 
                   alt={selectedVendor.name} 
-                  className="w-full h-full object-cover object-top"
-                  style={{ imageRendering: 'high-quality', WebkitFontSmoothing: 'antialiased' }}
+                  className="w-full h-full object-scale-down bg-zinc-950"
                   referrerPolicy="no-referrer"
                 />
               ) : (

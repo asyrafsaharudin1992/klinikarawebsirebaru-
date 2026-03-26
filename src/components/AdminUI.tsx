@@ -793,15 +793,10 @@ export default function AdminUI({ user }: { user: User }) {
       let finalImageUrl = vendorForm.imageUrl || '';
 
       if (vendorImageFile) {
-        const options = {
-          maxSizeMB: 0.5,
-          maxWidthOrHeight: 1200,
-          useWebWorker: true,
-        };
-        const compressedFile = await imageCompression(vendorImageFile, options);
+        // Bypass compression entirely for maximum quality
         const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${vendorImageFile.name}`;
         const storageRef = ref(storage, `vendors/${uniqueFileName}`);
-        const uploadTask = uploadBytesResumable(storageRef, compressedFile);
+        const uploadTask = uploadBytesResumable(storageRef, vendorImageFile);
 
         finalImageUrl = await new Promise<string>((resolve, reject) => {
           uploadTask.on(
@@ -935,9 +930,10 @@ export default function AdminUI({ user }: { user: User }) {
 
       if (locImageFile) {
         const options = {
-          maxSizeMB: 0.2,
-          maxWidthOrHeight: 1200,
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
           useWebWorker: true,
+          initialQuality: 0.9,
         };
         const compressedFile = await imageCompression(locImageFile, options);
         const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${locImageFile.name}`;
@@ -1048,12 +1044,10 @@ export default function AdminUI({ user }: { user: User }) {
     setErrorMsg(null);
     
     try {
-      const options = { maxSizeMB: 0.5, maxWidthOrHeight: 1920, useWebWorker: true };
-      const compressedFile = await imageCompression(file, options);
-      
+      // Bypass compression entirely for maximum quality
       const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${file.name}`;
       const storageRef = ref(storage, `promotions/${uniqueFileName}`);
-      const uploadTask = uploadBytesResumable(storageRef, compressedFile);
+      const uploadTask = uploadBytesResumable(storageRef, file);
       
       const url = await new Promise<string>((resolve, reject) => {
         uploadTask.on('state_changed', null, reject, async () => {
@@ -1117,21 +1111,13 @@ export default function AdminUI({ user }: { user: User }) {
 
       // 2. Upload Gallery Images
       if (imageFiles.length > 0) {
-        setUploadStatus('compressing');
-        const options = {
-          maxSizeMB: 0.1, 
-          maxWidthOrHeight: 1200,
-          useWebWorker: true,
-          initialQuality: 0.7,
-        };
-        
         setUploadStatus('uploading');
         
         const uploadPromises = imageFiles.map(async (file, index) => {
-          const compressedFile = await imageCompression(file, options);
+          // Bypass compression entirely for maximum quality
           const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${file.name}`;
           const storageRef = ref(storage, `services/${uniqueFileName}`);
-          const uploadTask = uploadBytesResumable(storageRef, compressedFile);
+          const uploadTask = uploadBytesResumable(storageRef, file);
 
           return new Promise<string>((resolve, reject) => {
             uploadTask.on(
