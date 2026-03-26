@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview } from '../types';
-import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle, Phone } from 'lucide-react';
+import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle, Phone, Share2, Check } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { GoogleGenAI, Type } from '@google/genai';
 import GoogleReviews from './GoogleReviews';
@@ -112,6 +112,34 @@ export default function PublicUI() {
   const [aiResults, setAiResults] = useState<string[]>([]);
   const [bookingModalService, setBookingModalService] = useState<Service | null>(null);
   const [leadData, setLeadData] = useState({ name: '', phone: '', locationId: '', locationPhone: '' });
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleShare = async (service: Service) => {
+    const shareUrl = `${window.location.origin}${window.location.pathname}?service=${service.id}`;
+
+    // Try native mobile sharing first
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Klinik Ara 24 Jam - ${service.title}`,
+          text: `Check out this service at Klinik Ara: ${service.title}`,
+          url: shareUrl,
+        });
+        return;
+      } catch (error) {
+        console.log('Error sharing', error);
+      }
+    }
+
+    // Fallback for Desktop: Copy to clipboard
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
+  };
 
   useEffect(() => {
     const qServices = query(collection(db, 'services'));
@@ -125,6 +153,17 @@ export default function PublicUI() {
       const sortedServices = [...servicesData].sort((a, b) => (a.rankOrder || 0) - (b.rankOrder || 0));
       setServices(sortedServices);
       setLoading(false);
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const serviceIdFromUrl = urlParams.get('service');
+
+      if (serviceIdFromUrl) {
+        const serviceToOpen = sortedServices.find(s => s.id === serviceIdFromUrl);
+        if (serviceToOpen) {
+          setSelectedService(serviceToOpen);
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      }
     }, (error) => {
       console.error("Services Fetch Error:", error);
       handleFirestoreError(error, OperationType.LIST, 'services', auth);
@@ -767,12 +806,20 @@ export default function PublicUI() {
             className="bg-gray-900 w-full mt-auto md:mt-0 md:max-w-4xl rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col md:flex-row max-h-[95vh] md:max-h-[85vh] relative shadow-2xl border-t md:border border-gray-800"
             onClick={e => e.stopPropagation()}
           >
-            <button 
-              onClick={() => setSelectedService(null)}
-              className="absolute top-4 right-4 z-50 bg-black/40 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-md transition-all cursor-pointer"
-            >
-              <X className="w-6 h-6" />
-            </button>
+            <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
+              <button 
+                onClick={() => handleShare(selectedService)}
+                className="bg-zinc-900/80 backdrop-blur p-2 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all border border-zinc-700/50"
+              >
+                {isCopied ? <Check className="w-5 h-5 text-green-400" /> : <Share2 className="w-5 h-5" />}
+              </button>
+              <button 
+                onClick={() => setSelectedService(null)}
+                className="bg-black/40 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-md transition-all cursor-pointer"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
 
             {/* Left Side / Top: The Hero Image */}
             <div className="relative w-full md:w-1/2 min-h-[300px] md:min-h-[500px] bg-zinc-950 flex-shrink-0 group">
