@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
@@ -9,6 +9,46 @@ import { GoogleGenAI, Type } from '@google/genai';
 import GoogleReviews from './GoogleReviews';
 import SEO from './SEO';
 
+const CarouselWrapper = ({ children }: { children: React.ReactNode }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const { current } = scrollRef;
+      const scrollAmount = direction === 'left' ? -current.offsetWidth / 1.5 : current.offsetWidth / 1.5;
+      current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <div className="relative group">
+      {/* Left Arrow (Hidden on mobile, shows on group hover on desktop) */}
+      <button 
+        onClick={() => scroll('left')}
+        className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-30 bg-black/50 hover:bg-black/80 backdrop-blur text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all border border-zinc-700 shadow-xl"
+      >
+        <ChevronLeft className="w-6 h-6" />
+      </button>
+
+      {/* Scrollable Container */}
+      <div 
+        ref={scrollRef}
+        className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pb-6 hide-scrollbar scroll-smooth relative z-20"
+      >
+        {children}
+      </div>
+
+      {/* Right Arrow */}
+      <button 
+        onClick={() => scroll('right')}
+        className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-30 bg-black/50 hover:bg-black/80 backdrop-blur text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all border border-zinc-700 shadow-xl"
+      >
+        <ChevronRight className="w-6 h-6" />
+      </button>
+    </div>
+  );
+};
+
 const ServiceCarouselRow = ({ title, services, onSelect, subheading }: { title: string, services: Service[], onSelect: (s: Service) => void, key?: string | number, subheading?: string }) => {
   if (!services || services.length === 0) return null;
   return (
@@ -18,7 +58,7 @@ const ServiceCarouselRow = ({ title, services, onSelect, subheading }: { title: 
         <ChevronRight className="w-5 h-5 text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
       </h2>
       {subheading && <p className="text-sm text-gray-400 mb-6">{subheading}</p>}
-      <div className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-4 md:gap-6 pb-6">
+      <CarouselWrapper>
         {services.map(service => {
           const displayImage = service.imageUrls?.[0] || service.imageUrl;
           return (
@@ -52,7 +92,7 @@ const ServiceCarouselRow = ({ title, services, onSelect, subheading }: { title: 
             </div>
           );
         })}
-      </div>
+      </CarouselWrapper>
     </section>
   );
 };
@@ -594,7 +634,7 @@ export default function PublicUI() {
                 <section key="teamAra" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
                   <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Keluarga TeamAra</h2>
                   <p className="text-sm text-gray-400 mb-6">{settings?.teamAraSub || 'Pelan kesihatan eksklusif untuk keluarga anda'}</p>
-                  <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pb-6 hide-scrollbar">
+                  <CarouselWrapper>
                     {collaborators.map(collab => (
                       <div key={collab.id} className="w-[280px] sm:w-[300px] flex-shrink-0 flex flex-col bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden snap-center group">
                         <div className="h-48 w-full overflow-hidden bg-zinc-800">
@@ -615,7 +655,7 @@ export default function PublicUI() {
                         </div>
                       </div>
                     ))}
-                  </div>
+                  </CarouselWrapper>
                 </section>
               ) : null;
             }
@@ -624,7 +664,7 @@ export default function PublicUI() {
                 <section key="vendors" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
                   <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Rakan Vendor</h2>
                   <p className="text-sm text-gray-400 mb-6">{settings?.vendorsSub || settings?.vendorSubheading || 'Entiti perniagaan yang memberi keistimewaan kepada ahli TeamAra'}</p>
-                  <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pb-6 hide-scrollbar">
+                  <CarouselWrapper>
                     {vendors.map(vendor => (
                       <div 
                         key={vendor.id} 
@@ -649,7 +689,7 @@ export default function PublicUI() {
                         </div>
                       </div>
                     ))}
-                  </div>
+                  </CarouselWrapper>
                 </section>
               ) : null;
             }
@@ -660,7 +700,7 @@ export default function PublicUI() {
                     <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Panel Kesihatan</h2>
                     <p className="text-sm text-gray-400">{settings?.panelsSub || 'Klik untuk melihat cawangan'}</p>
                   </div>
-                  <div className="flex items-center gap-4 overflow-x-auto pb-4 no-scrollbar snap-x snap-mandatory">
+                  <CarouselWrapper>
                     {panels.map((panel) => (
                       <div 
                         key={panel.id} 
@@ -676,7 +716,7 @@ export default function PublicUI() {
                         />
                       </div>
                     ))}
-                  </div>
+                  </CarouselWrapper>
                 </div>
               ) : null;
             }
@@ -689,7 +729,7 @@ export default function PublicUI() {
           {/* Locations Section */}
           <section id="locations" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
             <h2 className="text-xl md:text-2xl font-bold text-white mb-6">Cawangan Ara</h2>
-            <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-6 hide-scrollbar">
+            <CarouselWrapper>
               {locations?.length > 0 ? (
                 locations?.map(loc => (
                   <div key={loc.id} className="w-[300px] sm:w-[320px] flex-shrink-0 flex flex-col bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden min-h-[450px] snap-center group">
@@ -763,7 +803,7 @@ export default function PublicUI() {
                   <p>Locations are currently being updated.</p>
                 </div>
               )}
-            </div>
+            </CarouselWrapper>
           </section>
         </section>
       )}
