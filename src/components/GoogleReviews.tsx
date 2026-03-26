@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, ExternalLink } from 'lucide-react';
+import { Star, ExternalLink, Quote } from 'lucide-react';
 import { GoogleReview } from '../types';
 
 interface GoogleReviewsProps {
@@ -32,48 +32,46 @@ export default function GoogleReviews({ reviews, subheading }: GoogleReviewsProp
         {reviews.map((review) => (
           <div 
             key={review.id} 
-            className="flex-none w-[280px] md:w-[350px] snap-start bg-zinc-900 rounded-xl p-6 border border-zinc-800 flex flex-col"
+            className="flex-none w-[280px] md:w-[350px] snap-start bg-zinc-900 border border-zinc-800 rounded-2xl p-6 md:p-8 flex flex-col relative overflow-hidden shadow-lg hover:border-zinc-700 transition-colors"
           >
+            {/* Background Watermark */}
+            <Quote className="absolute top-4 right-4 w-24 h-24 text-zinc-800/30 -rotate-12 pointer-events-none" strokeWidth={1} />
+
             {/* Header: Avatar + Name + Branch */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 font-bold border border-zinc-700">
+            <div className="flex items-center gap-4 mb-4 relative z-10">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-zinc-800 text-zinc-300 font-medium">
                 {review.reviewerName.charAt(0)}
               </div>
               <div>
-                <h4 className="font-bold text-sm text-zinc-100">{review.reviewerName}</h4>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{review.branchName}</p>
+                <h4 className="text-white font-semibold text-base">{review.reviewerName}</h4>
+                <p className="text-xs font-bold text-zinc-500 tracking-wider uppercase mt-0.5">{review.branchName}</p>
               </div>
             </div>
 
             {/* Stars */}
-            <div className="flex gap-1 mb-3">
+            <div className="flex gap-1 mb-5 relative z-10">
               {[...Array(5)].map((_, i) => (
                 <Star 
                   key={i} 
-                  className="w-4 h-4 fill-yellow-500 text-yellow-500" 
+                  className="w-4 h-4 fill-yellow-400 text-yellow-400" 
                 />
               ))}
             </div>
 
-            {/* Review Text Link */}
-            <a 
-              href={review.reviewUrl} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="hover:text-blue-400 transition-colors cursor-pointer block mt-3 text-sm font-medium underline underline-offset-2 text-zinc-300 leading-relaxed italic"
-            >
+            {/* Review Text */}
+            <p className="text-zinc-300 font-sans text-base leading-relaxed relative z-10 flex-grow">
               "{review.reviewText}"
-            </a>
+            </p>
 
             {/* Footer Link */}
             <a 
               href={review.reviewUrl} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1 mt-auto w-fit transition-colors pt-4"
+              className="mt-auto mt-6 pt-4 border-t border-zinc-800/50 relative z-10 inline-flex items-center gap-2 text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
             >
               Lihat di Google
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink className="w-4 h-4" />
             </a>
           </div>
         ))}
