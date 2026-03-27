@@ -34,6 +34,7 @@ export interface Panel {
   name: string;
   imageUrl: string;
   availableLocations: string[];
+  rankOrder: number;
 }
 
 export interface Collaborator {

@@ -228,13 +228,16 @@ export default function PublicUI() {
 
       const fetchPanels = async () => {
         try {
-          const q = query(collection(db, 'panels'), orderBy('name'));
+          const q = query(collection(db, 'panels'));
           const snapshot = await getDocs(q);
           const panelData = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
           })) as Panel[];
-          setPanels(panelData);
+          
+          // Sort in memory to handle missing rankOrder fields without excluding them from the query
+          const sortedPanels = panelData.sort((a, b) => (a.rankOrder ?? 9999) - (b.rankOrder ?? 9999));
+          setPanels(sortedPanels);
         } catch (error) {
           console.error("Failed to fetch panels:", error);
         }
@@ -262,7 +265,10 @@ export default function PublicUI() {
             id: doc.id,
             ...doc.data()
           })) as Vendor[];
-          setVendors(vendorData);
+          
+          // Sort by name by default
+          const sortedVendors = [...vendorData].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+          setVendors(sortedVendors);
         } catch (error) {
           console.error("Failed to fetch vendors:", error);
         }
@@ -726,11 +732,9 @@ export default function PublicUI() {
             }
             if (section === 'panels') {
               return panels.length > 0 ? (
-                <div key="panels" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12 max-w-7xl mx-auto w-full">
-                  <div className="max-w-4xl mx-auto mb-4">
-                    <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Panel Kesihatan</h2>
-                    <p className="text-sm text-gray-400">{settings?.panelsSub || 'Klik untuk melihat cawangan'}</p>
-                  </div>
+                <section key="panels" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
+                  <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Panel Kesihatan</h2>
+                  <p className="text-sm text-gray-400 mb-6">{settings?.panelsSub || 'Klik untuk melihat cawangan'}</p>
                   <CarouselWrapper>
                     {panels.map((panel) => (
                       <div 
@@ -748,7 +752,7 @@ export default function PublicUI() {
                       </div>
                     ))}
                   </CarouselWrapper>
-                </div>
+                </section>
               ) : null;
             }
             return null;
@@ -867,154 +871,181 @@ export default function PublicUI() {
           onClick={handleCloseModal}
         >
           <div 
-            className="w-full h-full md:h-[85vh] md:max-w-5xl rounded-none md:rounded-3xl overflow-hidden flex flex-col md:flex-row relative bg-white md:bg-zinc-950 shadow-2xl"
+            className="w-full h-[95vh] md:h-auto md:max-h-[85vh] md:max-w-5xl rounded-t-[32px] md:rounded-3xl overflow-hidden flex flex-col md:flex-row relative bg-white md:bg-zinc-950 shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
-            {/* Left Section: Portrait Image & Overlays */}
-            <div className="relative w-full aspect-square md:aspect-auto md:w-1/2 md:h-full flex-shrink-0 group bg-zinc-950">
-              {(() => {
-                const carouselImages = selectedService 
-                  ? [...(selectedService.modalImageUrls || []), ...(selectedService.imageUrls || []), selectedService.imageUrl].filter(Boolean) as string[]
-                  : [];
-                if (carouselImages.length === 0) return <div className="w-full h-full flex items-center justify-center text-zinc-600 bg-zinc-900">No Image</div>;
-                
-                return (
-                  <>
-                    <img 
-                      src={carouselImages[currentImageIndex]} 
-                      alt={`${selectedService.title} - Image ${currentImageIndex + 1}`}
-                      className="absolute inset-0 w-full h-full object-cover object-top md:object-contain bg-zinc-950"
-                      referrerPolicy="no-referrer"
-                      loading="lazy"
-                    />
+            {/* Close Button (Sticky Top Right) */}
+            <button 
+              onClick={() => setSelectedService(null)}
+              className="absolute top-4 right-4 z-[60] bg-black/40 hover:bg-black/60 md:bg-zinc-100 md:hover:bg-zinc-200 text-white md:text-zinc-600 p-2.5 rounded-full backdrop-blur-md transition-colors border border-white/20 md:border-zinc-200"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-                    {/* Gradient Overlay (Smooth fade to black on bottom edge) */}
-                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-zinc-950 to-transparent pointer-events-none" />
-
-                    {/* Top Floating Controls */}
-                    <div className="absolute top-4 inset-x-4 flex items-center justify-between z-50">
-                      {/* Heart/Favorite Icon */}
-                      <button className="bg-zinc-950/40 backdrop-blur-md p-2 rounded-full text-white/80 hover:text-white transition-all border border-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
-                      </button>
-
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => handleShare(selectedService)}
-                          className="bg-zinc-950/40 backdrop-blur-md p-2 rounded-full text-white/80 hover:text-white transition-all border border-white/10"
-                        >
-                          {isCopied ? <Check className="w-5 h-5 text-green-400" /> : <Share2 className="w-5 h-5" />}
-                        </button>
-                        <button 
-                          onClick={() => setSelectedService(null)}
-                          className="bg-zinc-950/40 backdrop-blur-md hover:bg-zinc-900/80 text-white p-2 rounded-full transition-all cursor-pointer border border-white/10"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Carousel Navigation */}
-                    {carouselImages.length > 1 && (
-                      <>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev === 0 ? carouselImages.length - 1 : prev - 1)); }}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 backdrop-blur-sm text-white p-1.5 rounded-full"
-                        >
-                          <ChevronLeft className="w-5 h-5" />
-                        </button>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % carouselImages.length); }}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 backdrop-blur-sm text-white p-1.5 rounded-full"
-                        >
-                          <ChevronRight className="w-5 h-5" />
-                        </button>
-
-                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-                          {carouselImages.map((_, idx) => (
-                            <div 
-                              key={idx} 
-                              className={`h-1.5 rounded-full transition-all ${idx === currentImageIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
-
-            {/* Right Section: Details Panel & Footer */}
-            <div className="flex-1 md:w-1/2 bg-white flex flex-col rounded-t-[32px] md:rounded-none -mt-8 md:mt-0 relative z-30 shadow-[0_-10px_40px_rgba(0,0,0,0.15)] md:shadow-none pb-32 md:pb-0">
+            {/* Unified Scroll Wrapper (Mobile) / Flex Container (Desktop) */}
+            <div className="w-full h-full overflow-y-auto md:overflow-hidden flex flex-col md:flex-row relative hide-scrollbar">
               
-              {/* Scrollable Content Area */}
-              <div className="flex-1 p-6 md:p-10 overflow-y-auto hide-scrollbar">
-                
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="px-3 py-1 bg-zinc-900 text-white text-[10px] font-bold tracking-widest rounded-full uppercase">
-                    {selectedService.category}
-                  </span>
-                  {(selectedService.startDate || selectedService.endDate) && (
-                    <span className="px-3 py-1 bg-zinc-100 text-zinc-600 text-[10px] font-bold tracking-widest rounded-full uppercase flex items-center gap-1 border border-zinc-200">
-                      <Calendar className="w-3 h-3" /> Valid Now
-                    </span>
-                  )}
-                </div>
-
-                <h3 className="text-2xl md:text-3xl font-bold text-zinc-900 leading-tight mb-6">
-                  {selectedService.title}
-                </h3>
-
-                {/* Pricing Card */}
-                <div className="border border-zinc-200 rounded-2xl p-4 flex flex-wrap items-center gap-6 mb-4 bg-zinc-50/50">
-                  {selectedService.teamAraPrice ? (
+              {/* Left Section: Portrait Image & Overlays */}
+              <div className="relative w-full aspect-square md:aspect-auto md:w-1/2 shrink-0 group bg-zinc-950 overflow-hidden md:flex md:items-center">
+                {(() => {
+                  const carouselImages = selectedService 
+                    ? [...(selectedService.modalImageUrls || []), ...(selectedService.imageUrls || []), selectedService.imageUrl].filter(Boolean) as string[]
+                    : [];
+                  if (carouselImages.length === 0) return <div className="w-full h-full flex items-center justify-center text-zinc-600 bg-zinc-900">No Image</div>;
+                  
+                  return (
                     <>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-green-600 font-bold uppercase tracking-wider mb-1 flex items-center gap-1">
-                          TeamAra Price
-                        </span>
-                        <span className="text-4xl font-black text-green-500 tracking-tighter">RM{selectedService.teamAraPrice}</span>
+                      <img 
+                        src={carouselImages[currentImageIndex]} 
+                        className="hidden md:block absolute inset-0 w-full h-full object-cover blur-3xl opacity-50 scale-125 pointer-events-none z-0" 
+                        referrerPolicy="no-referrer" 
+                      />
+
+                      <img 
+                        src={carouselImages[currentImageIndex]} 
+                        alt={`${selectedService.title} - Image ${currentImageIndex + 1}`}
+                        className="w-full h-full md:h-auto md:max-h-[85vh] object-cover object-top md:object-contain block z-10 relative"
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
+                      />
+
+                      {/* Gradient Overlay (Smooth fade to black on bottom edge) */}
+                      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-zinc-950 to-transparent pointer-events-none z-20" />
+
+                      {/* Top Floating Controls */}
+                      <div className="absolute top-4 inset-x-4 flex items-center justify-between z-50">
+                        {/* Heart/Favorite Icon */}
+                        <button className="bg-zinc-950/40 backdrop-blur-md p-2 rounded-full text-white/80 hover:text-white transition-all border border-white/10">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                        </button>
                       </div>
-                      {selectedService.price && (
-                        <div className="flex flex-col border-l border-zinc-200 pl-6">
-                          <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mb-1">Regular Price</span>
-                          <span className="text-xl font-bold text-zinc-400 line-through decoration-zinc-300">RM{selectedService.price}</span>
-                        </div>
+
+                      {/* Carousel Navigation */}
+                      {carouselImages.length > 1 && (
+                        <>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev === 0 ? carouselImages.length - 1 : prev - 1)); }}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 backdrop-blur-sm text-white p-1.5 rounded-full z-50"
+                          >
+                            <ChevronLeft className="w-5 h-5" />
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % carouselImages.length); }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 backdrop-blur-sm text-white p-1.5 rounded-full z-50"
+                          >
+                            <ChevronRight className="w-5 h-5" />
+                          </button>
+
+                          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-1.5 z-50">
+                            {carouselImages.map((_, idx) => (
+                              <div 
+                                key={idx} 
+                                className={`h-1.5 rounded-full transition-all ${idx === currentImageIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
+                              />
+                            ))}
+                          </div>
+                        </>
                       )}
                     </>
-                  ) : selectedService.price ? (
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Price</span>
-                      <span className="text-4xl font-black text-zinc-900 tracking-tighter">RM{selectedService.price}</span>
-                    </div>
-                  ) : (
-                    <span className="text-sm font-medium text-zinc-500">Price available upon request</span>
-                  )}
-                </div>
-
-                <p className="text-xs text-zinc-600 mb-8 leading-relaxed">
-                  Harga TeamAra hanya untuk ahli TeamAra sahaja. Pendaftaran keahlian TeamAra boleh dilakukan di klinik secara percuma, harga TeamAra boleh dinikmati secara terus selepas pendaftaran keahlian dibuat.
-                </p>
-
-                <div className="w-full h-px bg-zinc-100 mb-8"></div>
-
-                <div className="prose prose-sm md:prose-base prose-zinc text-zinc-600 leading-relaxed whitespace-pre-wrap">
-                  {selectedService.description || "No detailed description provided for this service."}
-                </div>
+                  );
+                })()}
               </div>
 
-              {/* Sticky Action Footer */}
-              <div className="absolute md:relative bottom-0 left-0 w-full bg-gradient-to-t from-white via-white to-white/90 md:bg-white/95 md:backdrop-blur-md pt-12 md:pt-4 pb-6 md:pb-safe px-6 flex items-center justify-center z-50 pointer-events-none md:pointer-events-auto">
-                <button 
-                  onClick={() => setBookingModalService(selectedService)}
-                  className="pointer-events-auto w-full max-w-sm bg-green-600 hover:bg-green-500 text-white font-bold py-3.5 md:py-4 px-6 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-green-900/20 text-lg"
-                >
-                  Saya nak tempah slot
-                </button>
-              </div>
+              {/* Right Section: Details Panel & Desktop Footer */}
+              <div className="w-full md:w-1/2 bg-white flex flex-col rounded-t-[32px] md:rounded-none -mt-8 md:mt-0 relative z-30 md:min-h-0">
+                
+                {/* Scrollable Content Area */}
+                <div className="p-6 pb-48 md:p-10 md:pb-6 flex flex-col md:flex-1 md:overflow-y-auto hide-scrollbar">
+                  
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="px-3 py-1 bg-zinc-900 text-white text-[10px] font-bold tracking-widest rounded-full uppercase">
+                      {selectedService.category}
+                    </span>
+                    {(selectedService.startDate || selectedService.endDate) && (
+                      <span className="px-3 py-1 bg-zinc-100 text-zinc-600 text-[10px] font-bold tracking-widest rounded-full uppercase flex items-center gap-1 border border-zinc-200">
+                        <Calendar className="w-3 h-3" /> Valid Now
+                      </span>
+                    )}
+                  </div>
 
+                  <h3 className="text-2xl md:text-3xl font-bold text-zinc-900 leading-tight mb-6">
+                    {selectedService.title}
+                  </h3>
+
+                  {/* Pricing Card */}
+                  <div className="bg-zinc-50 rounded-2xl p-5 border border-zinc-100 my-6 flex flex-wrap items-center gap-6">
+                    {selectedService.teamAraPrice ? (
+                      <>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-green-600 font-bold uppercase tracking-wider mb-1 flex items-center gap-1">
+                            TeamAra Price
+                          </span>
+                          <span className="text-4xl font-black text-green-500 tracking-tighter">RM{selectedService.teamAraPrice}</span>
+                        </div>
+                        {selectedService.price && (
+                          <div className="flex flex-col border-l border-zinc-200 pl-6">
+                            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Regular Price</span>
+                            <span className="text-xl font-bold text-zinc-400 line-through decoration-zinc-300">RM{selectedService.price}</span>
+                          </div>
+                        )}
+                      </>
+                    ) : selectedService.price ? (
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Price</span>
+                        <span className="text-4xl font-black text-zinc-900 tracking-tighter">RM{selectedService.price}</span>
+                      </div>
+                    ) : (
+                      <span className="text-sm font-medium text-zinc-600">Price available upon request</span>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-zinc-600 mb-8 leading-relaxed">
+                    Harga TeamAra hanya untuk ahli TeamAra sahaja. Pendaftaran keahlian TeamAra boleh dilakukan di klinik secara percuma, harga TeamAra boleh dinikmati secara terus selepas pendaftaran keahlian dibuat.
+                  </p>
+
+                  <div className="w-full h-px bg-zinc-100 mb-8"></div>
+
+                  <div className="prose prose-sm md:prose-base prose-zinc text-zinc-700 leading-relaxed whitespace-pre-wrap">
+                    {selectedService.description || "No detailed description provided for this service."}
+                  </div>
+                </div>
+
+                {/* Desktop Sticky Footer (Hidden on Mobile) */}
+                <div className="hidden md:flex shrink-0 bg-white border-t border-zinc-100 p-5 md:p-6 flex-col gap-3 z-50">
+                  <button 
+                    onClick={() => setBookingModalService(selectedService)}
+                    className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-lg transition-transform active:scale-95"
+                  >
+                    Saya nak tempah slot
+                  </button>
+                  <button 
+                    onClick={() => handleShare(selectedService)}
+                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 text-lg transition-transform active:scale-95"
+                  >
+                    {isCopied ? <Check className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
+                    {isCopied ? "Telah Disalin!" : "Kongsi"}
+                  </button>
+                </div>
+              </div>
             </div>
+
+            {/* Mobile Floating Action Footer (Hidden on Desktop) */}
+            <div className="md:hidden absolute bottom-0 left-0 w-full bg-gradient-to-t from-white via-white/95 to-white/0 pt-12 pb-6 px-6 flex flex-col gap-3 z-50 pointer-events-none">
+              <button 
+                onClick={() => setBookingModalService(selectedService)}
+                className="pointer-events-auto w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-lg transition-transform active:scale-95"
+              >
+                Saya nak tempah slot
+              </button>
+              <button 
+                onClick={() => handleShare(selectedService)}
+                className="pointer-events-auto w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 text-lg transition-transform active:scale-95"
+              >
+                {isCopied ? <Check className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
+                {isCopied ? "Telah Disalin!" : "Kongsi"}
+              </button>
+            </div>
+
           </div>
         </div>
       )}
@@ -1094,6 +1125,116 @@ export default function PublicUI() {
                 Dengan menekan teruskan, anda bersetuju dengan terma dan syarat kami, termasuk membenarkan Klinik Ara menyimpan nombor telefon anda dan memberi kebenaran kepada kami untuk menghubungi anda berkenaan pertanyaan anda.
               </p>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Vendor Details Modal */}
+      {selectedVendor && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" onClick={() => setSelectedVendor(null)}>
+          <div className="bg-zinc-900 w-full max-w-md rounded-2xl p-6 border border-zinc-800 relative" onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setSelectedVendor(null)}
+              className="absolute top-4 right-4 z-50 bg-black/40 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-md transition-all cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            <div className="h-48 w-full overflow-hidden bg-zinc-800 rounded-xl mb-6">
+              <img 
+                src={selectedVendor.imageUrl} 
+                alt={selectedVendor.name} 
+                className="w-full h-full object-contain bg-zinc-900"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+
+            <h2 className="text-2xl font-bold text-white mb-2">{selectedVendor.name}</h2>
+            
+            <div className="space-y-4 mb-8">
+              <div className="flex items-start gap-3 text-zinc-400">
+                <MapPin className="w-5 h-5 flex-shrink-0 mt-0.5 text-cyan-400" />
+                <p className="text-sm">{selectedVendor.address}</p>
+              </div>
+              
+              <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                  <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Kelebihan TeamAra</span>
+                </div>
+                <p className="text-zinc-200 text-sm leading-relaxed">{selectedVendor.perks}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <a 
+                href={selectedVendor.mapUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
+              >
+                <MapPin className="w-4 h-4" />
+                Lokasi
+              </a>
+              <a 
+                href={`https://wa.me/${selectedVendor.phone.replace(/[^0-9]/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" />
+                WhatsApp
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Panel Details Modal */}
+      {selectedPanel && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" onClick={() => setSelectedPanel(null)}>
+          <div className="bg-zinc-900 w-full max-w-md rounded-2xl p-6 border border-zinc-800 relative" onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setSelectedPanel(null)}
+              className="absolute top-4 right-4 z-50 bg-black/40 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-md transition-all cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="bg-white p-4 rounded-xl mb-4 w-32 h-24 flex items-center justify-center">
+                <img 
+                  src={selectedPanel.imageUrl} 
+                  alt={selectedPanel.name} 
+                  className="max-w-full max-h-full object-contain"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-1">{selectedPanel.name}</h2>
+              <p className="text-zinc-400 text-sm">Cawangan Tersedia</p>
+            </div>
+
+            <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2 hide-scrollbar">
+              {selectedPanel.availableLocations && selectedPanel.availableLocations.length > 0 ? (
+                selectedPanel.availableLocations.map((loc, idx) => (
+                  <div key={idx} className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
+                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-zinc-200 font-medium">{loc}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-zinc-500">
+                  Tiada maklumat cawangan tersedia.
+                </div>
+              )}
+            </div>
+
+            <button 
+              onClick={() => setSelectedPanel(null)}
+              className="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-xl mt-6 transition-colors"
+            >
+              Tutup
+            </button>
           </div>
         </div>
       )}

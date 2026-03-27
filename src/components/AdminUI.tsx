@@ -7,7 +7,7 @@ import { Service, Location, Panel, Collaborator, AdminUser, Vendor, AppSettings,
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { LogOut, Plus, GripVertical, Image as ImageIcon, Trash2, Loader2, AlertCircle, CheckCircle2, X, Edit2, Sparkles, MapPin, Phone, ArrowUp, ArrowDown } from 'lucide-react';
+import { LogOut, Plus, GripVertical, Image as ImageIcon, Trash2, Loader2, AlertCircle, CheckCircle2, X, Edit2, Sparkles, MapPin, Phone, ArrowUp, ArrowDown, ChevronLeft } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { GoogleGenAI } from '@google/genai';
 
@@ -135,7 +135,8 @@ export default function AdminUI({ user }: { user: User }) {
   const [panelForm, setPanelForm] = useState({
     name: '',
     imageUrl: '',
-    availableLocations: [] as string[]
+    availableLocations: [] as string[],
+    rankOrder: 0
   });
   const [panelImageFile, setPanelImageFile] = useState<File | null>(null);
   const [panelImagePreview, setPanelImagePreview] = useState<string | null>(null);
@@ -297,7 +298,9 @@ export default function AdminUI({ user }: { user: User }) {
         ...doc.data()
       })) as Panel[];
       
-      setPanels(panelData);
+      // Sort in memory to handle missing rankOrder fields without excluding them from the query
+      const sortedPanels = panelData.sort((a, b) => (a.rankOrder ?? 9999) - (b.rankOrder ?? 9999));
+      setPanels(sortedPanels);
     }, (error) => {
       console.error("Admin Panels Fetch Error:", error);
       handleFirestoreError(error, OperationType.LIST, 'panels', auth);
@@ -323,7 +326,9 @@ export default function AdminUI({ user }: { user: User }) {
         ...doc.data()
       })) as Vendor[];
       
-      setVendors(vendorData);
+      // Sort by name by default
+      const sortedVendors = [...vendorData].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      setVendors(sortedVendors);
     }, (error) => {
       console.error("Admin Vendors Fetch Error:", error);
       handleFirestoreError(error, OperationType.LIST, 'vendors', auth);
@@ -555,7 +560,8 @@ export default function AdminUI({ user }: { user: User }) {
     setPanelForm({
       name: panel.name || '',
       imageUrl: panel.imageUrl || '',
-      availableLocations: panel.availableLocations || []
+      availableLocations: panel.availableLocations || [],
+      rankOrder: panel.rankOrder || 0
     });
     setPanelImagePreview(panel.imageUrl || null);
     setPanelImageFile(null);
@@ -567,10 +573,39 @@ export default function AdminUI({ user }: { user: User }) {
     setPanelForm({
       name: '',
       imageUrl: '',
-      availableLocations: []
+      availableLocations: [],
+      rankOrder: 0
     });
     setPanelImageFile(null);
     setPanelImagePreview(null);
+  };
+
+  const handleMovePanel = async (panelId: string, direction: 'up' | 'down') => {
+    const currentIndex = panels.findIndex(p => p.id === panelId);
+    if (currentIndex === -1) return;
+
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= panels.length) return;
+
+    const currentPanel = panels[currentIndex];
+    const otherPanel = panels[newIndex];
+
+    try {
+      const currentRef = doc(db, 'panels', currentPanel.id);
+      const otherRef = doc(db, 'panels', otherPanel.id);
+
+      // Use current index as fallback if rankOrder is missing to ensure we have values to swap
+      const currentOrder = currentPanel.rankOrder ?? currentIndex;
+      const otherOrder = otherPanel.rankOrder ?? newIndex;
+
+      // Swap rankOrder
+      // If they are the same (e.g. both missing and indices were same? No, indices are different)
+      // If they were both 0 in DB, they will now be swapped based on their current list position
+      await updateDoc(currentRef, { rankOrder: otherOrder });
+      await updateDoc(otherRef, { rankOrder: currentOrder });
+    } catch (error) {
+      console.error("Error moving panel:", error);
+    }
   };
 
   const handleSavePanel = async (e: React.FormEvent) => {
@@ -612,7 +647,8 @@ export default function AdminUI({ user }: { user: User }) {
 
       const panelData = { 
         ...panelForm,
-        imageUrl: finalImageUrl
+        imageUrl: finalImageUrl,
+        rankOrder: editingPanelId ? panelForm.rankOrder : (panels.length > 0 ? Math.max(...panels.map(p => p.rankOrder || 0)) + 1 : 0)
       };
       
       if (editingPanelId) {
@@ -2253,6 +2289,24 @@ export default function AdminUI({ user }: { user: User }) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 mr-2 border-r border-zinc-800 pr-2">
+                        <button 
+                          onClick={() => handleMovePanel(panel.id, 'up')}
+                          disabled={panels.indexOf(panel) === 0}
+                          className="p-1.5 text-zinc-500 hover:text-white disabled:opacity-20 transition-colors"
+                          title="Move Up"
+                        >
+                          <ChevronLeft className="w-5 h-5 rotate-90" />
+                        </button>
+                        <button 
+                          onClick={() => handleMovePanel(panel.id, 'down')}
+                          disabled={panels.indexOf(panel) === panels.length - 1}
+                          className="p-1.5 text-zinc-500 hover:text-white disabled:opacity-20 transition-colors"
+                          title="Move Down"
+                        >
+                          <ChevronLeft className="w-5 h-5 -rotate-90" />
+                        </button>
+                      </div>
                       <button onClick={() => handleEditPanel(panel)} className="p-2 text-zinc-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all" title="Edit">
                         <Edit2 className="w-5 h-5" />
                       </button>
