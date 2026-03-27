@@ -52,7 +52,7 @@ const CarouselWrapper = ({ children }: { children: React.ReactNode }) => {
 const ServiceCarouselRow = ({ title, services, onSelect, subheading }: { title: string, services: Service[], onSelect: (s: Service) => void, key?: string | number, subheading?: string }) => {
   if (!services || services.length === 0) return null;
   return (
-    <section className="mb-2 md:mb-4 pt-2 border-t border-zinc-800/50 px-4 md:px-12">
+    <section className="mb-1 md:mb-2 pt-2 border-t border-zinc-800/50 px-4 md:px-12">
       <h2 className="text-xl md:text-2xl font-bold text-white mb-1 flex items-center gap-2 group cursor-pointer">
         {title}
         <ChevronRight className="w-5 h-5 text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
