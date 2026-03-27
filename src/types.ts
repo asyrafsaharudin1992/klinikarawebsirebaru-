@@ -14,6 +14,7 @@ export interface Service {
   description: string;
   isFeatured: boolean;
   rankOrder: number;
+  showTeamAraDisclaimer?: boolean;
 }
 
 export interface Location {

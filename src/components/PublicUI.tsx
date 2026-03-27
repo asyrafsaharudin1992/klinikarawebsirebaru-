@@ -996,11 +996,13 @@ export default function PublicUI() {
                     ) : (
                       <span className="text-sm font-medium text-zinc-400">Price available upon request</span>
                     )}
-                  </div>
+                  </div>              
 
-                  <p className="text-xs text-zinc-400 mb-8 leading-relaxed">
-                    Harga TeamAra hanya untuk ahli TeamAra sahaja. Pendaftaran keahlian TeamAra boleh dilakukan di klinik secara percuma, harga TeamAra boleh dinikmati secara terus selepas pendaftaran keahlian dibuat.
-                  </p>
+                  {selectedService.showTeamAraDisclaimer && (
+                    <p className="text-xs text-zinc-400 mb-8 leading-relaxed">
+                      Harga TeamAra hanya untuk ahli TeamAra sahaja. Pendaftaran keahlian TeamAra boleh dilakukan di klinik secara percuma, harga TeamAra boleh dinikmati secara terus selepas pendaftaran keahlian dibuat.
+                    </p>
+                  )}
 
                   <div className="w-full h-px bg-zinc-800 mb-8"></div>
 

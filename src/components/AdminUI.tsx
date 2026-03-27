@@ -188,6 +188,7 @@ export default function AdminUI({ user }: { user: User }) {
   const [category, setCategory] = useState<string>('AraMommy');
   const [price, setPrice] = useState('');
   const [teamAraPrice, setTeamAraPrice] = useState('');
+  const [showTeamAraDisclaimer, setShowTeamAraDisclaimer] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [description, setDescription] = useState('');
@@ -482,6 +483,7 @@ export default function AdminUI({ user }: { user: User }) {
     setCategory(service.category);
     setPrice(service.price || '');
     setTeamAraPrice(service.teamAraPrice || '');
+    setShowTeamAraDisclaimer(service.showTeamAraDisclaimer || false);
     setStartDate(service.startDate || '');
     setEndDate(service.endDate || '');
     setDescription(service.description || '');
@@ -508,6 +510,7 @@ export default function AdminUI({ user }: { user: User }) {
     setCategory('AraMommy');
     setPrice('');
     setTeamAraPrice('');
+    setShowTeamAraDisclaimer(false);
     setStartDate('');
     setEndDate('');
     setDescription('');
@@ -1323,6 +1326,7 @@ export default function AdminUI({ user }: { user: User }) {
         modalImageUrls: finalModalImageUrls,
         price,
         teamAraPrice,
+        showTeamAraDisclaimer,
         startDate,
         endDate,
         description,
@@ -1679,6 +1683,15 @@ export default function AdminUI({ user }: { user: User }) {
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
                     placeholder="e.g., 120"
                   />
+                  <label className="flex items-center gap-2 mt-4 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={showTeamAraDisclaimer} 
+                      onChange={(e) => setShowTeamAraDisclaimer(e.target.checked)}
+                      className="w-4 h-4 text-green-600 bg-zinc-900 border-zinc-700 rounded focus:ring-green-500 focus:ring-2"
+                    />
+                    <span className="text-sm text-zinc-300">Show TeamAra Membership Disclaimer on Modal</span>
+                  </label>
                 </div>
               </div>
 
