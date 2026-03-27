@@ -1248,7 +1248,7 @@ export default function PublicUI() {
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-white">Internal Applications</h2>
-                    <p className="text-zinc-400 text-sm">Selamat datang, TeamAra. Sila pilih aplikasi untuk diteruskan.</p>
+                    <p className="text-zinc-400 text-sm">Welcome, TeamAra. Kindly select Ara application to continue.</p>
                   </div>
                 </div>
 
@@ -1282,7 +1282,7 @@ export default function PublicUI() {
                 </div>
 
                 <p className="text-center text-[10px] text-zinc-600 mt-8">
-                  Akses ini dipantau untuk tujuan keselamatan. Sila log keluar selepas selesai.
+                  This access is monitored for security purposes. Please log out when finished.
                 </p>
               </div>
             )}
