@@ -668,7 +668,7 @@ export default function PublicUI() {
             }
             if (section === 'teamAra') {
               return collaborators.length > 0 ? (
-                <section key="teamAra" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
+                <section key="teamAra" className="mb-4 md:mb-6 pt-6 border-t border-zinc-800/50 px-4 md:px-12">
                   <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Keluarga TeamAra</h2>
                   <p className="text-sm text-gray-400 mb-6">{settings?.teamAraSub || 'Pelan kesihatan eksklusif untuk keluarga anda'}</p>
                  <CarouselWrapper>
@@ -699,7 +699,7 @@ export default function PublicUI() {
             }
             if (section === 'vendors') {
               return vendors.length > 0 ? (
-                <section key="vendors" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
+                <section key="vendors" className="mb-4 md:mb-6 pt-6 border-t border-zinc-800/50 px-4 md:px-12">
                   <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Rakan Vendor</h2>
                   <p className="text-sm text-gray-400 mb-6">{settings?.vendorsSub || settings?.vendorSubheading || 'Entiti perniagaan yang memberi keistimewaan kepada ahli TeamAra'}</p>
                   <CarouselWrapper>
@@ -764,7 +764,7 @@ export default function PublicUI() {
           <GoogleReviews reviews={reviews} subheading={settings?.reviewsSub} />
 
           {/* Locations Section */}
-          <section id="locations" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
+          <section id="locations" className="mb-4 md:mb-6 pt-6 border-t border-zinc-800/50 px-4 md:px-12">
             <h2 className="text-xl md:text-2xl font-bold text-white mb-6">Cawangan Ara</h2>
             <CarouselWrapper>
               {locations?.length > 0 ? (
