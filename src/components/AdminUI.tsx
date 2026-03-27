@@ -3,7 +3,7 @@ import { User, signOut } from 'firebase/auth';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, deleteDoc, writeBatch, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, auth, storage } from '../firebase';
-import { Service, Location, Panel, Collaborator, AdminUser, Vendor, AppSettings, GoogleReview, handleFirestoreError, OperationType } from '../types';
+import { Service, Location, Panel, Collaborator, AdminUser, Vendor, AppSettings, InternalApp, GoogleReview, handleFirestoreError, OperationType } from '../types';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -21,7 +21,7 @@ const SortableServiceCard: React.FC<{ service: Service, onDelete: (id: string) =
     zIndex: isDragging ? 10 : 1,
   };
 
-  const displayImage = service.heroImageUrl || service.imageUrls?.[0] || service.imageUrl;
+  const displayImage = service.thumbnailUrl || service.heroImageUrl || service.imageUrls?.[0] || service.imageUrl;
 
   return (
     <div 
@@ -100,7 +100,11 @@ export default function AdminUI({ user }: { user: User }) {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [reviews, setReviews] = useState<GoogleReview[]>([]);
-  const [settings, setSettings] = useState<AppSettings>({ vendorSubheading: '', carouselOrder: ['services', 'teamAra', 'vendors', 'panels'] });
+  const [settings, setSettings] = useState<AppSettings>({ 
+    vendorSubheading: '', 
+    carouselOrder: ['services', 'teamAra', 'vendors', 'panels'],
+    internalApps: []
+  });
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [adminLoading, setAdminLoading] = useState(true);
@@ -191,6 +195,17 @@ export default function AdminUI({ user }: { user: User }) {
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  
+  // Zone 2: Thumbnail Image (Portrait 3:4)
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+
+  // Zone 3: Modal Gallery Images (Portrait 3:4)
+  const [modalImageUrls, setModalImageUrls] = useState<string[]>([]);
+  const [modalImageFiles, setModalImageFiles] = useState<File[]>([]);
+  const [modalImagePreviews, setModalImagePreviews] = useState<string[]>([]);
+
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'compressing' | 'uploading'>('idle');
 
   // AI Generation State
@@ -375,6 +390,47 @@ export default function AdminUI({ user }: { user: User }) {
     };
   }, [user, currentAdminInfo?.role, currentAdminInfo?.branchId]);
 
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setThumbnailFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setThumbnailPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeThumbnail = () => {
+    setThumbnailFile(null);
+    setThumbnailPreview(null);
+    setThumbnailUrl('');
+  };
+
+  const handleModalImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []) as File[];
+    if (files.length > 0) {
+      setModalImageFiles(prev => [...prev, ...files]);
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setModalImagePreviews(prev => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const removeExistingModalImage = (index: number) => {
+    setModalImageUrls(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeNewModalImage = (index: number) => {
+    setModalImageFiles(prev => prev.filter((_, i) => i !== index));
+    setModalImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setErrorMsg(null);
     if (e.target.files && e.target.files.length > 0) {
@@ -427,6 +483,10 @@ export default function AdminUI({ user }: { user: User }) {
     setIsFeatured(service.isFeatured || false);
     
     setHeroImageUrl(service.heroImageUrl || '');
+    setThumbnailUrl(service.thumbnailUrl || '');
+    setThumbnailPreview(service.thumbnailUrl || null);
+    setModalImageUrls(service.modalImageUrls || []);
+    setModalImagePreviews(service.modalImageUrls || []);
     setAiPrompt('');
     setGeneratedImageBase64(null);
 
@@ -451,6 +511,12 @@ export default function AdminUI({ user }: { user: User }) {
     setImageFiles([]);
     setImagePreviews([]);
     setHeroImageUrl('');
+    setThumbnailUrl('');
+    setThumbnailFile(null);
+    setThumbnailPreview(null);
+    setModalImageUrls([]);
+    setModalImageFiles([]);
+    setModalImagePreviews([]);
     setAiPrompt('');
     setGeneratedImageBase64(null);
   };
@@ -869,7 +935,8 @@ export default function AdminUI({ user }: { user: User }) {
         teamAraSub: settings.teamAraSub || '',
         panelsSub: settings.panelsSub || '',
         vendorsSub: settings.vendorsSub || '',
-        reviewsSub: settings.reviewsSub || ''
+        reviewsSub: settings.reviewsSub || '',
+        internalApps: settings.internalApps || []
       });
       setSuccessMsg('Layout saved successfully!');
       setTimeout(() => setSuccessMsg(null), 3000);
@@ -899,6 +966,31 @@ export default function AdminUI({ user }: { user: User }) {
       [newOrder[index + 1], newOrder[index]] = [newOrder[index], newOrder[index + 1]];
     }
     setSettings({ ...settings, carouselOrder: newOrder });
+  };
+
+  const addInternalApp = () => {
+    setSettings(prev => ({
+      ...prev,
+      internalApps: [
+        ...(prev.internalApps || []),
+        { name: '', url: '', description: '' }
+      ]
+    }));
+  };
+
+  const removeInternalApp = (index: number) => {
+    setSettings(prev => ({
+      ...prev,
+      internalApps: (prev.internalApps || []).filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateInternalApp = (index: number, field: keyof InternalApp, value: string) => {
+    setSettings(prev => {
+      const newApps = [...(prev.internalApps || [])];
+      newApps[index] = { ...newApps[index], [field]: value } as InternalApp;
+      return { ...prev, internalApps: newApps };
+    });
   };
 
   const fillKajangLocation = () => {
@@ -1086,6 +1178,8 @@ export default function AdminUI({ user }: { user: User }) {
     try {
       let newlyUploadedUrls: string[] = [];
       let finalHeroImageUrl = heroImageUrl;
+      let finalThumbnailUrl = thumbnailUrl;
+      let newlyUploadedModalUrls: string[] = [];
 
       setUploadStatus('uploading');
 
@@ -1109,7 +1203,51 @@ export default function AdminUI({ user }: { user: User }) {
         });
       }
 
-      // 2. Upload Gallery Images
+      // 2. Upload Thumbnail Image
+      if (thumbnailFile) {
+        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-thumbnail-${thumbnailFile.name}`;
+        const storageRef = ref(storage, `services/${uniqueFileName}`);
+        const uploadTask = uploadBytesResumable(storageRef, thumbnailFile);
+
+        finalThumbnailUrl = await new Promise<string>((resolve, reject) => {
+          uploadTask.on(
+            'state_changed',
+            null,
+            (error) => reject(error),
+            async () => {
+              const url = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve(url);
+            }
+          );
+        });
+      }
+
+      // 3. Upload Modal Gallery Images
+      if (modalImageFiles.length > 0) {
+        const uploadPromises = modalImageFiles.map(async (file) => {
+          const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-modal-${file.name}`;
+          const storageRef = ref(storage, `services/${uniqueFileName}`);
+          const uploadTask = uploadBytesResumable(storageRef, file);
+
+          return new Promise<string>((resolve, reject) => {
+            uploadTask.on(
+              'state_changed',
+              null,
+              (error) => reject(error),
+              async () => {
+                const url = await getDownloadURL(uploadTask.snapshot.ref);
+                resolve(url);
+              }
+            );
+          });
+        });
+
+        newlyUploadedModalUrls = await Promise.all(uploadPromises);
+      }
+
+      const finalModalImageUrls = [...modalImageUrls, ...newlyUploadedModalUrls];
+
+      // 4. Upload Legacy Gallery Images
       if (imageFiles.length > 0) {
         setUploadStatus('uploading');
         
@@ -1145,6 +1283,8 @@ export default function AdminUI({ user }: { user: User }) {
         category,
         imageUrls: finalImageUrls,
         heroImageUrl: finalHeroImageUrl,
+        thumbnailUrl: finalThumbnailUrl,
+        modalImageUrls: finalModalImageUrls,
         price,
         teamAraPrice,
         startDate,
@@ -1538,11 +1678,11 @@ export default function AdminUI({ user }: { user: User }) {
                 />
               </div>
 
-              {/* Hero Banner Settings (Wide 16:9 Image) */}
+              {/* Zone 1: Hero Banner Image (Horizontal 16:9) */}
               <div className="bg-zinc-950/50 border border-zinc-800/80 p-5 rounded-xl space-y-6">
                 <div className="flex items-center gap-2 mb-2">
                   <ImageIcon className="w-5 h-5 text-purple-400" />
-                  <h3 className="text-sm font-semibold text-white">Hero Banner Settings (Wide 16:9 Image)</h3>
+                  <h3 className="text-sm font-semibold text-white">Zone 1: Hero Banner Image (Horizontal 16:9)</h3>
                 </div>
 
                 {/* Visual Feedback: Current Hero Banner */}
@@ -1551,7 +1691,7 @@ export default function AdminUI({ user }: { user: User }) {
                   {heroImageUrl ? (
                     <div className="w-full aspect-video rounded-lg overflow-hidden border border-purple-500/50 relative group">
                       <img src={heroImageUrl} alt="Current Hero" className="w-full h-full object-cover" />
-                      <button type="button" onClick={removeHeroImage} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button type="button" onClick={() => setHeroImageUrl('')} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <Trash2 className="w-6 h-6 text-red-500" />
                       </button>
                     </div>
@@ -1564,30 +1704,30 @@ export default function AdminUI({ user }: { user: User }) {
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 pt-4 border-t border-zinc-800/80">
-                  {/* Option 1: Pick from Uploaded Posters */}
+                  {/* Option 1: Pick from Gallery */}
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-zinc-300">Option 1: Pick from Uploaded Posters</h4>
-                    {existingImageUrls.length > 0 ? (
+                    <h4 className="text-sm font-medium text-zinc-300">Option 1: Pick from Gallery</h4>
+                    {[...modalImageUrls, ...existingImageUrls].length > 0 ? (
                       <div className="flex flex-wrap gap-3">
-                        {existingImageUrls.map((url, i) => (
-                          <div key={`ext-hero-${i}`} className="relative w-24 h-24 rounded-lg overflow-hidden border border-zinc-700 group">
+                        {[...modalImageUrls, ...existingImageUrls].map((url, i) => (
+                          <div key={`ext-hero-${i}`} className="relative w-20 h-20 rounded-lg overflow-hidden border border-zinc-700 group">
                             <img src={url} alt="" className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity p-1">
                               <button type="button" onClick={() => setHeroImageUrl(url)} className="text-[10px] bg-white text-black px-2 py-1 rounded font-bold hover:bg-zinc-200 text-center w-full">
-                                Set as Hero Banner
+                                Set Hero
                               </button>
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-zinc-500 italic">Upload gallery images below to pick one.</p>
+                      <p className="text-xs text-zinc-500 italic">Upload images in Zone 3 to pick one.</p>
                     )}
                   </div>
 
-                  {/* Option 2: Upload a Custom Wide Image */}
+                  {/* Option 2: Upload Custom Wide Image */}
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-zinc-300">Option 2: Upload a Custom Wide Image</h4>
+                    <h4 className="text-sm font-medium text-zinc-300">Option 2: Upload Custom Wide Image</h4>
                     <div className="flex items-center gap-4">
                       <input 
                         type="file" 
@@ -1602,14 +1742,14 @@ export default function AdminUI({ user }: { user: User }) {
 
                   {/* Option 3: Generate with AI */}
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-zinc-300">Option 3: Generate with AI (Google Vertex/Imagen)</h4>
+                    <h4 className="text-sm font-medium text-zinc-300">Option 3: Generate with AI</h4>
                     <textarea 
                       value={aiPrompt}
                       onChange={(e) => setAiPrompt(e.target.value)}
                       rows={2}
                       disabled={isGenerating || isUploadingHero}
                       className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-purple-500 resize-none disabled:opacity-50"
-                      placeholder="e.g., Warm photo of Malay doctor with healthy baby, smiling, cinematic lighting."
+                      placeholder="e.g., Warm photo of Malay doctor with healthy baby..."
                     />
                     <button 
                       type="button"
@@ -1622,16 +1762,13 @@ export default function AdminUI({ user }: { user: User }) {
 
                     {generatedImageBase64 && heroImageUrl !== generatedImageBase64 && (
                       <div className="mt-3 p-3 bg-zinc-900 border border-purple-500/30 rounded-lg space-y-3 animate-in fade-in zoom-in duration-300">
-                        <p className="text-xs text-zinc-400 font-medium">Generated Preview:</p>
                         <img src={generatedImageBase64} alt="AI Preview" className="w-full aspect-video object-cover rounded border border-zinc-700" />
                         <button 
                           type="button"
-                          onClick={() => {
-                            setHeroImageUrl(generatedImageBase64);
-                          }}
+                          onClick={() => setHeroImageUrl(generatedImageBase64)}
                           className="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
                         >
-                          <CheckCircle2 className="w-4 h-4" /> Confirm & Use This
+                          <CheckCircle2 className="w-4 h-4" /> Use This Banner
                         </button>
                       </div>
                     )}
@@ -1639,55 +1776,100 @@ export default function AdminUI({ user }: { user: User }) {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Gallery Images *</label>
-                
-                {/* Existing Images */}
-                {existingImageUrls.length > 0 && (
-                  <div className="flex flex-wrap gap-3 mb-3">
-                    {existingImageUrls.map((url, i) => (
-                      <div key={`ext-${i}`} className="relative w-20 h-20 rounded-lg overflow-hidden border border-zinc-700 group">
-                        <img src={url} alt="" className="w-full h-full object-cover" />
-                        <button type="button" onClick={() => removeExistingImage(i)} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Trash2 className="w-5 h-5 text-red-500" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* New Image Previews */}
-                {imagePreviews.length > 0 && (
-                  <div className="flex flex-wrap gap-3 mb-3">
-                    {imagePreviews.map((preview, i) => (
-                      <div key={`new-${i}`} className="relative w-20 h-20 rounded-lg overflow-hidden border border-green-500/50 group">
-                        <img src={preview} alt="" className="w-full h-full object-cover" />
-                        <div className="absolute top-0 right-0 bg-green-500 text-white text-[10px] px-1 font-bold">NEW</div>
-                        <button type="button" onClick={() => removeNewImage(i)} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Trash2 className="w-5 h-5 text-red-500" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-zinc-800 border-dashed rounded-xl hover:border-zinc-700 transition-colors relative overflow-hidden group">
-                  <div className="space-y-1 text-center">
-                    <ImageIcon className="mx-auto h-8 w-8 text-zinc-500" />
-                    <div className="flex text-sm text-zinc-400 justify-center">
-                      <span className="relative cursor-pointer bg-transparent rounded-md font-medium text-red-500 hover:text-red-400 focus-within:outline-none">
-                        <span>Add images</span>
-                      </span>
-                    </div>
-                  </div>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    multiple
-                    onChange={handleImageChange}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
-                  />
+              {/* Zone 2: Thumbnail Image (Portrait 3:4) */}
+              <div className="bg-zinc-950/50 border border-zinc-800/80 p-5 rounded-xl space-y-4">
+                <div className="flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-blue-400" />
+                  <h3 className="text-sm font-semibold text-white">Zone 2: Thumbnail Image (Portrait 3:4)</h3>
                 </div>
+                <p className="text-xs text-zinc-500">This image appears on the homepage carousel cards.</p>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-24 h-32 rounded-lg border border-zinc-800 bg-zinc-900 overflow-hidden flex-shrink-0">
+                    {thumbnailPreview ? (
+                      <img src={thumbnailPreview} alt="Thumbnail" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-zinc-700">
+                        <ImageIcon className="w-6 h-6" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-grow space-y-3">
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={handleThumbnailChange}
+                      className="block w-full text-xs text-zinc-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700"
+                    />
+                    {thumbnailPreview && (
+                      <button type="button" onClick={removeThumbnail} className="text-xs text-red-500 hover:text-red-400 flex items-center gap-1">
+                        <Trash2 className="w-3 h-3" /> Remove Thumbnail
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Zone 3: Modal Gallery Images (Portrait 3:4) */}
+              <div className="bg-zinc-950/50 border border-zinc-800/80 p-5 rounded-xl space-y-4">
+                <div className="flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-green-400" />
+                  <h3 className="text-sm font-semibold text-white">Zone 3: Modal Gallery Images (Portrait 3:4)</h3>
+                </div>
+                <p className="text-xs text-zinc-500">These images appear in the popup gallery when a service is clicked.</p>
+
+                <div className="flex flex-wrap gap-3">
+                  {modalImageUrls.map((url, i) => (
+                    <div key={`modal-ext-${i}`} className="relative w-20 h-28 rounded-lg overflow-hidden border border-zinc-700 group">
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => removeExistingModalImage(i)} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Trash2 className="w-5 h-5 text-red-500" />
+                      </button>
+                    </div>
+                  ))}
+                  {modalImagePreviews.map((preview, i) => (
+                    <div key={`modal-new-${i}`} className="relative w-20 h-28 rounded-lg overflow-hidden border border-green-500/50 group">
+                      <img src={preview} alt="" className="w-full h-full object-cover" />
+                      <div className="absolute top-0 right-0 bg-green-500 text-white text-[8px] px-1 font-bold">NEW</div>
+                      <button type="button" onClick={() => removeNewModalImage(i)} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Trash2 className="w-5 h-5 text-red-500" />
+                      </button>
+                    </div>
+                  ))}
+                  <label className="w-20 h-28 rounded-lg border-2 border-dashed border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 flex flex-col items-center justify-center cursor-pointer transition-colors">
+                    <Plus className="w-6 h-6 text-zinc-600" />
+                    <span className="text-[10px] text-zinc-500 font-medium">Add Image</span>
+                    <input type="file" accept="image/*" multiple onChange={handleModalImageChange} className="hidden" />
+                  </label>
+                </div>
+              </div>
+
+              {/* Legacy Gallery (Optional) */}
+              <div className="opacity-50 hover:opacity-100 transition-opacity">
+                <details className="bg-zinc-900/30 border border-zinc-800 rounded-xl p-4">
+                  <summary className="text-xs font-medium text-zinc-500 cursor-pointer">Legacy Gallery Settings (Optional)</summary>
+                  <div className="pt-4 space-y-4">
+                    {existingImageUrls.length > 0 && (
+                      <div className="flex flex-wrap gap-3">
+                        {existingImageUrls.map((url, i) => (
+                          <div key={`ext-${i}`} className="relative w-16 h-16 rounded-lg overflow-hidden border border-zinc-700 group">
+                            <img src={url} alt="" className="w-full h-full object-cover" />
+                            <button type="button" onClick={() => removeExistingImage(i)} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      multiple
+                      onChange={handleImageChange}
+                      className="block w-full text-xs text-zinc-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700"
+                    />
+                  </div>
+                </details>
               </div>
 
               {isUploading && (
@@ -1710,7 +1892,7 @@ export default function AdminUI({ user }: { user: User }) {
 
               <button 
                 type="submit" 
-                disabled={isUploading || isGenerating || isUploadingHero || !title || (existingImageUrls.length === 0 && imageFiles.length === 0 && !heroImageUrl)}
+                disabled={isUploading || isGenerating || isUploadingHero || !title || (!thumbnailUrl && !thumbnailFile && !heroImageUrl && existingImageUrls.length === 0)}
                 className={`w-full ${editingId ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 mt-6`}
               >
                 {isUploading ? (
@@ -2483,6 +2665,70 @@ export default function AdminUI({ user }: { user: User }) {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 space-y-6">
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                <h3 className="text-lg font-medium text-white">Internal Applications (Special Access)</h3>
+                <button 
+                  onClick={addInternalApp}
+                  className="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add App
+                </button>
+              </div>
+              
+              <div className="space-y-6">
+                {(settings.internalApps || []).map((app, index) => (
+                  <div key={index} className="p-4 bg-zinc-900 border border-zinc-800 rounded-xl relative group">
+                    <button 
+                      onClick={() => removeInternalApp(index)}
+                      className="absolute top-4 right-4 text-zinc-500 hover:text-red-500 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-zinc-500 mb-1 uppercase tracking-wider">App Name</label>
+                        <input
+                          type="text"
+                          value={app.name}
+                          onChange={e => updateInternalApp(index, 'name', e.target.value)}
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500 transition-all"
+                          placeholder="e.g., Inventory Management"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-zinc-500 mb-1 uppercase tracking-wider">App URL</label>
+                        <input
+                          type="text"
+                          value={app.url}
+                          onChange={e => updateInternalApp(index, 'url', e.target.value)}
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500 transition-all"
+                          placeholder="https://..."
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-medium text-zinc-500 mb-1 uppercase tracking-wider">Description</label>
+                        <input
+                          type="text"
+                          value={app.description}
+                          onChange={e => updateInternalApp(index, 'description', e.target.value)}
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500 transition-all"
+                          placeholder="Short description of what this app does"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {(!settings.internalApps || settings.internalApps.length === 0) && (
+                  <div className="text-center py-8 text-zinc-500 border border-dashed border-zinc-800 rounded-xl">
+                    No internal applications added yet.
+                  </div>
+                )}
               </div>
             </div>
 

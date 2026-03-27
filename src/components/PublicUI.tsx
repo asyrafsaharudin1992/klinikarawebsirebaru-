@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview } from '../types';
-import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle, Phone, Share2, Check } from 'lucide-react';
+import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle, Phone, Share2, Check, Lock, ExternalLink, Database, Users, CreditCard, Settings } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { GoogleGenAI, Type } from '@google/genai';
 import GoogleReviews from './GoogleReviews';
@@ -60,7 +60,7 @@ const ServiceCarouselRow = ({ title, services, onSelect, subheading }: { title: 
       {subheading && <p className="text-sm text-gray-400 mb-6">{subheading}</p>}
       <CarouselWrapper>
         {services.map(service => {
-          const displayImage = service.imageUrls?.[0] || service.imageUrl;
+          const displayImage = service.thumbnailUrl || service.imageUrls?.[0] || service.imageUrl;
           return (
             <div 
               key={service.id} 
@@ -124,6 +124,31 @@ export default function PublicUI() {
   const [bookingModalService, setBookingModalService] = useState<Service | null>(null);
   const [leadData, setLeadData] = useState({ name: '', phone: '', locationId: '', locationPhone: '' });
   const [isCopied, setIsCopied] = useState(false);
+  const [isSpecialAccessModalOpen, setIsSpecialAccessModalOpen] = useState(false);
+  const [specialAccessPassword, setSpecialAccessPassword] = useState('');
+  const [isSpecialAccessAuthenticated, setIsSpecialAccessAuthenticated] = useState(false);
+  const [specialAccessError, setSpecialAccessError] = useState('');
+
+  const handleSpecialAccessSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (specialAccessPassword === 'TEAMARA1234') {
+      setIsSpecialAccessAuthenticated(true);
+      setSpecialAccessError('');
+    } else {
+      setSpecialAccessError('Kata laluan salah. Sila cuba lagi.');
+    }
+  };
+
+  const getInferredIcon = (name: string, description: string) => {
+    const text = (name + ' ' + description).toLowerCase();
+    if (text.includes('stok') || text.includes('inventory') || text.includes('ubat') || text.includes('item') || text.includes('database')) return Database;
+    if (text.includes('pesakit') || text.includes('patient') || text.includes('rekod') || text.includes('record') || text.includes('users')) return Users;
+    if (text.includes('jadual') || text.includes('schedule') || text.includes('syif') || text.includes('shift') || text.includes('calendar')) return Calendar;
+    if (text.includes('billing') || text.includes('bayaran') || text.includes('kewangan') || text.includes('finance') || text.includes('duit') || text.includes('credit-card')) return CreditCard;
+    if (text.includes('laporan') || text.includes('report') || text.includes('file') || text.includes('dokumen') || text.includes('file-text')) return FileText;
+    if (text.includes('admin') || text.includes('tetapan') || text.includes('setting')) return Settings;
+    return Database;
+  };
 
   const handleShare = async (service: Service) => {
     const shareUrl = `${window.location.origin}${window.location.pathname}?service=${service.id}`;
@@ -814,73 +839,92 @@ export default function PublicUI() {
           <p className="text-zinc-500 text-sm">
             &copy; {new Date().getFullYear()} Klinik Ara 24 Jam. All rights reserved.
           </p>
-          <Link to="/login" className="text-zinc-600 hover:text-zinc-400 text-sm transition-colors">
-            Staff Login
-          </Link>
+          <div className="flex flex-wrap items-center justify-center md:justify-end gap-4 md:gap-8">
+            <button 
+              onClick={() => setIsSpecialAccessModalOpen(true)}
+              className="text-zinc-600 hover:text-zinc-400 text-sm transition-colors flex items-center gap-1.5"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              Special Access
+            </button>
+            <Link to="/login" className="text-zinc-600 hover:text-zinc-400 text-sm transition-colors">
+              Staff Login
+            </Link>
+          </div>
         </div>
       </footer>
 
-      {/* Interactive Modal */}
+    {/* Interactive Modal (Premium Mobile & Desktop Split Redesign) */}
       {selectedService && (
         <div 
-          className="fixed inset-0 z-50 flex flex-col md:flex-row md:items-center md:justify-center bg-black/80 p-0 md:p-6"
+          className="fixed inset-0 z-50 flex flex-col md:flex-row md:items-center md:justify-center bg-zinc-950/90 backdrop-blur-sm p-0 md:p-6 overflow-hidden"
           onClick={handleCloseModal}
         >
           <div 
-            className="bg-gray-900 w-full mt-auto md:mt-0 md:max-w-4xl rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col md:flex-row max-h-[95vh] md:max-h-[85vh] relative shadow-2xl border-t md:border border-gray-800"
+            className="w-full h-full md:h-[85vh] md:max-w-5xl rounded-none md:rounded-3xl overflow-hidden flex flex-col md:flex-row relative bg-white md:bg-zinc-950 shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
-            <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
-              <button 
-                onClick={() => handleShare(selectedService)}
-                className="bg-zinc-900/80 p-2 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all border border-zinc-700/50"
-              >
-                {isCopied ? <Check className="w-5 h-5 text-green-400" /> : <Share2 className="w-5 h-5" />}
-              </button>
-              <button 
-                onClick={() => setSelectedService(null)}
-                className="bg-black/40 hover:bg-black/80 text-white p-2 rounded-full transition-all cursor-pointer"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            {/* Left Side / Top: The Hero Image */}
-            <div className="relative w-full md:w-1/2 min-h-[300px] md:min-h-[500px] bg-zinc-950 flex-shrink-0 group">
+            {/* Left Section: Portrait Image & Overlays */}
+            <div className="relative w-full aspect-square md:aspect-auto md:w-1/2 md:h-full flex-shrink-0 group bg-zinc-950">
               {(() => {
                 const carouselImages = selectedService 
-                  ? [selectedService.heroImageUrl, ...(selectedService.imageUrls || [])].filter(Boolean) as string[]
+                  ? [...(selectedService.modalImageUrls || []), ...(selectedService.imageUrls || []), selectedService.imageUrl].filter(Boolean) as string[]
                   : [];
-                if (carouselImages.length === 0) return <div className="w-full h-full flex items-center justify-center text-zinc-600">No Image</div>;
+                if (carouselImages.length === 0) return <div className="w-full h-full flex items-center justify-center text-zinc-600 bg-zinc-900">No Image</div>;
                 
                 return (
                   <>
                     <img 
                       src={carouselImages[currentImageIndex]} 
                       alt={`${selectedService.title} - Image ${currentImageIndex + 1}`}
-                      className="absolute inset-0 w-full h-full object-scale-down bg-zinc-950"
+                      className="absolute inset-0 w-full h-full object-cover object-top md:object-contain bg-zinc-950"
                       referrerPolicy="no-referrer"
                       loading="lazy"
                     />
 
-                    {/* Only show navigation if there is more than 1 image */}
+                    {/* Gradient Overlay (Smooth fade to black on bottom edge) */}
+                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-zinc-950 to-transparent pointer-events-none" />
+
+                    {/* Top Floating Controls */}
+                    <div className="absolute top-4 inset-x-4 flex items-center justify-between z-50">
+                      {/* Heart/Favorite Icon */}
+                      <button className="bg-zinc-950/40 backdrop-blur-md p-2 rounded-full text-white/80 hover:text-white transition-all border border-white/10">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                      </button>
+
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => handleShare(selectedService)}
+                          className="bg-zinc-950/40 backdrop-blur-md p-2 rounded-full text-white/80 hover:text-white transition-all border border-white/10"
+                        >
+                          {isCopied ? <Check className="w-5 h-5 text-green-400" /> : <Share2 className="w-5 h-5" />}
+                        </button>
+                        <button 
+                          onClick={() => setSelectedService(null)}
+                          className="bg-zinc-950/40 backdrop-blur-md hover:bg-zinc-900/80 text-white p-2 rounded-full transition-all cursor-pointer border border-white/10"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Carousel Navigation */}
                     {carouselImages.length > 1 && (
                       <>
                         <button 
                           onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev === 0 ? carouselImages.length - 1 : prev - 1)); }}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-2 rounded-full transition-all"
+                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 backdrop-blur-sm text-white p-1.5 rounded-full"
                         >
                           <ChevronLeft className="w-5 h-5" />
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % carouselImages.length); }}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/80 text-white p-2 rounded-full transition-all"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 backdrop-blur-sm text-white p-1.5 rounded-full"
                         >
                           <ChevronRight className="w-5 h-5" />
                         </button>
 
-                        {/* Image Dots Indicator */}
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
                           {carouselImages.map((_, idx) => (
                             <div 
                               key={idx} 
@@ -895,222 +939,75 @@ export default function PublicUI() {
               })()}
             </div>
 
-            {/* Right Side / Bottom: The Content Area */}
-            <div className="flex-1 p-6 md:p-8 overflow-y-auto flex flex-col hide-scrollbar">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="px-3 py-1 bg-zinc-800 text-zinc-300 text-xs font-bold tracking-wider rounded-md border border-zinc-700">
-                  {selectedService.category.toUpperCase()}
-                </span>
-                {(selectedService.startDate || selectedService.endDate) && (
-                  <span className="flex items-center gap-1.5 text-xs font-medium text-amber-400 bg-amber-400/10 px-3 py-1 rounded-md border border-amber-400/20">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {selectedService.startDate ? new Date(selectedService.startDate).toLocaleDateString() : 'Now'} 
-                    {' - '} 
-                    {selectedService.endDate ? new Date(selectedService.endDate).toLocaleDateString() : 'Ongoing'}
+            {/* Right Section: Details Panel & Footer */}
+            <div className="flex-1 md:w-1/2 bg-white flex flex-col rounded-t-[32px] md:rounded-none -mt-8 md:mt-0 relative z-30 shadow-[0_-10px_40px_rgba(0,0,0,0.15)] md:shadow-none pb-32 md:pb-0">
+              
+              {/* Scrollable Content Area */}
+              <div className="flex-1 p-6 md:p-10 overflow-y-auto hide-scrollbar">
+                
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="px-3 py-1 bg-zinc-900 text-white text-[10px] font-bold tracking-widest rounded-full uppercase">
+                    {selectedService.category}
                   </span>
-                )}
-              </div>
+                  {(selectedService.startDate || selectedService.endDate) && (
+                    <span className="px-3 py-1 bg-zinc-100 text-zinc-600 text-[10px] font-bold tracking-widest rounded-full uppercase flex items-center gap-1 border border-zinc-200">
+                      <Calendar className="w-3 h-3" /> Valid Now
+                    </span>
+                  )}
+                </div>
 
-              <h2 className="text-3xl font-extrabold text-white tracking-tight leading-tight">
-                {selectedService.title}
-              </h2>
-
-              <div className="bg-gray-800/50 p-4 rounded-2xl border border-gray-700 mt-6 flex flex-wrap items-baseline gap-4">
-                {selectedService.teamAraPrice ? (
-                  <>
-                    <div className="flex flex-col">
-                      <span className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-1">TeamAra Price</span>
-                      <span className="text-4xl font-black text-green-400">RM{selectedService.teamAraPrice}</span>
-                    </div>
-                    {selectedService.price && (
-                      <div className="flex flex-col ml-4">
-                        <span className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-1">Regular Price</span>
-                        <span className="text-xl font-bold text-zinc-500 line-through decoration-red-500/50 decoration-2">RM{selectedService.price}</span>
-                      </div>
-                    )}
-                  </>
-                ) : selectedService.price ? (
-                  <div className="flex flex-col">
-                    <span className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-1">Price</span>
-                    <span className="text-4xl font-black text-white">RM{selectedService.price}</span>
-                  </div>
-                ) : (
-                  <span className="text-xl font-medium text-zinc-400">Price available upon request</span>
-                )}
-              </div>
-
-              <p className="text-xs text-gray-400 mt-3 leading-relaxed">
-                Harga TeamAra hanya untuk ahli TeamAra sahaja. Pendaftaran keahlian TeamAra boleh dilakukan di klinik secara percuma, harga TeamAra boleh dinikmati secara terus selepas pendaftaran keahlian dibuat.
-              </p>
-
-              <div className="flex-grow">
-                <h3 className="flex items-center gap-2 text-sm font-bold text-gray-400 uppercase tracking-wider mt-8 mb-3">
-                  <FileText className="w-4 h-4" /> Description
+                <h3 className="text-2xl md:text-3xl font-bold text-zinc-900 leading-tight mb-6">
+                  {selectedService.title}
                 </h3>
-                <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-sm md:text-base">
-                  {selectedService.description || "No detailed description provided for this service."}
+
+                {/* Pricing Card */}
+                <div className="border border-zinc-200 rounded-2xl p-4 flex flex-wrap items-center gap-6 mb-4 bg-zinc-50/50">
+                  {selectedService.teamAraPrice ? (
+                    <>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-green-600 font-bold uppercase tracking-wider mb-1 flex items-center gap-1">
+                          TeamAra Price
+                        </span>
+                        <span className="text-4xl font-black text-green-500 tracking-tighter">RM{selectedService.teamAraPrice}</span>
+                      </div>
+                      {selectedService.price && (
+                        <div className="flex flex-col border-l border-zinc-200 pl-6">
+                          <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mb-1">Regular Price</span>
+                          <span className="text-xl font-bold text-zinc-400 line-through decoration-zinc-300">RM{selectedService.price}</span>
+                        </div>
+                      )}
+                    </>
+                  ) : selectedService.price ? (
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Price</span>
+                      <span className="text-4xl font-black text-zinc-900 tracking-tighter">RM{selectedService.price}</span>
+                    </div>
+                  ) : (
+                    <span className="text-sm font-medium text-zinc-500">Price available upon request</span>
+                  )}
+                </div>
+
+                <p className="text-xs text-zinc-600 mb-8 leading-relaxed">
+                  Harga TeamAra hanya untuk ahli TeamAra sahaja. Pendaftaran keahlian TeamAra boleh dilakukan di klinik secara percuma, harga TeamAra boleh dinikmati secara terus selepas pendaftaran keahlian dibuat.
                 </p>
+
+                <div className="w-full h-px bg-zinc-100 mb-8"></div>
+
+                <div className="prose prose-sm md:prose-base prose-zinc text-zinc-600 leading-relaxed whitespace-pre-wrap">
+                  {selectedService.description || "No detailed description provided for this service."}
+                </div>
               </div>
 
-              <div className="mt-8 pt-4 border-t border-gray-800">
+              {/* Sticky Action Footer */}
+              <div className="absolute md:relative bottom-0 left-0 w-full bg-gradient-to-t from-white via-white to-white/90 md:bg-white/95 md:backdrop-blur-md pt-12 md:pt-4 pb-6 md:pb-safe px-6 flex items-center justify-center z-50 pointer-events-none md:pointer-events-auto">
                 <button 
                   onClick={() => setBookingModalService(selectedService)}
-                  className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 md:py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-colors shadow-lg shadow-green-900/20 mb-3"
+                  className="pointer-events-auto w-full max-w-sm bg-green-600 hover:bg-green-500 text-white font-bold py-3.5 md:py-4 px-6 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-green-900/20 text-lg"
                 >
-                  <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                  </svg>
-                  Teruskan tempahan
-                </button>
-                <button 
-                  onClick={() => setSelectedService(null)}
-                  className="w-full bg-gray-800 hover:bg-gray-700 text-white py-3 md:py-4 rounded-xl font-bold transition-all"
-                >
-                  Tutup / Kembali
+                  Saya nak tempah slot
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Panel Details Modal */}
-      {selectedPanel && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-gray-900 rounded-2xl w-full max-w-sm p-6 relative border border-gray-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <button 
-              onClick={() => setSelectedPanel(null)}
-              className="absolute top-4 right-4 p-2 bg-gray-800 hover:bg-gray-700 rounded-full text-white transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
 
-            <div className="flex flex-col items-center">
-              <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center p-4 shadow-xl mb-4">
-                <img 
-                  src={selectedPanel.imageUrl} 
-                  alt={selectedPanel.name} 
-                  className="max-w-full max-h-full object-contain"
-                  referrerPolicy="no-referrer"
-                  loading="lazy"
-                />
-              </div>
-              
-              <h2 className="text-xl font-bold text-center text-white mt-4">{selectedPanel.name}</h2>
-              <p className="text-sm text-gray-400 text-center mt-2 mb-4">Panel ini ada di cawangan:</p>
-
-              <div className="w-full space-y-2">
-                {selectedPanel.availableLocations.map((loc, idx) => (
-                  <div key={idx} className="flex items-center gap-3 bg-gray-800 p-3 rounded-lg text-white font-medium">
-                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span>{loc}</span>
-                  </div>
-                ))}
-                {selectedPanel.availableLocations.length === 0 && (
-                  <p className="text-center text-gray-500 italic py-4">No locations listed.</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Vendor Modal */}
-      {selectedVendor && (
-        <div 
-          className="fixed inset-0 z-50 flex flex-col md:flex-row md:items-center md:justify-center bg-black/80 p-0 md:p-6"
-          onClick={() => setSelectedVendor(null)}
-        >
-          <div 
-            className="bg-gray-900 w-full mt-auto md:mt-0 md:max-w-4xl rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col md:flex-row max-h-[95vh] md:max-h-[85vh] relative shadow-2xl border-t md:border border-gray-800"
-            onClick={e => e.stopPropagation()}
-          >
-            <button 
-              onClick={() => setSelectedVendor(null)}
-              className="absolute top-4 right-4 z-50 bg-black/40 hover:bg-black/80 text-white p-2 rounded-full transition-all cursor-pointer"
-            >
-              <X className="w-6 h-6" />
-            </button>
-
-            {/* Left Side / Top: The Hero Image */}
-            <div className="w-full h-64 md:h-auto md:w-1/2 flex-shrink-0 bg-zinc-950 relative">
-              {selectedVendor.imageUrl ? (
-                <img 
-                  src={selectedVendor.imageUrl} 
-                  alt={selectedVendor.name} 
-                  className="w-full h-full object-scale-down bg-zinc-950"
-                  referrerPolicy="no-referrer"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-zinc-600">No Image</div>
-              )}
-            </div>
-
-            {/* Right Side / Bottom: The Content Area */}
-            <div className="flex-1 p-6 md:p-8 overflow-y-auto flex flex-col hide-scrollbar">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="px-3 py-1 bg-zinc-800 text-zinc-300 text-xs font-bold tracking-wider rounded-md border border-zinc-700">
-                  VENDOR TEAMARA
-                </span>
-              </div>
-
-              <h2 className="text-3xl font-extrabold text-white tracking-tight leading-tight mb-6">
-                {selectedVendor.name}
-              </h2>
-
-              <div className="space-y-4 mb-8">
-                <div className="flex items-start gap-3 text-gray-300">
-                  <MapPin className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm md:text-base leading-relaxed">{selectedVendor.address}</p>
-                </div>
-                {selectedVendor.phone && (
-                  <div className="flex items-center gap-3 text-gray-300">
-                    <Phone className="w-5 h-5 text-cyan-400 flex-shrink-0" />
-                    <p className="text-sm md:text-base">{selectedVendor.phone}</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex-grow">
-                <h3 className="flex items-center gap-2 text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">
-                  <Sparkles className="w-4 h-4" /> Perks & Description
-                </h3>
-                <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-sm md:text-base">
-                  {selectedVendor.perks || "No detailed description provided for this vendor."}
-                </p>
-              </div>
-
-              <div className="mt-8 pt-4 border-t border-gray-800 space-y-3">
-                {selectedVendor.phone && (
-                  <a 
-                    href={`https://wa.me/${formatPhoneNumber(selectedVendor.phone)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 md:py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-colors shadow-lg shadow-green-900/20"
-                  >
-                    <MessageCircle className="w-5 h-5" />
-                    WhatsApp Vendor
-                  </a>
-                )}
-                {selectedVendor.mapUrl && (
-                  <a 
-                    href={selectedVendor.mapUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 md:py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-colors shadow-lg shadow-blue-900/20"
-                  >
-                    <MapPin className="w-5 h-5" />
-                    Open in Google Maps
-                  </a>
-                )}
-                <button 
-                  onClick={() => setSelectedVendor(null)}
-                  className="w-full bg-gray-800 hover:bg-gray-700 text-white py-3 md:py-4 rounded-xl font-bold transition-all"
-                >
-                  Tutup / Kembali
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -1195,6 +1092,100 @@ export default function PublicUI() {
         </div>
       )}
       
+      {/* Special Access Modal */}
+      {isSpecialAccessModalOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-fade-in">
+          <div className="bg-zinc-900 w-full max-w-2xl rounded-3xl p-8 border border-zinc-800 relative shadow-2xl overflow-hidden">
+            <button 
+              onClick={() => {
+                setIsSpecialAccessModalOpen(false);
+                setIsSpecialAccessAuthenticated(false);
+                setSpecialAccessPassword('');
+                setSpecialAccessError('');
+              }}
+              className="absolute top-6 right-6 z-50 bg-zinc-800 hover:bg-zinc-700 text-white p-2 rounded-full transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {!isSpecialAccessAuthenticated ? (
+              <div className="py-8 text-center">
+                <div className="w-16 h-16 bg-zinc-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <Lock className="w-8 h-8 text-cyan-400" />
+                </div>
+                <h2 className="text-3xl font-bold text-white mb-2">Special Access</h2>
+                <p className="text-zinc-400 mb-8">Sila masukkan kata laluan untuk mengakses aplikasi dalaman.</p>
+                
+                <form onSubmit={handleSpecialAccessSubmit} className="max-w-xs mx-auto space-y-4">
+                  <div className="relative">
+                    <input 
+                      type="password" 
+                      required
+                      autoFocus
+                      value={specialAccessPassword}
+                      onChange={(e) => setSpecialAccessPassword(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-4 text-white text-center text-xl tracking-widest focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                  {specialAccessError && (
+                    <p className="text-red-500 text-sm font-medium">{specialAccessError}</p>
+                  )}
+                  <button 
+                    type="submit"
+                    className="w-full bg-white text-black font-bold py-4 rounded-2xl hover:bg-zinc-200 transition-colors shadow-lg"
+                  >
+                    Masuk
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <div className="py-4">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center">
+                    <Sparkles className="w-6 h-6 text-green-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Internal Applications</h2>
+                    <p className="text-zinc-400 text-sm">Selamat datang, TeamAra. Sila pilih aplikasi untuk diteruskan.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(settings.internalApps || []).map((app, idx) => {
+                    const Icon = getInferredIcon(app.name, app.description);
+                    return (
+                      <a 
+                        key={idx}
+                        href={app.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group p-5 bg-zinc-950 border border-zinc-800 rounded-2xl hover:border-cyan-500/50 hover:bg-zinc-900/50 transition-all flex items-start gap-4"
+                      >
+                        <div className="w-10 h-10 bg-zinc-900 rounded-lg flex items-center justify-center group-hover:bg-cyan-500/10 transition-colors">
+                          <Icon className="w-5 h-5 text-zinc-400 group-hover:text-cyan-400 transition-colors" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <h3 className="font-bold text-white group-hover:text-cyan-400 transition-colors">{app.name}</h3>
+                            <ExternalLink className="w-3.5 h-3.5 text-zinc-600 group-hover:text-cyan-400" />
+                          </div>
+                          <p className="text-xs text-zinc-500 leading-relaxed">{app.description}</p>
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+
+                <p className="text-center text-[10px] text-zinc-600 mt-8">
+                  Akses ini dipantau untuk tujuan keselamatan. Sila log keluar selepas selesai.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <style>{`
         .hide-scrollbar::-webkit-scrollbar {
           display: none;

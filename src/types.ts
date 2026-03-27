@@ -3,8 +3,10 @@ export interface Service {
   title: string;
   category: string;
   imageUrl?: string; // Legacy support
-  imageUrls: string[];
-  heroImageUrl?: string;
+  imageUrls?: string[]; // Legacy support
+  heroImageUrl?: string; // Zone 1: Horizontal Banner
+  thumbnailUrl?: string; // Zone 2: Portrait Card
+  modalImageUrls?: string[]; // Zone 3: Modal Gallery
   price: string;
   teamAraPrice: string;
   startDate: string;
@@ -51,6 +53,12 @@ export interface Vendor {
   perks: string;
 }
 
+export interface InternalApp {
+  name: string;
+  url: string;
+  description: string;
+}
+
 export interface AppSettings {
   vendorSubheading: string;
   carouselOrder: string[];
@@ -59,6 +67,7 @@ export interface AppSettings {
   panelsSub?: string;
   vendorsSub?: string;
   reviewsSub?: string;
+  internalApps?: InternalApp[];
 }
 
 export interface GoogleReview {
