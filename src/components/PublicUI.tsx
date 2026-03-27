@@ -769,14 +769,15 @@ export default function PublicUI() {
                   <div key={loc.id} className="w-[300px] sm:w-[320px] flex-shrink-0 flex flex-col bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden min-h-[450px] snap-center group">
                     {loc.imageUrl && (
                       <div className="h-52 w-full overflow-hidden bg-zinc-800">
-                        <img 
-                          src={loc.imageUrl} 
-                          alt={`${loc.branchName} - Klinik Ara 24 Jam Branch`} 
-                          className="w-full h-full object-contain bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
-                          referrerPolicy="no-referrer"
-                          loading="lazy"
-                        />
-                      </div>
+  <img 
+    src={loc.imageUrl} 
+    alt={`${loc.branchName} - Klinik Ara 24 Jam Branch`} 
+    // CHANGED: object-contain to object-cover
+    className="w-full h-full object-cover bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
+    referrerPolicy="no-referrer"
+    loading="lazy"
+  />
+</div>
                     )}
                     <div className="flex-1 p-5 flex flex-col">
                       <h4 className="text-lg font-bold text-white mb-1">{loc.branchName}</h4>

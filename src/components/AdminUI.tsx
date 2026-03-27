@@ -94,17 +94,42 @@ export default function AdminUI({ user }: { user: User }) {
   const [currentAdminInfo, setCurrentAdminInfo] = useState<AdminUser | null>(null);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
 
-  const [services, setServices] = useState<Service[]>([]);
+ const [services, setServices] = useState<Service[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [panels, setPanels] = useState<Panel[]>([]);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [reviews, setReviews] = useState<GoogleReview[]>([]);
-  const [settings, setSettings] = useState<AppSettings>({ 
+  const [settings, setSettings] = useState<AppSettings>({
     vendorSubheading: '', 
     carouselOrder: ['services', 'teamAra', 'vendors', 'panels'],
     internalApps: []
   });
+
+  // ==========================================
+  // ADDED DRAG AND DROP STATE & FUNCTION HERE
+  // ==========================================
+  const [draggedPanelIndex, setDraggedPanelIndex] = useState<number | null>(null);
+
+  const handleDropReorder = async (dropIndex: number) => {
+    // 1. If we didn't drag anything, or dropped it in the exact same spot, do nothing
+    if (draggedPanelIndex === null || draggedPanelIndex === dropIndex) return;
+    
+    // 2. Create a copy of the panels, remove the dragged item, and insert it at the new spot
+    const newPanels = [...panels];
+    const [draggedItem] = newPanels.splice(draggedPanelIndex, 1);
+    newPanels.splice(dropIndex, 0, draggedItem);
+    
+    // 3. Update the screen instantly
+    setPanels(newPanels); 
+    setDraggedPanelIndex(null);
+
+    // 4. IMPORTANT: You will need to save this new order to your database.
+    // If you already have a function that saves the whole list of panels, call it here!
+    // Example: await savePanelsOrderToDatabase(newPanels); 
+    // (You can look at how your existing `handleMovePanel` function saves to the database and do the same thing here).
+  };
+  // ==========================================
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [adminLoading, setAdminLoading] = useState(true);
@@ -2288,24 +2313,44 @@ export default function AdminUI({ user }: { user: User }) {
                   <p className="text-sm mt-1">Add your first insurance panel using the form.</p>
                 </div>
               ) : (
-                panels.map(panel => (
-                  <div key={panel.id} className="p-6 hover:bg-zinc-800/30 transition-colors group flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                panels.map((panel, index) => (
+                  <div 
+                    key={panel.id} 
+                    draggable
+                    onDragStart={() => setDraggedPanelIndex(index)}
+                    onDragOver={(e) => e.preventDefault()} // Required to allow dropping
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      handleDropReorder(index);
+                    }}
+                    className={`p-6 hover:bg-zinc-800/30 transition-all group flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center cursor-grab active:cursor-grabbing ${
+                      draggedPanelIndex === index ? 'opacity-40 bg-zinc-800/50 border-dashed border border-zinc-600' : ''
+                    }`}
+                  >
                     <div className="flex gap-4 items-center">
-                      <div className="w-16 h-16 rounded-lg bg-white overflow-hidden flex-shrink-0 border border-zinc-800 p-2">
+                      {/* New Drag Handle Icon */}
+                      <div className="text-zinc-600 group-hover:text-cyan-500 transition-colors pr-2">
+                        <GripVertical className="w-5 h-5" />
+                      </div>
+
+                      {/* pointer-events-none prevents the browser from trying to drag the image file instead of the whole row */}
+                      <div className="w-16 h-16 rounded-lg bg-white overflow-hidden flex-shrink-0 border border-zinc-800 p-2 pointer-events-none">
                         <img src={panel.imageUrl} alt="" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                       </div>
-                      <div>
+                      <div className="pointer-events-none">
                         <h3 className="text-lg font-bold text-white mb-1">{panel.name}</h3>
                         <p className="text-xs text-zinc-400 mb-2">
-                          Accepted at: {panel.availableLocations.length > 0 ? panel.availableLocations.join(', ') : 'No locations specified'}
+                          Accepted at: {panel.availableLocations?.length > 0 ? panel.availableLocations.join(', ') : 'No locations specified'}
                         </p>
                       </div>
                     </div>
+                    
                     <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Original move buttons kept intact */}
                       <div className="flex items-center gap-1 mr-2 border-r border-zinc-800 pr-2">
                         <button 
                           onClick={() => handleMovePanel(panel.id, 'up')}
-                          disabled={panels.indexOf(panel) === 0}
+                          disabled={index === 0}
                           className="p-1.5 text-zinc-500 hover:text-white disabled:opacity-20 transition-colors"
                           title="Move Up"
                         >
@@ -2313,13 +2358,14 @@ export default function AdminUI({ user }: { user: User }) {
                         </button>
                         <button 
                           onClick={() => handleMovePanel(panel.id, 'down')}
-                          disabled={panels.indexOf(panel) === panels.length - 1}
+                          disabled={index === panels.length - 1}
                           className="p-1.5 text-zinc-500 hover:text-white disabled:opacity-20 transition-colors"
                           title="Move Down"
                         >
                           <ChevronLeft className="w-5 h-5 -rotate-90" />
                         </button>
                       </div>
+                      
                       <button onClick={() => handleEditPanel(panel)} className="p-2 text-zinc-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all" title="Edit">
                         <Edit2 className="w-5 h-5" />
                       </button>
