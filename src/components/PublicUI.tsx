@@ -1252,30 +1252,33 @@ export default function PublicUI() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(settings.internalApps || []).map((app, idx) => {
-                    const Icon = getInferredIcon(app.name, app.description);
-                    return (
-                      <a 
-                        key={idx}
-                        href={app.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group p-5 bg-zinc-950 border border-zinc-800 rounded-2xl hover:border-cyan-500/50 hover:bg-zinc-900/50 transition-all flex items-start gap-4"
-                      >
-                        <div className="w-10 h-10 bg-zinc-900 rounded-lg flex items-center justify-center group-hover:bg-cyan-500/10 transition-colors">
-                          <Icon className="w-5 h-5 text-zinc-400 group-hover:text-cyan-400 transition-colors" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-1">
-                            <h3 className="font-bold text-white group-hover:text-cyan-400 transition-colors">{app.name}</h3>
-                            <ExternalLink className="w-3.5 h-3.5 text-zinc-600 group-hover:text-cyan-400" />
+               {/* Scrollable Wrapper Added Here */}
+                <div className="overflow-y-auto max-h-[60vh] pr-2 pb-4 hide-scrollbar">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {(settings.internalApps || []).map((app, idx) => {
+                      const Icon = getInferredIcon(app.name, app.description);
+                      return (
+                        <a 
+                          key={idx}
+                          href={app.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group p-5 bg-zinc-950 border border-zinc-800 rounded-2xl hover:border-cyan-500/50 hover:bg-zinc-900/50 transition-all flex items-start gap-4"
+                        >
+                          <div className="w-10 h-10 bg-zinc-900 rounded-lg flex items-center justify-center group-hover:bg-cyan-500/10 transition-colors">
+                            <Icon className="w-5 h-5 text-zinc-400 group-hover:text-cyan-400 transition-colors" />
                           </div>
-                          <p className="text-xs text-zinc-500 leading-relaxed">{app.description}</p>
-                        </div>
-                      </a>
-                    );
-                  })}
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <h3 className="font-bold text-white group-hover:text-cyan-400 transition-colors">{app.name}</h3>
+                              <ExternalLink className="w-3.5 h-3.5 text-zinc-600 group-hover:text-cyan-400" />
+                            </div>
+                            <p className="text-xs text-zinc-500 leading-relaxed">{app.description}</p>
+                          </div>
+                        </a>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <p className="text-center text-[10px] text-zinc-600 mt-8">
