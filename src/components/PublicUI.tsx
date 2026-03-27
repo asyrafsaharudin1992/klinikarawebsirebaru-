@@ -476,9 +476,10 @@ export default function PublicUI() {
         title="Klinik Ara 24 Jam"
         description="Selamat datang ke laman sesawang Klinik Ara 24 Jam, Ayuh sertai TeamAra untuk menikmati pelbagai manfaat."
       />
+     {/* Navbar */}
       {/* Navbar */}
-      <nav className="fixed top-0 w-full z-50 bg-black/60 backdrop-blur-md px-4 md:px-12 py-4 flex items-center justify-between border-b border-white/5">
-        <div className="flex items-center gap-8">
+      <nav className="fixed top-0 w-full z-50 bg-gradient-to-b from-black/90 via-black/40 to-transparent px-4 md:px-12 pt-4 pb-8 flex items-center justify-between pointer-events-none">
+        <div className="flex items-center gap-8 pointer-events-auto">
           <a 
             href="/" 
             onClick={(e) => {
@@ -487,12 +488,17 @@ export default function PublicUI() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }
             }}
-            className="text-white-255 text-2xl md:text-3xl font-bold tracking-tighter hover:opacity-80 transition-opacity cursor-pointer flex items-center gap-2"
+            className="text-white text-2xl md:text-3xl font-bold tracking-tighter hover:opacity-80 transition-opacity cursor-pointer flex items-center gap-3"
           >
+            <img 
+              src="https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/Light%20Logo%20HSO%20.png?alt=media&token=af618257-921e-42c6-9197-daf5b513fcd4" 
+              alt="Logo Klinik Ara" 
+              className="h-16 md:h-16 w-auto object-contain"
+            />
             KLINIK ARA 24 JAM
           </a>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-300">
-            <a href="#" className="text-white font-semibold">Laman Utama</a>
+            <a href="#" className="text-white font-semibold hover:text-white transition">Laman Utama</a>
             <a href="#services" className="hover:text-white transition">Perkhidmatan</a>
             <a href="#locations" className="hover:text-white transition">Cawangan</a>
           </div>
