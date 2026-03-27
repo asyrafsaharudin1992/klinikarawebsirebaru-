@@ -948,8 +948,8 @@ export default function PublicUI() {
                 })()}
               </div>
 
-              {/* Right Section: Details Panel & Desktop Footer */}
-              <div className="w-full md:w-1/2 bg-zinc-950 flex flex-col rounded-t-[32px] md:rounded-none -mt-8 md:mt-0 relative z-30 md:min-h-0 border-l border-zinc-900/50">
+             {/* Right Section: Details Panel & Desktop Footer */}
+<div className="w-full md:w-1/2 bg-zinc-950 flex flex-col rounded-t-[32px] md:rounded-none -mt-8 md:mt-0 relative md:absolute md:right-0 md:top-0 md:bottom-0 z-30 border-l border-zinc-900/50">
                 
                 {/* Scrollable Content Area */}
                 <div className="p-6 pb-48 md:p-10 md:pb-6 flex flex-col md:flex-1 md:overflow-y-auto hide-scrollbar">
