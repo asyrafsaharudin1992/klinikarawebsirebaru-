@@ -1027,20 +1027,20 @@ export default function PublicUI() {
               </div>
             </div>
 
-            {/* Mobile Floating Action Footer (Hidden on Desktop) */}
-            {/* Removed the white gradient to prevent awkward fading in dark mode. Solid black/transparent backdrop blur used instead */}
-            <div className="md:hidden absolute bottom-0 left-0 w-full bg-zinc-950/90 backdrop-blur-md pt-6 pb-6 px-6 flex flex-col gap-3 z-50 pointer-events-none border-t border-zinc-800">
+          {/* Mobile Floating Action Footer (Hidden on Desktop) */}
+            {/* Pure gradient fade without any hard blur lines or borders */}
+            <div className="md:hidden absolute bottom-0 left-0 w-full bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-transparent pt-16 pb-6 px-4 flex flex-row gap-3 z-50 pointer-events-none">
               <button 
                 onClick={() => setBookingModalService(selectedService)}
-                className="pointer-events-auto w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-lg transition-transform active:scale-95"
+                className="pointer-events-auto flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-sm sm:text-base transition-transform active:scale-95"
               >
                 Saya nak tempah slot
               </button>
               <button 
                 onClick={() => handleShare(selectedService)}
-                className="pointer-events-auto w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 text-lg transition-transform active:scale-95"
+                className="pointer-events-auto shrink-0 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-5 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 text-sm sm:text-base transition-transform active:scale-95"
               >
-                {isCopied ? <Check className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
+                {isCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
                 {isCopied ? "Telah Disalin!" : "Kongsi"}
               </button>
             </div>
@@ -1048,7 +1048,6 @@ export default function PublicUI() {
           </div>
         </div>
       )}
-
   {/* Vendor Details Modal */}
       {selectedVendor && (
         <div 
