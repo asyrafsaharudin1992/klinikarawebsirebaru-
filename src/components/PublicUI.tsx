@@ -111,7 +111,11 @@ export default function PublicUI() {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [reviews, setReviews] = useState<GoogleReview[]>([]);
-  const [settings, setSettings] = useState<AppSettings>({ vendorSubheading: '', carouselOrder: ['services', 'teamAra', 'vendors', 'panels'] });
+  const [settings, setSettings] = useState<AppSettings>({ 
+    vendorSubheading: '', 
+    carouselOrder: ['services', 'teamAra', 'vendors', 'panels'],
+    internalApps: []
+  });
   const [selectedPanel, setSelectedPanel] = useState<Panel | null>(null);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
@@ -284,13 +288,15 @@ export default function PublicUI() {
           if (docSnap.exists()) {
             const data = docSnap.data() as AppSettings;
             setSettings({
+              ...data,
               vendorSubheading: data.vendorSubheading || '',
               carouselOrder: data.carouselOrder || ['services', 'teamAra', 'vendors', 'panels'],
               categorySubheadings: data.categorySubheadings || {},
               teamAraSub: data.teamAraSub || '',
               panelsSub: data.panelsSub || '',
               vendorsSub: data.vendorsSub || '',
-              reviewsSub: data.reviewsSub || ''
+              reviewsSub: data.reviewsSub || '',
+              internalApps: data.internalApps || []
             });
           }
         } catch (error) {
