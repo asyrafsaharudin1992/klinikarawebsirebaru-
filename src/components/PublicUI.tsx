@@ -712,7 +712,8 @@ export default function PublicUI() {
                           <img 
                             src={vendor.imageUrl} 
                             alt={`${vendor.name} - Vendor TeamAra`} 
-                            className="w-full h-full object-contain bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
+                            // CHANGED: object-contain to object-cover to completely fill the box
+                            className="w-full h-full object-cover bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
                             referrerPolicy="no-referrer"
                             loading="lazy"
                           />
@@ -1129,63 +1130,97 @@ export default function PublicUI() {
         </div>
       )}
 
-      {/* Vendor Details Modal */}
+  {/* Vendor Details Modal */}
       {selectedVendor && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" onClick={() => setSelectedVendor(null)}>
-          <div className="bg-zinc-900 w-full max-w-md rounded-2xl p-6 border border-zinc-800 relative" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm p-0 md:p-6 overflow-hidden" 
+          onClick={() => setSelectedVendor(null)}
+        >
+          <div 
+            className="w-full h-[95vh] md:h-auto md:max-h-[85vh] md:max-w-5xl rounded-t-[32px] md:rounded-3xl overflow-hidden flex flex-col md:flex-row relative bg-white shadow-2xl" 
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Close Button (Top Right, Sticky) */}
             <button 
               onClick={() => setSelectedVendor(null)}
-              className="absolute top-4 right-4 z-50 bg-black/40 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-md transition-all cursor-pointer"
+              className="absolute top-4 right-4 z-[70] bg-black/40 hover:bg-black/60 md:bg-zinc-100 md:hover:bg-zinc-200 text-white md:text-zinc-600 p-2.5 rounded-full backdrop-blur-md transition-colors border border-white/20 md:border-zinc-200"
             >
               <X className="w-5 h-5" />
             </button>
-            
-            <div className="h-48 w-full overflow-hidden bg-zinc-800 rounded-xl mb-6">
-              <img 
-                src={selectedVendor.imageUrl} 
-                alt={selectedVendor.name} 
-                className="w-full h-full object-contain bg-zinc-900"
-                referrerPolicy="no-referrer"
-              />
-            </div>
 
-            <h2 className="text-2xl font-bold text-white mb-2">{selectedVendor.name}</h2>
-            
-            <div className="space-y-4 mb-8">
-              <div className="flex items-start gap-3 text-zinc-400">
-                <MapPin className="w-5 h-5 flex-shrink-0 mt-0.5 text-cyan-400" />
-                <p className="text-sm">{selectedVendor.address}</p>
-              </div>
+            {/* Unified Scroll Wrapper */}
+            <div className="w-full h-full overflow-y-auto md:overflow-hidden flex flex-col md:flex-row relative hide-scrollbar pb-32 md:pb-0">
               
-              <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="w-4 h-4 text-cyan-400" />
-                  <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Kelebihan TeamAra</span>
+              {/* Left Panel: Image (Dynamic height on desktop, square on mobile) */}
+              <div className="relative w-full aspect-square md:aspect-auto md:w-1/2 flex-shrink-0 bg-zinc-950 flex items-center overflow-hidden">
+                <img 
+                  src={selectedVendor.imageUrl} 
+                  alt={selectedVendor.name} 
+                  className="w-full h-full md:h-auto md:max-h-[85vh] object-cover object-top md:object-contain block z-10 relative"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+
+              {/* Right Panel: Content (Scrollable on desktop, matches image height) */}
+              <div className="w-full md:w-1/2 bg-white flex flex-col min-h-0 relative z-30 rounded-t-[32px] md:rounded-none -mt-8 md:mt-0">
+                <div className="flex-1 md:overflow-y-auto p-6 md:p-10 pb-48 md:pb-32 flex flex-col hide-scrollbar">
+                  
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="px-3 py-1 bg-zinc-900 text-white text-[10px] font-bold tracking-widest rounded-full uppercase">
+                      Rakan Vendor
+                    </span>
+                  </div>
+
+                  <h2 className="text-2xl md:text-3xl font-bold text-zinc-900 leading-tight mb-6">
+                    {selectedVendor.name}
+                  </h2>
+
+                  <div className="flex items-start gap-3 text-zinc-600 mb-6">
+                    <MapPin className="w-5 h-5 flex-shrink-0 mt-0.5 text-cyan-600" />
+                    <p className="text-sm md:text-base leading-relaxed">{selectedVendor.address}</p>
+                  </div>
+
+                  {/* Perks Card */}
+                  <div className="bg-zinc-50 border border-zinc-100 rounded-2xl p-5 mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-[10px] font-bold text-cyan-600 uppercase tracking-wider">Kelebihan TeamAra</span>
+                    </div>
+                    <p className="text-zinc-600 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
+                      {selectedVendor.perks}
+                    </p>
+                  </div>
+
                 </div>
-                <p className="text-zinc-200 text-sm leading-relaxed">{selectedVendor.perks}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <a 
-                href={selectedVendor.mapUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
-              >
-                <MapPin className="w-4 h-4" />
-                Lokasi
-              </a>
-              <a 
-                href={`https://wa.me/${selectedVendor.phone.replace(/[^0-9]/g, '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors"
-              >
-                <MessageCircle className="w-4 h-4" />
-                WhatsApp
-              </a>
+            {/* Floating Action Footer (Sticky Bottom, side-by-side buttons) */}
+            <div className="absolute bottom-0 left-0 w-full md:w-1/2 md:left-1/2 bg-gradient-to-t from-white via-white/95 to-white/0 md:bg-white/95 md:backdrop-blur-md md:border-t md:border-zinc-100 pt-12 md:pt-5 pb-6 md:pb-5 px-6 flex flex-row gap-3 z-50 pointer-events-none md:pointer-events-auto">
+              {selectedVendor.mapUrl && (
+                <a 
+                  href={selectedVendor.mapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="pointer-events-auto flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-4 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-zinc-900/20 text-sm md:text-base"
+                >
+                  <MapPin className="w-5 h-5" />
+                  Lokasi
+                </a>
+              )}
+              
+              {selectedVendor.phone && (
+                <a 
+                  href={`https://wa.me/${selectedVendor.phone.replace(/[^0-9]/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="pointer-events-auto flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-green-900/20 text-sm md:text-base"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  WhatsApp
+                </a>
+              )}
             </div>
+            
           </div>
         </div>
       )}
