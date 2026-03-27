@@ -32,10 +32,10 @@ export default function GoogleReviews({ reviews, subheading }: GoogleReviewsProp
         {reviews.map((review) => (
           <div 
             key={review.id} 
-            className="flex-none w-[280px] md:w-[350px] snap-start bg-zinc-900 border border-zinc-800 rounded-2xl p-6 md:p-8 flex flex-col relative overflow-hidden shadow-lg hover:border-zinc-700 transition-colors"
+            className="flex-none w-[280px] md:w-[350px] snap-start bg-blue-900 border border-zinc-800 rounded-2xl p-6 md:p-8 flex flex-col relative overflow-hidden shadow-lg hover:border-zinc-700 transition-colors"
           >
             {/* Background Watermark */}
-            <Quote className="absolute top-4 right-4 w-24 h-24 text-zinc-800/30 -rotate-12 pointer-events-none" strokeWidth={1} />
+            <Quote className="absolute top-4 right-4 w-24 h-24 text-blue-600/30 -rotate-12 pointer-events-none" strokeWidth={1} />
 
             {/* Header: Avatar + Name + Branch */}
             <div className="flex items-center gap-4 mb-4 relative z-10">
@@ -53,7 +53,8 @@ export default function GoogleReviews({ reviews, subheading }: GoogleReviewsProp
               {[...Array(5)].map((_, i) => (
                 <Star 
                   key={i} 
-                  className="w-4 h-4 fill-yellow-400 text-yellow-400" 
+                  // Metallic Gold Hex: Fill is bright gold, border is a slightly darker gold for depth
+                  className="w-4 h-4 fill-[#D4AF37] text-[#B8962D]" 
                 />
               ))}
             </div>
