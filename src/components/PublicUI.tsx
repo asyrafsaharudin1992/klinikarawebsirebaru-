@@ -497,9 +497,6 @@ export default function PublicUI() {
             <a href="#locations" className="hover:text-white transition">Cawangan</a>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <a href="/admin" className="text-sm font-medium text-zinc-300 hover:text-white transition hidden sm:block">Admin Login</a>
-        </div>
       </nav>
 
       <main>
