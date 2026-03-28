@@ -156,7 +156,7 @@ export default function PublicUI() {
 
  const handleShare = async (service: Service) => {
     // 1. Generate the specific link
-    const shareUrl = `${window.location.origin}${window.location.pathname}?service=${service.id}`;
+    const shareUrl = `https://us-central1-new-website-7b8dd.cloudfunctions.net/serveDynamicTags?service=${service.id}`;
     
     // 2. Combine the text and the link into one complete message for the clipboard
     const fullMessage = `Check out this service at Klinik Ara: ${service.title}\n${shareUrl}`;
