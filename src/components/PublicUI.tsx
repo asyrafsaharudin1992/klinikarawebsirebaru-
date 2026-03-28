@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+ import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
@@ -954,11 +954,14 @@ export default function PublicUI() {
                 })()}
               </div>
 
-             {/* Right Section: Details Panel & Desktop Footer */}
-<div className="w-full md:w-1/2 bg-zinc-950 flex flex-col rounded-t-[32px] md:rounded-none -mt-8 md:mt-0 relative md:absolute md:right-0 md:top-0 md:bottom-0 z-30 border-l border-zinc-900/50">
+            
+
+                {/* Right Section: Details Panel & Desktop Footer */}
+              <div className="w-full md:w-1/2 bg-zinc-950 flex flex-col rounded-t-[32px] md:rounded-none -mt-8 md:mt-0 relative md:absolute md:right-0 md:top-0 md:bottom-0 z-30 border-l border-zinc-900/50 overflow-hidden">
                 
                 {/* Scrollable Content Area */}
-                <div className="p-6 pb-48 md:p-10 md:pb-6 flex flex-col md:flex-1 md:overflow-y-auto hide-scrollbar">
+                {/* CHANGED: md:pb-6 to md:pb-48 so the text can scroll past the floating gradient */}
+                <div className="p-6 pb-48 md:p-10 md:pb-48 flex flex-col md:flex-1 md:overflow-y-auto hide-scrollbar">
                   
                   <div className="flex items-center gap-2 mb-4">
                     <span className="px-3 py-1 bg-white text-zinc-950 text-[10px] font-bold tracking-widest rounded-full uppercase">
@@ -1000,8 +1003,9 @@ export default function PublicUI() {
                     ) : (
                       <span className="text-sm font-medium text-zinc-400">Price available upon request</span>
                     )}
-                  </div>              
+                  </div>
 
+                  {/* Optional Disclaimer Block (Keep if using the toggle feature we built earlier) */}
                   {selectedService.showTeamAraDisclaimer && (
                     <p className="text-xs text-zinc-400 mb-8 leading-relaxed">
                       Harga TeamAra hanya untuk ahli TeamAra sahaja. Pendaftaran keahlian TeamAra boleh dilakukan di klinik secara percuma, harga TeamAra boleh dinikmati secara terus selepas pendaftaran keahlian dibuat.
@@ -1016,16 +1020,16 @@ export default function PublicUI() {
                 </div>
 
                 {/* Desktop Sticky Footer (Hidden on Mobile) */}
-                <div className="hidden md:flex shrink-0 bg-zinc-950 border-t border-zinc-800 p-5 md:p-6 flex-col gap-3 z-50">
+                <div className="hidden md:flex absolute bottom-0 left-0 w-full bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-transparent pt-20 pb-8 px-10 flex-col gap-3 z-50 pointer-events-none">
                   <button 
                     onClick={() => setBookingModalService(selectedService)}
-                    className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-lg transition-transform active:scale-95"
+                    className="pointer-events-auto w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-lg transition-transform active:scale-95"
                   >
                     Saya nak tempah slot
                   </button>
                   <button 
                     onClick={() => handleShare(selectedService)}
-                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 text-lg transition-transform active:scale-95"
+                    className="pointer-events-auto w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 text-lg transition-transform active:scale-95"
                   >
                     {isCopied ? <Check className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
                     {isCopied ? "Telah Disalin!" : "Kongsi"}
@@ -1055,7 +1059,7 @@ export default function PublicUI() {
           </div>
         </div>
       )}
-  {/* Vendor Details Modal */}
+      {/* Vendor Details Modal */}
       {selectedVendor && (
         <div 
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm p-0 md:p-6 overflow-hidden" 
