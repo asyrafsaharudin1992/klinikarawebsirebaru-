@@ -1,50 +1,57 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-const https = require("https");
 
 admin.initializeApp();
 
-exports.serveDynamicTags = functions.https.onRequest((req, res) => {
+exports.serveDynamicTags = functions.https.onRequest(async (req, res) => {
   const serviceId = req.query.service;
-  const liveHtmlUrl = "https://new-website-7b8dd.web.app/index.html";
 
-  https.get(liveHtmlUrl, (response) => {
-    let html = '';
-    response.on('data', chunk => html += chunk);
-    
-    response.on('end', async () => {
-      // 1. Default fallback text
-      let finalTitle = "Klinik Ara 24 Jam";
-      let finalDesc = "Selamat datang ke laman sesawang Klinik Ara 24 Jam. Jom sertai TeamAra untuk menikmati pelbagai manfaat.";
-      let finalImage = "https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/Light%20Logo%20HSO%20.png?alt=media";
+  // 1. Default clinic info
+  let title = "Klinik Ara 24 Jam";
+  let desc = "Selamat datang ke laman sesawang Klinik Ara 24 Jam. Jom sertai TeamAra untuk menikmati pelbagai manfaat.";
+  let image = "https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/Light%20Logo%20HSO%20.png?alt=media";
+  let redirectUrl = "https://klinikara24jam.hsohealthcare.com/";
 
-      // 2. Fetch specific service if ID exists
-      if (serviceId) {
-        try {
-          const doc = await admin.firestore().collection("services").doc(serviceId).get();
-          if (doc.exists) {
-            const data = doc.data();
-            if (data.title) finalTitle = `${data.title} - Klinik Ara 24 Jam`;
-            if (data.description) finalDesc = data.description.substring(0, 150) + '...';
-            if (data.imageUrl || (data.imageUrls && data.imageUrls[0])) {
-              finalImage = data.imageUrl || data.imageUrls[0];
-            }
-          }
-        } catch (error) {
-          console.error("Database error:", error);
+  // 2. Fetch specific service
+  if (serviceId) {
+    redirectUrl = `https://klinikara24jam.hsohealthcare.com/?service=${serviceId}`;
+    try {
+      const doc = await admin.firestore().collection("services").doc(serviceId).get();
+      if (doc.exists) {
+        const data = doc.data();
+        if (data.title) title = `${data.title} - Klinik Ara 24 Jam`;
+        if (data.description) desc = data.description.substring(0, 150) + '...';
+        if (data.imageUrl || (data.imageUrls && data.imageUrls[0])) {
+          image = data.imageUrl || data.imageUrls[0];
         }
       }
+    } catch (error) {
+      console.error("Database error:", error);
+    }
+  }
 
-      // 3. Replace the raw placeholders in the HTML
-      html = html.replace(/__OG_TITLE__/g, finalTitle)
-                 .replace(/__OG_DESC__/g, finalDesc)
-                 .replace(/__OG_IMAGE__/g, finalImage);
+  // 3. The Magic Shell: Bots read the tags, humans get redirected!
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <title>${title}</title>
+      <meta property="og:title" content="${title}">
+      <meta property="og:description" content="${desc}">
+      <meta property="og:image" content="${image}">
+      <meta property="og:url" content="${redirectUrl}">
+      <meta name="twitter:card" content="summary_large_image">
+      <script>
+        // If a real human clicks this, instantly redirect them to the real site!
+        window.location.href = "${redirectUrl}";
+      </script>
+    </head>
+    <body>
+      <p>Redirecting to Klinik Ara 24 Jam...</p>
+    </body>
+    </html>
+  `;
 
-      // 4. Send the clean HTML to WhatsApp!
-      res.status(200).send(html);
-    });
-  }).on('error', (err) => {
-    console.error("Network error:", err);
-    res.status(500).send("Server Error");
-  });
+  res.status(200).send(html);
 });
