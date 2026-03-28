@@ -956,12 +956,12 @@ export default function PublicUI() {
 
             
 
-                {/* Right Section: Details Panel & Desktop Footer */}
-              <div className="w-full md:w-1/2 bg-zinc-950 flex flex-col rounded-t-[32px] md:rounded-none -mt-8 md:mt-0 relative md:absolute md:right-0 md:top-0 md:bottom-0 z-30 border-l border-zinc-900/50 overflow-hidden">
+              {/* Right Section: Details Panel & Desktop Footer */}
+              {/* FIX: Changed overflow-hidden to md:overflow-hidden so it scrolls on mobile */}
+              <div className="w-full md:w-1/2 bg-zinc-950 flex flex-col rounded-t-[32px] md:rounded-none -mt-8 md:mt-0 relative md:absolute md:right-0 md:top-0 md:bottom-0 z-30 border-l border-zinc-900/50 md:overflow-hidden">
                 
                 {/* Scrollable Content Area */}
-                {/* CHANGED: md:pb-6 to md:pb-48 so the text can scroll past the floating gradient */}
-                <div className="p-6 pb-48 md:p-10 md:pb-48 flex flex-col md:flex-1 md:overflow-y-auto hide-scrollbar">
+                <div className="p-6 pb-32 md:p-10 md:pb-48 flex flex-col md:flex-1 md:overflow-y-auto hide-scrollbar">
                   
                   <div className="flex items-center gap-2 mb-4">
                     <span className="px-3 py-1 bg-white text-zinc-950 text-[10px] font-bold tracking-widest rounded-full uppercase">
@@ -1038,9 +1038,9 @@ export default function PublicUI() {
               </div>
             </div>
 
-          {/* Mobile Floating Action Footer (Hidden on Desktop) */}
+            {/* Mobile Floating Action Footer (Hidden on Desktop) */}
             {/* Pure gradient fade without any hard blur lines or borders */}
-            <div className="md:hidden absolute bottom-0 left-0 w-full bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-transparent pt-16 pb-6 px-4 flex flex-row gap-3 z-50 pointer-events-none">
+            <div className="md:hidden absolute bottom-0 left-0 w-full bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-transparent pt-20 pb-6 px-4 flex flex-row gap-3 z-50 pointer-events-none">
               <button 
                 onClick={() => setBookingModalService(selectedService)}
                 className="pointer-events-auto flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-sm sm:text-base transition-transform active:scale-95"
