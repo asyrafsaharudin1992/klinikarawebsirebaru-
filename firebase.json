@@ -22,7 +22,7 @@
     ],
     "rewrites": [
       {
-        "source": "/share",
+        "source": "/share**",
         "function": "serveDynamicTags"
       },
       {
