@@ -54,41 +54,38 @@ async function startServer() {
       html = await vite.transformIndexHtml(req.url, html);
     }
 
+    let title = 'Klinik Ara 24 Jam';
+    let description = 'Selamat datang ke laman sesawang Klinik Ara 24 Jam. Jom sertai TeamAra untuk menikmati pelbagai manfaat.';
+    let imageUrl = 'https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/locations%2F1774409163998-uha4uj0-%7BA3113931-E36A-4750-9461-CF9E820F4CE2%7D.png?alt=media&token=9ab31dee-069e-4b33-b21c-1feb457c916c';
+    let fullUrl = 'https://klinikara24jam.hsohealthcare.com/';
+
     if (serviceId) {
       try {
         const serviceDoc = await db.collection('services').doc(serviceId).get();
         if (serviceDoc.exists) {
           const service = serviceDoc.data();
-          const title = service?.title || 'Klinik Ara 24 Jam';
-          const description = service?.description || 'Selamat datang ke laman sesawang Klinik Ara 24 Jam.';
-          const imageUrl = service?.heroImageUrl || service?.imageUrl || service?.imageUrls?.[0] || '';
-
-          const escapeHtml = (str: string) => str.replace(/[&<>"']/g, (m) => ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#39;'
-          }[m as keyof any] || m));
-
-          const safeTitle = escapeHtml(title);
-          const safeDescription = escapeHtml(description);
-          const safeImageUrl = escapeHtml(imageUrl);
-
-          html = html.replace(/<title>.*?<\/title>/, `<title>${safeTitle} | Klinik Ara 24 Jam</title>`);
-          html = html.replace(/<meta name="title" content=".*?"\s*\/?>/, `<meta name="title" content="${safeTitle}">`);
-          html = html.replace(/<meta property="og:title" content=".*?"\s*\/?>/, `<meta property="og:title" content="${safeTitle}">`);
-          html = html.replace(/<meta property="og:description" content=".*?"\s*\/?>/, `<meta property="og:description" content="${safeDescription}">`);
-          html = html.replace(/<meta property="og:image" content=".*?"\s*\/?>/, `<meta property="og:image" content="${safeImageUrl}">`);
-          html = html.replace(/<meta name="description" content=".*?"\s*\/?>/, `<meta name="description" content="${safeDescription}">`);
-          
-          const fullUrl = `https://klinikara24jam.hsohealthcare.com/?service=${serviceId}`;
-          html = html.replace(/<meta property="og:url" content=".*?"\s*\/?>/, `<meta property="og:url" content="${fullUrl}">`);
+          title = service?.title ? `${service.title} | Klinik Ara 24 Jam` : title;
+          description = service?.description || description;
+          imageUrl = service?.heroImageUrl || service?.imageUrl || service?.imageUrls?.[0] || imageUrl;
+          fullUrl = `https://klinikara24jam.hsohealthcare.com/?service=${serviceId}`;
         }
       } catch (error) {
         console.error('Error fetching service:', error);
       }
     }
+
+    const escapeHtml = (str: string) => str.replace(/[&<>"']/g, (m) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[m as keyof any] || m));
+
+    html = html.replace(/__OG_TITLE__/g, escapeHtml(title));
+    html = html.replace(/__OG_DESC__/g, escapeHtml(description));
+    html = html.replace(/__OG_IMAGE__/g, escapeHtml(imageUrl));
+    html = html.replace(/__OG_URL__/g, escapeHtml(fullUrl));
 
     res.send(html);
   });

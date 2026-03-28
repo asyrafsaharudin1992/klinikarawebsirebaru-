@@ -154,8 +154,12 @@ export default function PublicUI() {
     return Database;
   };
 
-  const handleShare = async (service: Service) => {
+ const handleShare = async (service: Service) => {
+    // 1. Generate the specific link
     const shareUrl = `${window.location.origin}${window.location.pathname}?service=${service.id}`;
+    
+    // 2. Combine the text and the link into one complete message for the clipboard
+    const fullMessage = `Check out this service at Klinik Ara: ${service.title}\n${shareUrl}`;
 
     // Try native mobile sharing first
     if (navigator.share) {
@@ -167,17 +171,17 @@ export default function PublicUI() {
         });
         return;
       } catch (error) {
-        console.log('Error sharing', error);
+        console.log('Error sharing via native share sheet', error);
       }
     }
 
-    // Fallback for Desktop: Copy to clipboard
+    // Fallback for Desktop: Copy the FULL message to clipboard (Text + URL)
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(fullMessage);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy', err);
+      console.error('Failed to copy to clipboard', err);
     }
   };
 
