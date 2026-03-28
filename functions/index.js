@@ -6,7 +6,7 @@ admin.initializeApp();
 
 exports.serveDynamicTags = functions.https.onRequest((req, res) => {
   const serviceId = req.query.service;
-  const liveHtmlUrl = "https://new-website-7b8dd.web.app/index.html";
+  const liveHtmlUrl = "https://new-website-7b8dd.web.app/app.html";
 
   https.get(liveHtmlUrl, (response) => {
     let html = '';
