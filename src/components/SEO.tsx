@@ -23,7 +23,7 @@ const SEO: React.FC<SEOProps> = ({
     "alternateName": "Klinik Ara",
     "description": description,
     "url": url,
-    "logo": "https://ais-dev-hsvhfigpeqkxawqym2ax4s-499672742043.asia-southeast1.run.app/logo.png", // Replace with actual logo
+    "logo": "https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/Light%20Logo%20HSO%20.png?alt=media&token=af618257-921e-42c6-9197-daf5b513fcd4", // Replace with actual logo
     "contactPoint": {
       "@type": "ContactPoint",
       "telephone": "+60182194392",
