@@ -71,7 +71,7 @@ const ServiceCarouselRow = ({ title, services, onSelect, subheading }: { title: 
                 <img 
                   src={displayImage} 
                   alt={`${service.title} Poster - Klinik Ara 24 Jam`} 
-                  className="w-full h-full object-contain bg-zinc-900"
+                  className="w-full h-full object-cover bg-zinc-900"
                   referrerPolicy="no-referrer"
                   loading="lazy"
                 />
