@@ -52,5 +52,36 @@ exports.serveDynamicTags = functions.https.onRequest(async (req, res) => {
     </html>
   `;
 
-  res.status(200).send(html);
-});
+  // Inside your serveDynamicTags function, update the HTML response:
+res.status(200).send(`
+  <!DOCTYPE html>
+  <html lang="ms">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>${data.title}</title>
+    <meta name="description" content="${data.description}">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="${req.url}">
+    <meta property="og:title" content="${data.title}">
+    <meta property="og:description" content="${data.description}">
+    <meta property="og:image" content="${imageUrl}">
+    <meta property="og:image:secure_url" content="${imageUrl}">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="${data.title}">
+    <meta name="twitter:description" content="${data.description}">
+    <meta name="twitter:image" content="${imageUrl}">
+
+    <script>window.location.href = "https://klinikara24jam.hsohealthcare.com/services/${serviceId}";</script>
+  </head>
+  <body>
+    <p>Sila tunggu, anda sedang dibawa ke laman servis...</p>
+  </body>
+  </html>
+`);
