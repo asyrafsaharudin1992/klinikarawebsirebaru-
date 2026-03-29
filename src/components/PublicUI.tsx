@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview } from '../types';
-import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle, Phone, Share2, Check, Lock, ExternalLink, Database, Users, CreditCard, Settings } from 'lucide-react';
+import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle, Phone, Share2, Check, Lock, ExternalLink, Database, Users, CreditCard, Settings, Github, Star, GitFork, Code } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { GoogleGenAI, Type } from '@google/genai';
 import GoogleReviews from './GoogleReviews';
@@ -104,6 +104,17 @@ const formatPhoneNumber = (phone: string) => {
   return cleaned;
 };
 
+interface GithubRepo {
+  id: number;
+  name: string;
+  description: string;
+  html_url: string;
+  stargazers_count: number;
+  forks_count: number;
+  language: string;
+  updated_at: string;
+}
+
 export default function PublicUI() {
   const [services, setServices] = useState<Service[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -133,6 +144,9 @@ export default function PublicUI() {
   const [isSpecialAccessAuthenticated, setIsSpecialAccessAuthenticated] = useState(false);
   const [specialAccessError, setSpecialAccessError] = useState('');
 
+
+
+
   const handleSpecialAccessSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (specialAccessPassword === 'TEAMARA1234') {
@@ -156,7 +170,7 @@ export default function PublicUI() {
 
  const handleShare = async (service: Service) => {
     // 1. Generate the specific link
-    const shareUrl = `https://us-central1-new-website-7b8dd.cloudfunctions.net/serveDynamicTags?service=${service.id}`;
+   const shareUrl = `https://us-central1-new-website-7b8dd.cloudfunctions.net/serveDynamicTags?service=${service.id}`;
     
     // 2. Combine the text and the link into one complete message for the clipboard
     const fullMessage = `Check out this service at Klinik Ara: ${service.title}\n${shareUrl}`;
@@ -852,6 +866,8 @@ export default function PublicUI() {
           </section>
         </section>
       )}
+
+    
     </main>
 
       <footer className="bg-zinc-950 border-t border-zinc-900 py-8 mt-12">
