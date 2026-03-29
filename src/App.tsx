@@ -106,3 +106,5 @@ export default function App() {
     </ErrorBoundary>
   );
 }
+
+<Route path="/share" element={<SharePage />} />
