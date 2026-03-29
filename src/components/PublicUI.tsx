@@ -168,37 +168,35 @@ export default function PublicUI() {
     return Database;
   };
 const handleShare = async (service: Service) => {
-  // 1. Generate the specific link
+  // 1. The Clean Link (This MUST be at the very top for the big image)
   const shareUrl = `${window.location.origin}/share?service=${service.id}`;
   
-  // 2. The warm sentence
+  // 2. The Warm Sentence in Bahasa Melayu
   const warmSentence = `Jom lihat servis ini di Klinik Ara: ${service.title}`;
   
-  // 3. The Combined Message (for the Clipboard/Desktop)
+  // 3. The Combined Message (Link FIRST, then two new lines, then text)
   const fullMessage = `${shareUrl}\n\n${warmSentence}`;
 
-  // Try native mobile sharing first
+  // 4. Try the native share menu first (Mobile)
   if (navigator.share) {
     try {
       await navigator.share({
         title: `Klinik Ara 24 Jam - ${service.title}`,
-        // FIX: We keep them separate but keep the URL in its own field.
-        // WhatsApp is much more likely to show the BIG image this way.
-        text: warmSentence,
-        url: shareUrl,
+        // We put the fullMessage (Link-First) into the text field
+        text: fullMessage,
       });
       return;
     } catch (error) {
-      console.log('Error sharing via native share sheet', error);
+      console.log('Error sharing', error);
     }
   }
   
-  // Fallback for Desktop: Copy the FULL message (Link + Text)
+  // 5. Desktop/Fallback: Copy the same Link-First message to clipboard
   try {
     await navigator.clipboard.writeText(fullMessage);
-    alert('Link and message copied to clipboard!');
+    alert('Pautan dan mesej telah disalin! Tampal di WhatsApp untuk lihat gambar.');
   } catch (err) {
-    console.error('Failed to copy link', err);
+    console.error('Failed to copy', err);
   }
 };
 
