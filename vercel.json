@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/share",
+      "destination": "https://us-central1-new-website-7b8dd.cloudfunctions.net/serveDynamicTags"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
