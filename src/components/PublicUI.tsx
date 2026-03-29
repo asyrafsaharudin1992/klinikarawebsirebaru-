@@ -168,34 +168,36 @@ export default function PublicUI() {
     return Database;
   };
 
- const handleShare = async (service: Service) => {
+  const handleShare = async (service: Service) => {
     // 1. Generate the specific link
-   const shareUrl = `${window.location.origin}/share?service=${service.id}`;
+    const shareUrl = `${window.location.origin}/share?service=${service.id}`;
     
-    // 2. Combine the text and the link into one complete message for the clipboard
-    const fullMessage = `Check out this service at Klinik Ara: ${service.title}\n${shareUrl}`;
+    // 2. The combined message: Link first (for BIG preview), then the warm sentence
+    const fullMessage = `${shareUrl}\n\nJom lihat servis ini di Klinik Ara: ${service.title}`;
 
-    // Try native mobile sharing first
+    // 3. Try native mobile sharing first (WhatsApp/Social Apps)
     if (navigator.share) {
       try {
         await navigator.share({
           title: `Klinik Ara 24 Jam - ${service.title}`,
-          text: `Check out this service at Klinik Ara: ${service.title}`,
-          url: shareUrl,
+          // Using fullMessage here ensures the link is at the top for the big preview
+          text: fullMessage,
         });
         return;
       } catch (error) {
         console.log('Error sharing via native share sheet', error);
       }
     }
-
-    // Fallback for Desktop: Copy the FULL message to clipboard (Text + URL)
+    
+    // 4. Desktop/Fallback: Copy the full warm message to the clipboard
     try {
       await navigator.clipboard.writeText(fullMessage);
+      // Alert in English as requested, with the Malay message successfully copied
+      alert('Link and message copied to clipboard!');
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy to clipboard', err);
+      console.error('Failed to copy link', err);
     }
   };
 
