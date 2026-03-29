@@ -167,39 +167,38 @@ export default function PublicUI() {
     if (text.includes('admin') || text.includes('tetapan') || text.includes('setting')) return Settings;
     return Database;
   };
+const handleShare = async (service: Service) => {
+  // 1. The Clean Link (This MUST be at the very top for the big image)
+  const shareUrl = `${window.location.origin}/share?service=${service.id}`;
+  
+  // 2. The Warm Sentence in Bahasa Melayu
+  const warmSentence = `Jom lihat servis ini di Klinik Ara: ${service.title}`;
+  
+  // 3. The Combined Message (Link FIRST, then two new lines, then text)
+  const fullMessage = `${shareUrl}\n\n${warmSentence}`;
 
-  const handleShare = async (service: Service) => {
-    // 1. Generate the specific link
-    const shareUrl = `${window.location.origin}/share?service=${service.id}`;
-    
-    // 2. The combined message: Link first (for BIG preview), then the warm sentence
-    const fullMessage = `${shareUrl}\n\nJom lihat servis ini di Klinik Ara: ${service.title}`;
-
-    // 3. Try native mobile sharing first (WhatsApp/Social Apps)
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Klinik Ara 24 Jam - ${service.title}`,
-          // Using fullMessage here ensures the link is at the top for the big preview
-          text: fullMessage,
-        });
-        return;
-      } catch (error) {
-        console.log('Error sharing via native share sheet', error);
-      }
-    }
-    
-    // 4. Desktop/Fallback: Copy the full warm message to the clipboard
+  // 4. Try the native share menu first (Mobile)
+  if (navigator.share) {
     try {
-      await navigator.clipboard.writeText(fullMessage);
-      // Alert in English as requested, with the Malay message successfully copied
-      alert('Link and message copied to clipboard!');
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy link', err);
+      await navigator.share({
+        title: `Klinik Ara 24 Jam - ${service.title}`,
+        // We put the fullMessage (Link-First) into the text field
+        text: fullMessage,
+      });
+      return;
+    } catch (error) {
+      console.log('Error sharing', error);
     }
-  };
+  }
+  
+  // 5. Desktop/Fallback: Copy the same Link-First message to clipboard
+  try {
+    await navigator.clipboard.writeText(fullMessage);
+    alert('Pautan dan mesej telah disalin! Tampal di WhatsApp untuk lihat gambar.');
+  } catch (err) {
+    console.error('Failed to copy', err);
+  }
+};
 
   useEffect(() => {
     const loadAllData = async () => {
