@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/share",
-      "destination": "https://us-central1-klinik-ara-24-jam.cloudfunctions.net/generateShareMeta"
+      "destination": "https://thumbnail-generator-81459036171.asia-southeast1.run.app/"
     },
     {
       "source": "/(.*)",
