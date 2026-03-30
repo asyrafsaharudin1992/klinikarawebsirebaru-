@@ -1,8 +1,9 @@
 {
+  "version": 2,
   "rewrites": [
     {
       "source": "/share",
-      "destination": "https://us-central1-new-website-7b8dd.cloudfunctions.net/serveDynamicTags"
+      "destination": "https://us-central1-klinik-ara-24-jam.cloudfunctions.net/generateShareMeta"
     },
     {
       "source": "/(.*)",

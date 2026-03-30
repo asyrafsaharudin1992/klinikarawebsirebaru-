@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -10,6 +10,7 @@ import { auth, db } from './firebase';
 import { getDoc, doc } from 'firebase/firestore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import PublicUI from './components/PublicUI';
+import SharePage from './pages/SharePage';
 
 const AdminUI = lazy(() => import('./components/AdminUI'));
 const Login = lazy(() => import('./components/Login'));
@@ -87,24 +88,25 @@ export default function App() {
   }
 
   return (
-    <ErrorBoundary>
-      <BrowserRouter>
-        <Suspense fallback={<LoadingSpinner />}>
-          <Routes>
-            <Route path="/" element={<PublicUI />} />
-            <Route 
-              path="/admin" 
-              element={user ? <AdminUI user={user} /> : <Navigate to="/login" replace />} 
-            />
-            <Route 
-              path="/login" 
-              element={!user ? <Login /> : <Navigate to="/admin" replace />} 
-            />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
+   <ErrorBoundary>
+      <HelmetProvider>    {/* <--- ADD THIS LINE HERE */}
+        <BrowserRouter>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              <Route path="/" element={<PublicUI />} />
+              <Route path="/share" element={<SharePage />} />
+              <Route 
+                path="/admin" 
+                element={user ? <AdminUI user={user} /> : <Navigate to="/login" replace />} 
+              />
+              <Route 
+                path="/login" 
+                element={!user ? <Login /> : <Navigate to="/admin" replace />} 
+              />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </HelmetProvider>   {/* <--- ADD THIS LINE HERE */}
     </ErrorBoundary>
   );
 }
-
-<Route path="/share" element={<SharePage />} />

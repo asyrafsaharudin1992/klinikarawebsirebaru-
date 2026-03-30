@@ -168,33 +168,32 @@ export default function PublicUI() {
     return Database;
   };
 const handleShare = async (service: Service) => {
-  // 1. The Clean Link (This MUST be at the very top for the big image)
   const shareUrl = `${window.location.origin}/share?service=${service.id}`;
-  
-  // 2. The Warm Sentence in Bahasa Melayu
   const warmSentence = `Jom lihat servis ini di Klinik Ara: ${service.title}`;
   
-  // 3. The Combined Message (Link FIRST, then two new lines, then text)
+  // Create a combined message for copy-paste fallback
   const fullMessage = `${shareUrl}\n\n${warmSentence}`;
 
-  // 4. Try the native share menu first (Mobile)
   if (navigator.share) {
     try {
       await navigator.share({
         title: `Klinik Ara 24 Jam - ${service.title}`,
-        // We put the fullMessage (Link-First) into the text field
-        text: fullMessage,
+        text: warmSentence, // The text part
+        url: shareUrl,      // The URL part (Forces the preview)
       });
       return;
     } catch (error) {
-      console.log('Error sharing', error);
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.log('Error sharing', error);
+      }
     }
   }
-  
-  // 5. Desktop/Fallback: Copy the same Link-First message to clipboard
+
+  // OPTIONAL: Fallback if navigator.share fails (Desktop/Old Phones)
+  // Copy to clipboard or open a simple WhatsApp link
   try {
     await navigator.clipboard.writeText(fullMessage);
-    alert('Pautan dan mesej telah disalin! Tampal di WhatsApp untuk lihat gambar.');
+    alert("Link disalin! Sila tampal di WhatsApp.");
   } catch (err) {
     console.error('Failed to copy', err);
   }
