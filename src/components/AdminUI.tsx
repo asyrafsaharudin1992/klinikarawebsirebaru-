@@ -1228,127 +1228,81 @@ export default function AdminUI({ user }: { user: User }) {
 
   const handleSaveService = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title) return;
-    if (existingImageUrls.length === 0 && imageFiles.length === 0 && !generatedImageBase64 && !heroImageUrl) {
-      setErrorMsg('Please provide at least one image or generate a hero banner.');
-      return;
-    }
-
+    if (!title) return; // Images are now optional, but title is required
+    
     setIsUploading(true);
-    setUploadProgress(0);
-    setSuccessMsg(null);
     setErrorMsg(null);
+    setUploadStatus('uploading');
+    setUploadProgress(10);
 
     try {
-      let newlyUploadedUrls: string[] = [];
-      let finalHeroImageUrl = heroImageUrl;
-      let finalThumbnailUrl = thumbnailUrl;
-      let newlyUploadedModalUrls: string[] = [];
+      let finalThumbnailUrl = thumbnailUrl;      // Zone 2
+      let finalHeroImageUrl = heroImageUrl;        // Zone 1
+      let newlyUploadedModalUrls: string[] = [];   // Zone 3
 
-      setUploadStatus('uploading');
-
-      // 1. Upload AI Generated Hero Image if it's a pending base64 string
-      if (heroImageUrl && heroImageUrl.startsWith('data:image')) {
-        const blob = base64ToBlob(heroImageUrl);
-        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-ai-generated-hero.jpg`;
-        const storageRef = ref(storage, `promotions/${uniqueFileName}`);
-        const uploadTask = uploadBytesResumable(storageRef, blob);
-
-        finalHeroImageUrl = await new Promise<string>((resolve, reject) => {
-          uploadTask.on(
-            'state_changed',
-            null,
-            (error) => reject(error),
-            async () => {
-              const url = await getDownloadURL(uploadTask.snapshot.ref);
-              resolve(url);
-            }
-          );
-        });
-      }
-
-      // 2. Upload Thumbnail Image
+      // 1. PROCESS ZONE 2 (The Primary Source)
       if (thumbnailFile) {
-        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-thumbnail-${thumbnailFile.name}`;
+        setUploadStatus('compressing');
+        const uniqueFileName = `${Date.now()}-zone2-${thumbnailFile.name}`;
         const storageRef = ref(storage, `services/${uniqueFileName}`);
         const uploadTask = uploadBytesResumable(storageRef, thumbnailFile);
-
+        
         finalThumbnailUrl = await new Promise<string>((resolve, reject) => {
-          uploadTask.on(
-            'state_changed',
-            null,
-            (error) => reject(error),
-            async () => {
-              const url = await getDownloadURL(uploadTask.snapshot.ref);
-              resolve(url);
-            }
+          uploadTask.on('state_changed', 
+            (snapshot) => setUploadProgress((snapshot.bytesTransferred / snapshot.totalBytes) * 100), 
+            (error) => reject(error), 
+            async () => resolve(await getDownloadURL(uploadTask.snapshot.ref))
           );
         });
       }
 
-      // 3. Upload Modal Gallery Images
+      // 2. PROCESS ZONE 3 (Extra Gallery Images)
       if (modalImageFiles.length > 0) {
+        setUploadStatus('uploading');
         const uploadPromises = modalImageFiles.map(async (file) => {
-          const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-modal-${file.name}`;
+          const uniqueFileName = `${Date.now()}-zone3-${file.name}`;
           const storageRef = ref(storage, `services/${uniqueFileName}`);
           const uploadTask = uploadBytesResumable(storageRef, file);
-
           return new Promise<string>((resolve, reject) => {
-            uploadTask.on(
-              'state_changed',
-              null,
-              (error) => reject(error),
-              async () => {
-                const url = await getDownloadURL(uploadTask.snapshot.ref);
-                resolve(url);
-              }
-            );
+            uploadTask.on('state_changed', null, reject, async () => {
+              resolve(await getDownloadURL(uploadTask.snapshot.ref));
+            });
           });
         });
-
         newlyUploadedModalUrls = await Promise.all(uploadPromises);
       }
 
-      const finalModalImageUrls = [...modalImageUrls, ...newlyUploadedModalUrls];
-
-      // 4. Upload Legacy Gallery Images
-      if (imageFiles.length > 0) {
-        setUploadStatus('uploading');
-        
-        const uploadPromises = imageFiles.map(async (file, index) => {
-          // Bypass compression entirely for maximum quality
-          const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${file.name}`;
-          const storageRef = ref(storage, `services/${uniqueFileName}`);
-          const uploadTask = uploadBytesResumable(storageRef, file);
-
-          return new Promise<string>((resolve, reject) => {
-            uploadTask.on(
-              'state_changed',
-              (snapshot) => {
-                const fileProgress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                setUploadProgress((prev) => Math.min(99, prev + (fileProgress / imageFiles.length)));
-              },
-              (error) => reject(error),
-              async () => {
-                const url = await getDownloadURL(uploadTask.snapshot.ref);
-                resolve(url);
-              }
-            );
+      // 3. PROCESS AI GENERATED HERO (If pending)
+      if (heroImageUrl && heroImageUrl.startsWith('data:image')) {
+        const blob = base64ToBlob(heroImageUrl);
+        const uniqueFileName = `${Date.now()}-ai-hero.jpg`;
+        const storageRef = ref(storage, `promotions/${uniqueFileName}`);
+        const uploadTask = uploadBytesResumable(storageRef, blob);
+        finalHeroImageUrl = await new Promise<string>((resolve, reject) => {
+          uploadTask.on('state_changed', null, reject, async () => {
+            resolve(await getDownloadURL(uploadTask.snapshot.ref));
           });
         });
-
-        newlyUploadedUrls = await Promise.all(uploadPromises);
       }
 
-      const finalImageUrls = [...existingImageUrls, ...newlyUploadedUrls];
+      // --- AUTOMATIC TOP-DOWN INHERITANCE ---
+      
+      // Inheritance A: Modal Gallery (Zone 3) automatically starts with the Main Thumbnail
+      const finalModalImageUrls = Array.from(new Set([
+        finalThumbnailUrl, // Force Zone 2 image to be the first slide
+        ...modalImageUrls, // Existing ones from DB
+        ...newlyUploadedModalUrls // New ones just uploaded
+      ])).filter(Boolean); // Clean out any null/empty values
 
+      // Inheritance B: Hero Banner (Zone 1) defaults to Zone 2 if no specific Hero is uploaded
+      if (!finalHeroImageUrl || finalHeroImageUrl === '') {
+        finalHeroImageUrl = finalThumbnailUrl;
+      }
+
+      // 4. SAVE TO FIRESTORE
       const serviceData = {
         title,
         category,
-        imageUrls: finalImageUrls,
-        heroImageUrl: finalHeroImageUrl,
-        thumbnailUrl: finalThumbnailUrl,
-        modalImageUrls: finalModalImageUrls,
         price,
         teamAraPrice,
         showTeamAraDisclaimer,
@@ -1356,30 +1310,30 @@ export default function AdminUI({ user }: { user: User }) {
         endDate,
         description,
         isFeatured,
+        thumbnailUrl: finalThumbnailUrl,      // Source of truth
+        heroImageUrl: finalHeroImageUrl,        // Specific or Inherited
+        modalImageUrls: finalModalImageUrls,    // Primary + Extras
+        imageUrl: finalThumbnailUrl,            // Backward compatibility for WhatsApp Share Link
       };
 
       if (editingId) {
         await updateDoc(doc(db, 'services', editingId), serviceData);
         setSuccessMsg('Service updated successfully!');
-        setHighlightedServiceId(editingId);
       } else {
-        const newRankOrder = (services || []).length > 0 ? Math.max(...(services || []).map(s => s.rankOrder)) + 1 : 0;
-        const docRef = await addDoc(collection(db, 'services'), {
+        const newRankOrder = services.length > 0 ? Math.max(...services.map(s => s.rankOrder || 0)) + 1 : 0;
+        await addDoc(collection(db, 'services'), {
           ...serviceData,
-          rankOrder: newRankOrder
+          rankOrder: newRankOrder,
+          createdAt: serverTimestamp()
         });
         setSuccessMsg('Service added successfully!');
-        setHighlightedServiceId(docRef.id);
       }
 
       resetForm();
-      setTimeout(() => {
-        setSuccessMsg(null);
-        setHighlightedServiceId(null);
-      }, 3000);
+      setTimeout(() => setSuccessMsg(null), 3000);
     } catch (error: any) {
-      console.error('Save error:', error);
-      setErrorMsg(`Save failed: ${error.message || 'Unknown error'}.`);
+      handleFirestoreError(error, OperationType.WRITE, 'services', auth);
+      setErrorMsg(`Save failed: ${error.message || 'Unknown error'}`);
     } finally {
       setIsUploading(false);
       setUploadStatus('idle');
@@ -1752,119 +1706,24 @@ export default function AdminUI({ user }: { user: User }) {
                 />
               </div>
 
-              {/* Zone 1: Hero Banner Image (Horizontal 16:9) */}
-              <div className="bg-zinc-950/50 border border-zinc-800/80 p-5 rounded-xl space-y-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <ImageIcon className="w-5 h-5 text-purple-400" />
-                  <h3 className="text-sm font-semibold text-white">Zone 1: Hero Banner Image (Horizontal 16:9)</h3>
-                </div>
-
-                {/* Visual Feedback: Current Hero Banner */}
-                <div className="space-y-2">
-                  <p className="text-xs text-zinc-400 font-medium">Current Hero Banner Preview:</p>
-                  {heroImageUrl ? (
-                    <div className="w-full aspect-video rounded-lg overflow-hidden border border-purple-500/50 relative group">
-                      <img src={heroImageUrl} alt="Current Hero" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => setHeroImageUrl('')} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Trash2 className="w-6 h-6 text-red-500" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="w-full aspect-video rounded-lg border-2 border-dashed border-zinc-700 bg-zinc-900 flex flex-col items-center justify-center text-zinc-500">
-                      <ImageIcon className="w-8 h-8 mb-2 opacity-50" />
-                      <span className="text-sm font-medium">No Hero Banner Selected</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 gap-6 pt-4 border-t border-zinc-800/80">
-                  {/* Option 1: Pick from Gallery */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-zinc-300">Option 1: Pick from Gallery</h4>
-                    {[...modalImageUrls, ...existingImageUrls].length > 0 ? (
-                      <div className="flex flex-wrap gap-3">
-                        {[...modalImageUrls, ...existingImageUrls].map((url, i) => (
-                          <div key={`ext-hero-${i}`} className="relative w-20 h-20 rounded-lg overflow-hidden border border-zinc-700 group">
-                            <img src={url} alt="" className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity p-1">
-                              <button type="button" onClick={() => setHeroImageUrl(url)} className="text-[10px] bg-white text-black px-2 py-1 rounded font-bold hover:bg-zinc-200 text-center w-full">
-                                Set Hero
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-zinc-500 italic">Upload images in Zone 3 to pick one.</p>
-                    )}
+              {/* Zone 2: Primary Image (The "Source of Truth") */}
+              <div className="bg-zinc-950/50 border border-zinc-800/80 p-5 rounded-xl space-y-4 shadow-lg ring-1 ring-blue-500/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5 text-blue-400" />
+                    <h3 className="text-sm font-semibold text-white">Zone 2: Main Thumbnail (Portrait 3:4)</h3>
                   </div>
-
-                  {/* Option 2: Upload Custom Wide Image */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-zinc-300">Option 2: Upload Custom Wide Image</h4>
-                    <div className="flex items-center gap-4">
-                      <input 
-                        type="file" 
-                        accept="image/*"
-                        onChange={handleHeroImageUpload}
-                        disabled={isUploadingHero}
-                        className="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700 transition-colors"
-                      />
-                      {isUploadingHero && <Loader2 className="w-5 h-5 text-red-500 animate-spin" />}
-                    </div>
-                  </div>
-
-                  {/* Option 3: Generate with AI */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-zinc-300">Option 3: Generate with AI</h4>
-                    <textarea 
-                      value={aiPrompt}
-                      onChange={(e) => setAiPrompt(e.target.value)}
-                      rows={2}
-                      disabled={isGenerating || isUploadingHero}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-purple-500 resize-none disabled:opacity-50"
-                      placeholder="e.g., Warm photo of Malay doctor with healthy baby..."
-                    />
-                    <button 
-                      type="button"
-                      onClick={handleGenerateImage}
-                      disabled={isGenerating || !aiPrompt}
-                      className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
-                    >
-                      {isGenerating ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</> : '✨ Generate AI Banner'}
-                    </button>
-
-                    {generatedImageBase64 && heroImageUrl !== generatedImageBase64 && (
-                      <div className="mt-3 p-3 bg-zinc-900 border border-purple-500/30 rounded-lg space-y-3 animate-in fade-in zoom-in duration-300">
-                        <img src={generatedImageBase64} alt="AI Preview" className="w-full aspect-video object-cover rounded border border-zinc-700" />
-                        <button 
-                          type="button"
-                          onClick={() => setHeroImageUrl(generatedImageBase64)}
-                          className="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
-                        >
-                          <CheckCircle2 className="w-4 h-4" /> Use This Banner
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/30 font-bold uppercase">Primary Source</span>
                 </div>
-              </div>
-
-              {/* Zone 2: Thumbnail Image (Portrait 3:4) */}
-              <div className="bg-zinc-950/50 border border-zinc-800/80 p-5 rounded-xl space-y-4">
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5 text-blue-400" />
-                  <h3 className="text-sm font-semibold text-white">Zone 2: Thumbnail Image (Portrait 3:4)</h3>
-                </div>
-                <p className="text-xs text-zinc-500">This image appears on the homepage carousel cards.</p>
+                <p className="text-xs text-zinc-500 italic">Uploading here automatically fills the Hero Banner and the Modal Gallery unless you override them below.</p>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-24 h-32 rounded-lg border border-zinc-800 bg-zinc-900 overflow-hidden flex-shrink-0">
+                  <div className="w-24 h-32 rounded-lg border border-zinc-800 bg-zinc-900 overflow-hidden flex-shrink-0 shadow-inner">
                     {thumbnailPreview ? (
                       <img src={thumbnailPreview} alt="Thumbnail" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-zinc-700">
-                        <ImageIcon className="w-6 h-6" />
+                        <ImageIcon className="w-8 h-8 opacity-20" />
                       </div>
                     )}
                   </div>
@@ -1873,78 +1732,128 @@ export default function AdminUI({ user }: { user: User }) {
                       type="file" 
                       accept="image/*"
                       onChange={handleThumbnailChange}
-                      className="block w-full text-xs text-zinc-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700"
+                      className="block w-full text-xs text-zinc-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700 transition-all"
                     />
                     {thumbnailPreview && (
-                      <button type="button" onClick={removeThumbnail} className="text-xs text-red-500 hover:text-red-400 flex items-center gap-1">
-                        <Trash2 className="w-3 h-3" /> Remove Thumbnail
+                      <button type="button" onClick={removeThumbnail} className="text-xs text-red-500 hover:text-red-400 flex items-center gap-1 transition-colors">
+                        <Trash2 className="w-3 h-3" /> Remove Primary Image
                       </button>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Zone 3: Modal Gallery Images (Portrait 3:4) */}
-              <div className="bg-zinc-950/50 border border-zinc-800/80 p-5 rounded-xl space-y-4">
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5 text-green-400" />
-                  <h3 className="text-sm font-semibold text-white">Zone 3: Modal Gallery Images (Portrait 3:4)</h3>
-                </div>
-                <p className="text-xs text-zinc-500">These images appear in the popup gallery when a service is clicked.</p>
-
-                <div className="flex flex-wrap gap-3">
-                  {modalImageUrls.map((url, i) => (
-                    <div key={`modal-ext-${i}`} className="relative w-20 h-28 rounded-lg overflow-hidden border border-zinc-700 group">
-                      <img src={url} alt="" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => removeExistingModalImage(i)} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Trash2 className="w-5 h-5 text-red-500" />
-                      </button>
-                    </div>
-                  ))}
-                  {modalImagePreviews.map((preview, i) => (
-                    <div key={`modal-new-${i}`} className="relative w-20 h-28 rounded-lg overflow-hidden border border-green-500/50 group">
-                      <img src={preview} alt="" className="w-full h-full object-cover" />
-                      <div className="absolute top-0 right-0 bg-green-500 text-white text-[8px] px-1 font-bold">NEW</div>
-                      <button type="button" onClick={() => removeNewModalImage(i)} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Trash2 className="w-5 h-5 text-red-500" />
-                      </button>
-                    </div>
-                  ))}
-                  <label className="w-20 h-28 rounded-lg border-2 border-dashed border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 flex flex-col items-center justify-center cursor-pointer transition-colors">
-                    <Plus className="w-6 h-6 text-zinc-600" />
-                    <span className="text-[10px] text-zinc-500 font-medium">Add Image</span>
-                    <input type="file" accept="image/*" multiple onChange={handleModalImageChange} className="hidden" />
-                  </label>
-                </div>
-              </div>
-
-              {/* Legacy Gallery (Optional) */}
-              <div className="opacity-50 hover:opacity-100 transition-opacity">
-                <details className="bg-zinc-900/30 border border-zinc-800 rounded-xl p-4">
-                  <summary className="text-xs font-medium text-zinc-500 cursor-pointer">Legacy Gallery Settings (Optional)</summary>
-                  <div className="pt-4 space-y-4">
-                    {existingImageUrls.length > 0 && (
-                      <div className="flex flex-wrap gap-3">
-                        {existingImageUrls.map((url, i) => (
-                          <div key={`ext-${i}`} className="relative w-16 h-16 rounded-lg overflow-hidden border border-zinc-700 group">
-                            <img src={url} alt="" className="w-full h-full object-cover" />
-                            <button type="button" onClick={() => removeExistingImage(i)} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Trash2 className="w-4 h-4 text-red-500" />
-                            </button>
-                          </div>
-                        ))}
+              {/* Zone 1: Hero Banner (Optional Override) */}
+              <details className="bg-zinc-950/30 border border-zinc-800/80 rounded-xl overflow-hidden group">
+                <summary className="p-4 text-sm font-medium text-zinc-400 cursor-pointer hover:bg-zinc-800/50 flex items-center justify-between transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-purple-400" />
+                    Zone 1: Hero Banner Override (Optional)
+                  </div>
+                  <ArrowDown className="w-3 h-3 group-open:rotate-180 transition-transform" />
+                </summary>
+                <div className="p-5 border-t border-zinc-800/50 space-y-6 bg-black/20">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-grow">
+                        <label className="block text-[10px] uppercase font-bold text-zinc-500 mb-1">AI Prompt for Banner</label>
+                        <input 
+                          type="text"
+                          value={aiPrompt}
+                          onChange={(e) => setAiPrompt(e.target.value)}
+                          placeholder="e.g., A futuristic medical clinic with neon lights..."
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 transition-all"
+                        />
                       </div>
-                    )}
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      multiple
-                      onChange={handleImageChange}
-                      className="block w-full text-xs text-zinc-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700"
-                    />
+                      <button 
+                        type="button"
+                        onClick={handleGenerateImage}
+                        disabled={isGenerating || !aiPrompt}
+                        className="mt-5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white p-2 rounded-lg transition-colors shadow-lg shadow-purple-900/20"
+                      >
+                        {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                      </button>
+                    </div>
+
+                    <div className="relative aspect-[16/9] bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden group">
+                      {heroImageUrl ? (
+                        <img src={heroImageUrl} alt="Hero" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-zinc-700 gap-2">
+                          <ImageIcon className="w-12 h-12 opacity-10" />
+                          <span className="text-[10px] uppercase tracking-widest opacity-30">No Specific Hero Image</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                        <label className="bg-white text-black px-4 py-2 rounded-full text-xs font-bold cursor-pointer hover:scale-105 transition-transform">
+                          Upload Manually
+                          <input type="file" accept="image/*" onChange={handleHeroImageUpload} className="hidden" />
+                        </label>
+                        {heroImageUrl && (
+                          <button type="button" onClick={() => setHeroImageUrl('')} className="bg-red-600 text-white px-4 py-2 rounded-full text-xs font-bold hover:scale-105 transition-transform">
+                            Reset to Default
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </details>
-              </div>
+                </div>
+              </details>
+
+              {/* Zone 3: Extra Modal Images (Optional Extras) */}
+<details className="bg-zinc-950/30 border border-zinc-800/80 rounded-xl overflow-hidden group">
+  <summary className="p-4 text-sm font-medium text-zinc-400 cursor-pointer hover:bg-zinc-800/50 flex items-center justify-between transition-colors">
+    <div className="flex items-center gap-2">
+      <Plus className="w-4 h-4 text-green-400" />
+      Zone 3: Extra Gallery Images (Optional)
+    </div>
+    <ArrowDown className="w-3 h-3 group-open:rotate-180 transition-transform" />
+  </summary>
+  <div className="p-5 border-t border-zinc-800/50 bg-black/20">
+    <div className="grid grid-cols-4 gap-3 mb-4">
+      {/* Existing Images */}
+      {modalImageUrls.map((url, idx) => (
+        <div key={`existing-${idx}`} className="relative aspect-square rounded-lg border border-zinc-800 overflow-hidden group">
+          <img src={url} alt={`Gallery ${idx}`} className="w-full h-full object-cover" />
+          <button 
+            type="button"
+            onClick={() => removeExistingModalImage(idx)}
+            className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      ))}
+      {/* New Previews */}
+      {modalImagePreviews.map((preview, idx) => (
+        <div key={`new-${idx}`} className="relative aspect-square rounded-lg border border-blue-500/50 overflow-hidden group">
+          <img src={preview} alt={`New ${idx}`} className="w-full h-full object-cover" />
+          <div className="absolute top-1 left-1 bg-blue-600 text-[8px] px-1 rounded font-bold text-white uppercase">New</div>
+          <button 
+            type="button"
+            onClick={() => removeNewModalImage(idx)}
+            className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      ))}
+      {/* Upload Button */}
+      <label className="aspect-square rounded-lg border-2 border-dashed border-zinc-800 hover:border-zinc-700 flex flex-col items-center justify-center text-zinc-600 hover:text-zinc-400 cursor-pointer transition-all">
+        <Plus className="w-6 h-6 mb-1" />
+        <span className="text-[10px] font-bold uppercase">Add More</span>
+        <input 
+          type="file" 
+          accept="image/*" 
+          multiple 
+          onChange={handleModalImageChange} 
+          className="hidden" 
+        />
+      </label>
+    </div>
+    <p className="text-[10px] text-zinc-500 italic">Note: The Zone 2 Thumbnail is automatically included as the first image in the gallery.</p>
+  </div>
+</details>
 
               {isUploading && (
                 <div className="space-y-2">
@@ -1966,7 +1875,7 @@ export default function AdminUI({ user }: { user: User }) {
 
               <button 
                 type="submit" 
-                disabled={isUploading || isGenerating || isUploadingHero || !title || (!thumbnailUrl && !thumbnailFile && !heroImageUrl && existingImageUrls.length === 0)}
+                disabled={isUploading || isGenerating || isUploadingHero || !title}
                 className={`w-full ${editingId ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 mt-6`}
               >
                 {isUploading ? (
