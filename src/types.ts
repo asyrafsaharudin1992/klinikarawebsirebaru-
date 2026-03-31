@@ -38,6 +38,12 @@ export interface Panel {
   rankOrder: number;
 }
 
+export interface ServiceCategory {
+  id: string;
+  name: string;
+  rankOrder: number;
+}
+
 export interface Collaborator {
   id: string;
   name: string;

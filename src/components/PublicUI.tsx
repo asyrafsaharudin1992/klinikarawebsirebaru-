@@ -2,7 +2,7 @@
 import { Link } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview } from '../types';
+import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview, ServiceCategory } from '../types';
 import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle, Phone, Share2, Check, Lock, ExternalLink, Database, Users, CreditCard, Settings, Github, Star, GitFork, Code } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -117,6 +117,7 @@ interface GithubRepo {
 
 export default function PublicUI() {
   const [services, setServices] = useState<Service[]>([]);
+  const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [panels, setPanels] = useState<Panel[]>([]);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
@@ -328,6 +329,20 @@ const handleShare = async (service: Service) => {
         }
       };
 
+      const fetchCategories = async () => {
+        try {
+          const q = query(collection(db, 'serviceCategories'), orderBy('rankOrder', 'asc'));
+          const snapshot = await getDocs(q);
+          const catData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as ServiceCategory[];
+          setServiceCategories(catData);
+        } catch (error) {
+          console.error("Failed to fetch categories:", error);
+        }
+      };
+
       await Promise.all([
         fetchServices(),
         fetchLocations(),
@@ -335,7 +350,8 @@ const handleShare = async (service: Service) => {
         fetchCollaborators(),
         fetchVendors(),
         fetchReviews(),
-        fetchSettings()
+        fetchSettings(),
+        fetchCategories()
       ]);
 
       setLoading(false);
@@ -344,7 +360,9 @@ const handleShare = async (service: Service) => {
     loadAllData();
   }, []);
 
-  const uniqueCategories = Array.from(new Set((services || []).map(s => s.category).filter(Boolean))) as string[];
+  const uniqueCategories = serviceCategories.length > 0
+    ? serviceCategories.map(c => c.name)
+    : Array.from(new Set((services || []).map(s => s.category).filter(Boolean))) as string[];
   const featuredServices = (services || []).filter(s => s.isFeatured);
 
   // Initialize Fuse

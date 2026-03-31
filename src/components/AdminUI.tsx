@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, signOut } from 'firebase/auth';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, deleteDoc, writeBatch, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, auth, storage } from '../firebase';
-import { Service, Location, Panel, Collaborator, AdminUser, Vendor, AppSettings, InternalApp, GoogleReview, handleFirestoreError, OperationType } from '../types';
+import { Service, Location, Panel, Collaborator, AdminUser, Vendor, AppSettings, InternalApp, GoogleReview, handleFirestoreError, OperationType, ServiceCategory } from '../types';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -94,7 +94,11 @@ export default function AdminUI({ user }: { user: User }) {
   const [currentAdminInfo, setCurrentAdminInfo] = useState<AdminUser | null>(null);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
 
- const [services, setServices] = useState<Service[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
+  const [isSavingCategories, setIsSavingCategories] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [hasUnsavedCategoryChanges, setHasUnsavedCategoryChanges] = useState(false);
   const [hasUnsavedOrderChanges, setHasUnsavedOrderChanges] = useState(false);
   const hasUnsavedOrderChangesRef = useRef(false);
 
@@ -311,6 +315,18 @@ export default function AdminUI({ user }: { user: User }) {
     }, (error) => {
       console.error("Admin Services Fetch Error:", error);
       handleFirestoreError(error, OperationType.LIST, 'services', auth);
+    });
+
+    const qCategories = query(collection(db, 'serviceCategories'), orderBy('rankOrder', 'asc'));
+    const unsubscribeCategories = onSnapshot(qCategories, (snapshot) => {
+      const catData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as ServiceCategory[];
+      setServiceCategories(catData);
+    }, (error) => {
+      console.error("Admin Categories Fetch Error:", error);
+      handleFirestoreError(error, OperationType.LIST, 'serviceCategories', auth);
     });
 
     const qLocations = query(collection(db, 'locations'));
@@ -1419,6 +1435,82 @@ export default function AdminUI({ user }: { user: User }) {
     }
   };
 
+  const handleMoveCategory = (index: number, direction: 'up' | 'down') => {
+    const newCategories = [...serviceCategories];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    if (targetIndex < 0 || targetIndex >= newCategories.length) return;
+    
+    const temp = newCategories[index];
+    newCategories[index] = newCategories[targetIndex];
+    newCategories[targetIndex] = temp;
+    
+    // Update rankOrder locally
+    const updatedCategories = newCategories.map((cat, i) => ({
+      ...cat,
+      rankOrder: i
+    }));
+    
+    setServiceCategories(updatedCategories);
+    setHasUnsavedCategoryChanges(true);
+  };
+
+  const handleSaveCategoryOrder = async () => {
+    setIsSavingCategories(true);
+    try {
+      const batch = writeBatch(db);
+      serviceCategories.forEach((cat) => {
+        const catRef = doc(db, 'serviceCategories', cat.id);
+        batch.update(catRef, { rankOrder: cat.rankOrder });
+      });
+      await batch.commit();
+      setHasUnsavedCategoryChanges(false);
+      setSuccessMsg('Category order saved successfully!');
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (error) {
+      console.error("Error saving category order:", error);
+      setErrorMsg('Failed to save category order.');
+    } finally {
+      setIsSavingCategories(false);
+    }
+  };
+
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) return;
+    
+    try {
+      const nextRank = serviceCategories.length > 0 
+        ? Math.max(...serviceCategories.map(c => c.rankOrder || 0)) + 1 
+        : 0;
+        
+      await addDoc(collection(db, 'serviceCategories'), {
+        name: newCategoryName.trim(),
+        rankOrder: nextRank
+      });
+      
+      setNewCategoryName('');
+      setSuccessMsg('Category added successfully!');
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (error) {
+      console.error("Error adding category:", error);
+      setErrorMsg('Failed to add category.');
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this category? This will not delete the services within it, but they will no longer be grouped under this category.')) return;
+    
+    try {
+      await deleteDoc(doc(db, 'serviceCategories', id));
+      setSuccessMsg('Category deleted successfully!');
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      setErrorMsg('Failed to delete category.');
+    }
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
@@ -1479,7 +1571,9 @@ export default function AdminUI({ user }: { user: User }) {
     }
   };
 
-  const existingCategories = Array.from(new Set(services.map(s => s.category).filter(Boolean)));
+  const existingCategories = serviceCategories.length > 0 
+    ? serviceCategories.map(c => c.name)
+    : Array.from(new Set(services.map(s => s.category).filter(Boolean)));
 
   const handleMarkContacted = async (id: string) => {
     try {
@@ -2005,6 +2099,85 @@ export default function AdminUI({ user }: { user: User }) {
                 )}
               </button>
             </form>
+          </div>
+        </div>
+
+        {/* Category Management */}
+        <div className="w-full mb-12">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Service Categories</h2>
+                <p className="text-sm text-zinc-500">Manage the order of category carousels on the homepage</p>
+              </div>
+              {hasUnsavedCategoryChanges && (
+                <button
+                  onClick={handleSaveCategoryOrder}
+                  disabled={isSavingCategories}
+                  className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  {isSavingCategories ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                  Save Category Order
+                </button>
+              )}
+            </div>
+
+            <form onSubmit={handleAddCategory} className="flex gap-2 mb-6">
+              <input
+                type="text"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="New category name (e.g. AraVax)"
+                className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50"
+              />
+              <button
+                type="submit"
+                className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-xl border border-zinc-700 transition-colors flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Category
+              </button>
+            </form>
+
+            <div className="space-y-2">
+              {serviceCategories.length === 0 ? (
+                <p className="text-zinc-500 text-sm text-center py-4">No categories defined yet. Add one above.</p>
+              ) : (
+                serviceCategories.map((cat, index) => (
+                  <div key={cat.id} className="flex items-center justify-between bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4 group">
+                    <div className="flex items-center gap-4">
+                      <span className="text-zinc-500 font-mono text-xs w-4">{index + 1}</span>
+                      <span className="text-white font-medium">{cat.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleMoveCategory(index, 'up')}
+                        disabled={index === 0}
+                        className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-lg transition-colors disabled:opacity-30"
+                        title="Move Up"
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleMoveCategory(index, 'down')}
+                        disabled={index === serviceCategories.length - 1}
+                        className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-lg transition-colors disabled:opacity-30"
+                        title="Move Down"
+                      >
+                        <ArrowDown className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCategory(cat.id)}
+                        className="p-1.5 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors ml-2"
+                        title="Delete Category"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
 
