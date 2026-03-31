@@ -89,7 +89,7 @@ export default function App() {
 
   return (
    <ErrorBoundary>
-      <HelmetProvider>
+      <HelmetProvider>    {/* <--- ADD THIS LINE HERE */}
         <BrowserRouter>
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
@@ -106,7 +106,7 @@ export default function App() {
             </Routes>
           </Suspense>
         </BrowserRouter>
-      </HelmetProvider>
+      </HelmetProvider>   {/* <--- ADD THIS LINE HERE */}
     </ErrorBoundary>
   );
 }

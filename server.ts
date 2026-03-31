@@ -4,12 +4,11 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import admin from 'firebase-admin';
 import { createServer as createViteServer } from 'vite';
-import firebaseConfig from './firebase-applet-config.json';
 
 // Initialize Firebase Admin
 if (admin.apps.length === 0) {
   admin.initializeApp({
-    projectId: firebaseConfig.projectId, 
+    projectId: "new-website-7b8dd", 
   });
 }
 
