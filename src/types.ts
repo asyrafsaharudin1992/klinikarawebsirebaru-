@@ -2,10 +2,13 @@ export interface Service {
   id: string;
   title: string;
   category: string;
-  imageUrl?: string; // Legacy support
+  imageUrl?: string; // Legacy support & Share thumbnail
   imageUrls?: string[]; // Legacy support
+  galleryUrls?: string[]; // Media Library Pool
   heroImageUrl?: string; // Zone 1: Horizontal Banner
   thumbnailUrl?: string; // Zone 2: Portrait Card
+  carouselImageUrl?: string; // New Role: Carousel
+  modalImageUrl?: string; // New Role: Modal
   modalImageUrls?: string[]; // Zone 3: Modal Gallery
   price: string;
   teamAraPrice: string;

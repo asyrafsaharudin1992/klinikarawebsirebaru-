@@ -219,6 +219,14 @@ export default function AdminUI({ user }: { user: User }) {
   const [description, setDescription] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
   
+  // Media Library Pool
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  
+  // Role Assignments
+  const [selectedHeroUrl, setSelectedHeroUrl] = useState('');
+  const [selectedCarouselUrl, setSelectedCarouselUrl] = useState('');
+  const [selectedModalUrl, setSelectedModalUrl] = useState('');
+
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -240,6 +248,11 @@ export default function AdminUI({ user }: { user: User }) {
   const [isUploadingHero, setIsUploadingHero] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Category Ordering State
+  const [categoryOrder, setCategoryOrder] = useState<string[]>([]);
+  const [isCategoryOrderModalOpen, setIsCategoryOrderModalOpen] = useState(false);
+  const [tempCategoryOrder, setTempCategoryOrder] = useState<string[]>([]);
   const [generatedImageBase64, setGeneratedImageBase64] = useState<string | null>(null);
 
   const deleteImageFromStorage = async (imageUrl: string) => {
@@ -408,6 +421,16 @@ export default function AdminUI({ user }: { user: User }) {
       handleFirestoreError(error, OperationType.LIST, 'leads', auth);
     });
 
+    const docCategoryOrder = doc(db, 'settings', 'categoryOrder');
+    const unsubscribeCategoryOrder = onSnapshot(docCategoryOrder, (docSnap) => {
+      if (docSnap.exists()) {
+        setCategoryOrder(docSnap.data().order || []);
+      }
+    }, (error) => {
+      console.error("Admin Category Order Fetch Error:", error);
+      handleFirestoreError(error, OperationType.GET, 'settings/categoryOrder', auth);
+    });
+
     return () => {
       unsubscribeCurrentAdmin();
       unsubscribeServices();
@@ -418,8 +441,54 @@ export default function AdminUI({ user }: { user: User }) {
       unsubscribeSettings();
       unsubscribeReviews();
       unsubscribeLeads();
+      unsubscribeCategoryOrder();
     };
   }, [user, currentAdminInfo?.role, currentAdminInfo?.branchId]);
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []) as File[];
+    if (files.length === 0) return;
+
+    setIsUploading(true);
+    setUploadStatus('uploading');
+    setUploadProgress(0);
+
+    try {
+      const uploadPromises = files.map(async (file, index) => {
+        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-gallery-${file.name}`;
+        const storageRef = ref(storage, `services/gallery/${uniqueFileName}`);
+        const uploadTask = uploadBytesResumable(storageRef, file);
+
+        return new Promise<string>((resolve, reject) => {
+          uploadTask.on(
+            'state_changed',
+            (snapshot) => {
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              // Update overall progress roughly
+              setUploadProgress((prev) => Math.min(99, prev + (progress / files.length)));
+            },
+            (error) => reject(error),
+            async () => {
+              const url = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve(url);
+            }
+          );
+        });
+      });
+
+      const newUrls = await Promise.all(uploadPromises);
+      setGalleryImages(prev => [...prev, ...newUrls]);
+      setSuccessMsg(`Successfully uploaded ${files.length} images to the gallery.`);
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (error: any) {
+      console.error('Gallery upload error:', error);
+      setErrorMsg(`Upload failed: ${error.message}`);
+    } finally {
+      setIsUploading(false);
+      setUploadStatus('idle');
+      setUploadProgress(0);
+    }
+  };
 
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -514,6 +583,12 @@ export default function AdminUI({ user }: { user: User }) {
     setDescription(service.description || '');
     setIsFeatured(service.isFeatured || false);
     
+    // Media Library
+    setGalleryImages(service.galleryUrls || service.imageUrls || (service.imageUrl ? [service.imageUrl] : []));
+    setSelectedHeroUrl(service.heroImageUrl || '');
+    setSelectedCarouselUrl(service.carouselImageUrl || service.thumbnailUrl || '');
+    setSelectedModalUrl(service.modalImageUrl || '');
+
     setHeroImageUrl(service.heroImageUrl || '');
     setThumbnailUrl(service.thumbnailUrl || '');
     setThumbnailPreview(service.thumbnailUrl || null);
@@ -540,6 +615,13 @@ export default function AdminUI({ user }: { user: User }) {
     setEndDate('');
     setDescription('');
     setIsFeatured(false);
+    
+    // Media Library
+    setGalleryImages([]);
+    setSelectedHeroUrl('');
+    setSelectedCarouselUrl('');
+    setSelectedModalUrl('');
+
     setExistingImageUrls([]);
     setImageFiles([]);
     setImagePreviews([]);
@@ -1213,6 +1295,8 @@ export default function AdminUI({ user }: { user: User }) {
       });
       
       setHeroImageUrl(url);
+      setGalleryImages(prev => Array.from(new Set([...prev, url])));
+      setSelectedHeroUrl(url);
       setSuccessMsg('Hero image uploaded successfully!');
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (error: any) {
@@ -1229,7 +1313,7 @@ export default function AdminUI({ user }: { user: User }) {
   const handleSaveService = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title) return;
-    if (existingImageUrls.length === 0 && imageFiles.length === 0 && !generatedImageBase64 && !heroImageUrl) {
+    if (galleryImages.length === 0 && existingImageUrls.length === 0 && imageFiles.length === 0 && !generatedImageBase64 && !heroImageUrl) {
       setErrorMsg('Please provide at least one image or generate a hero banner.');
       return;
     }
@@ -1241,8 +1325,8 @@ export default function AdminUI({ user }: { user: User }) {
 
     try {
       let newlyUploadedUrls: string[] = [];
-      let finalHeroImageUrl = heroImageUrl;
-      let finalThumbnailUrl = thumbnailUrl;
+      let finalHeroImageUrl = selectedHeroUrl || heroImageUrl;
+      let finalThumbnailUrl = selectedCarouselUrl || thumbnailUrl;
       let newlyUploadedModalUrls: string[] = [];
 
       setUploadStatus('uploading');
@@ -1267,7 +1351,7 @@ export default function AdminUI({ user }: { user: User }) {
         });
       }
 
-      // 2. Upload Thumbnail Image
+      // 2. Upload Thumbnail Image (Legacy support)
       if (thumbnailFile) {
         const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-thumbnail-${thumbnailFile.name}`;
         const storageRef = ref(storage, `services/${uniqueFileName}`);
@@ -1286,7 +1370,7 @@ export default function AdminUI({ user }: { user: User }) {
         });
       }
 
-      // 3. Upload Modal Gallery Images
+      // 3. Upload Modal Gallery Images (Legacy support)
       if (modalImageFiles.length > 0) {
         const uploadPromises = modalImageFiles.map(async (file) => {
           const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-modal-${file.name}`;
@@ -1316,7 +1400,6 @@ export default function AdminUI({ user }: { user: User }) {
         setUploadStatus('uploading');
         
         const uploadPromises = imageFiles.map(async (file, index) => {
-          // Bypass compression entirely for maximum quality
           const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${file.name}`;
           const storageRef = ref(storage, `services/${uniqueFileName}`);
           const uploadTask = uploadBytesResumable(storageRef, file);
@@ -1341,14 +1424,24 @@ export default function AdminUI({ user }: { user: User }) {
       }
 
       const finalImageUrls = [...existingImageUrls, ...newlyUploadedUrls];
+      
+      // Combine all images into the pool
+      const finalGalleryUrls = Array.from(new Set([...galleryImages, ...finalImageUrls, ...finalModalImageUrls]));
+
+      // Critical for Sharing: Set imageUrl based on priority
+      const shareImageUrl = selectedModalUrl || selectedHeroUrl || finalGalleryUrls[0] || '';
 
       const serviceData = {
         title,
         category,
         imageUrls: finalImageUrls,
+        galleryUrls: finalGalleryUrls,
         heroImageUrl: finalHeroImageUrl,
-        thumbnailUrl: finalThumbnailUrl,
+        thumbnailUrl: finalThumbnailUrl, // Keep for legacy
+        carouselImageUrl: selectedCarouselUrl || finalThumbnailUrl,
+        modalImageUrl: selectedModalUrl,
         modalImageUrls: finalModalImageUrls,
+        imageUrl: shareImageUrl, // CRITICAL FOR SHARING
         price,
         teamAraPrice,
         showTeamAraDisclaimer,
@@ -1451,6 +1544,41 @@ export default function AdminUI({ user }: { user: User }) {
   };
 
   const existingCategories = Array.from(new Set(services.map(s => s.category).filter(Boolean)));
+  
+  // Sort categories based on categoryOrder
+  const sortedCategories = [...existingCategories].sort((a, b) => {
+    const indexA = categoryOrder.indexOf(a);
+    const indexB = categoryOrder.indexOf(b);
+    
+    if (indexA === -1 && indexB === -1) return 0;
+    if (indexA === -1) return 1;
+    if (indexB === -1) return -1;
+    
+    return indexA - indexB;
+  });
+
+  const handleSaveCategoryOrder = async () => {
+    try {
+      await setDoc(doc(db, 'settings', 'categoryOrder'), { order: tempCategoryOrder });
+      setSuccessMsg('Category order saved successfully!');
+      setTimeout(() => setSuccessMsg(null), 3000);
+      setIsCategoryOrderModalOpen(false);
+    } catch (error: any) {
+      console.error('Error saving category order:', error);
+      setErrorMsg('Failed to save category order.');
+      handleFirestoreError(error, OperationType.WRITE, 'settings/categoryOrder', auth);
+    }
+  };
+
+  const moveCategory = (index: number, direction: 'up' | 'down') => {
+    const newOrder = [...tempCategoryOrder];
+    if (direction === 'up' && index > 0) {
+      [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
+    } else if (direction === 'down' && index < newOrder.length - 1) {
+      [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+    }
+    setTempCategoryOrder(newOrder);
+  };
 
   const handleMarkContacted = async (id: string) => {
     try {
@@ -1752,171 +1880,244 @@ export default function AdminUI({ user }: { user: User }) {
                 />
               </div>
 
-              {/* Zone 1: Hero Banner Image (Horizontal 16:9) */}
-              <div className="bg-zinc-950/50 border border-zinc-800/80 p-5 rounded-xl space-y-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <ImageIcon className="w-5 h-5 text-purple-400" />
-                  <h3 className="text-sm font-semibold text-white">Zone 1: Hero Banner Image (Horizontal 16:9)</h3>
+              {/* Task 1: Service Media Gallery (Image Pool) */}
+              <div className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-2xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-purple-400" />
+                    <h3 className="text-lg font-bold text-white">Service Media Gallery</h3>
+                  </div>
+                  <label className="cursor-pointer bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors flex items-center gap-2 border border-zinc-700">
+                    <Plus className="w-4 h-4" />
+                    Upload Images
+                    <input 
+                      type="file" 
+                      multiple 
+                      accept="image/*" 
+                      onChange={handleGalleryUpload} 
+                      className="hidden" 
+                    />
+                  </label>
+                </div>
+                <p className="text-xs text-zinc-500">Upload all images for this service here. You can then assign them to specific roles below.</p>
+                
+                {galleryImages.length > 0 ? (
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 pt-2">
+                    {galleryImages.map((url, index) => (
+                      <div key={`gallery-${index}`} className="relative aspect-square rounded-lg overflow-hidden border border-zinc-800 group">
+                        <img src={url} alt="" className="w-full h-full object-cover" />
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            const urlToRemove = galleryImages[index];
+                            setGalleryImages(prev => prev.filter((_, i) => i !== index));
+                            if (selectedHeroUrl === urlToRemove) setSelectedHeroUrl('');
+                            if (selectedCarouselUrl === urlToRemove) setSelectedCarouselUrl('');
+                            if (selectedModalUrl === urlToRemove) setSelectedModalUrl('');
+                          }}
+                          className="absolute top-1 right-1 p-1 bg-black/60 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 className="w-3 h-3 text-red-500" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="h-32 border-2 border-dashed border-zinc-800 rounded-xl flex flex-col items-center justify-center text-zinc-600 bg-zinc-950/30">
+                    <ImageIcon className="w-8 h-8 mb-2 opacity-20" />
+                    <span className="text-sm font-medium">No images in gallery pool</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Task 2: Role Assignment UI */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Hero Image Role */}
+                <div className="bg-zinc-900/50 border border-zinc-800 p-5 rounded-2xl space-y-4">
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-purple-500" />
+                    Hero Image
+                  </h4>
+                  <div className="aspect-video bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden relative group">
+                    {selectedHeroUrl ? (
+                      <>
+                        <img src={selectedHeroUrl} alt="Hero" className="w-full h-full object-cover" />
+                        <button 
+                          type="button" 
+                          onClick={() => setSelectedHeroUrl('')}
+                          className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-6 h-6 text-white" />
+                        </button>
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-zinc-700 p-4 text-center">
+                        <ImageIcon className="w-6 h-6 mb-2 opacity-30" />
+                        <span className="text-[10px] font-medium">Select from gallery below</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {galleryImages.map((url, i) => (
+                      <button 
+                        key={`hero-pick-${i}`} 
+                        type="button"
+                        onClick={() => setSelectedHeroUrl(url)}
+                        className={`aspect-square rounded-md overflow-hidden border-2 transition-all ${selectedHeroUrl === url ? 'border-purple-500 scale-95' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                      >
+                        <img src={url} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Visual Feedback: Current Hero Banner */}
-                <div className="space-y-2">
-                  <p className="text-xs text-zinc-400 font-medium">Current Hero Banner Preview:</p>
-                  {heroImageUrl ? (
-                    <div className="w-full aspect-video rounded-lg overflow-hidden border border-purple-500/50 relative group">
-                      <img src={heroImageUrl} alt="Current Hero" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => setHeroImageUrl('')} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Trash2 className="w-6 h-6 text-red-500" />
+                {/* Carousel Image Role */}
+                <div className="bg-zinc-900/50 border border-zinc-800 p-5 rounded-2xl space-y-4">
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    Carousel Image
+                  </h4>
+                  <div className="aspect-[3/4] bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden relative group">
+                    {selectedCarouselUrl ? (
+                      <>
+                        <img src={selectedCarouselUrl} alt="Carousel" className="w-full h-full object-cover" />
+                        <button 
+                          type="button" 
+                          onClick={() => setSelectedCarouselUrl('')}
+                          className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-6 h-6 text-white" />
+                        </button>
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-zinc-700 p-4 text-center">
+                        <ImageIcon className="w-6 h-6 mb-2 opacity-30" />
+                        <span className="text-[10px] font-medium">Select from gallery below</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {galleryImages.map((url, i) => (
+                      <button 
+                        key={`carousel-pick-${i}`} 
+                        type="button"
+                        onClick={() => setSelectedCarouselUrl(url)}
+                        className={`aspect-square rounded-md overflow-hidden border-2 transition-all ${selectedCarouselUrl === url ? 'border-blue-500 scale-95' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                      >
+                        <img src={url} alt="" className="w-full h-full object-cover" />
                       </button>
-                    </div>
-                  ) : (
-                    <div className="w-full aspect-video rounded-lg border-2 border-dashed border-zinc-700 bg-zinc-900 flex flex-col items-center justify-center text-zinc-500">
-                      <ImageIcon className="w-8 h-8 mb-2 opacity-50" />
-                      <span className="text-sm font-medium">No Hero Banner Selected</span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Modal Image Role */}
+                <div className="bg-zinc-900/50 border border-zinc-800 p-5 rounded-2xl space-y-4">
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    Modal Image
+                  </h4>
+                  <div className="aspect-[3/4] bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden relative group">
+                    {selectedModalUrl ? (
+                      <>
+                        <img src={selectedModalUrl} alt="Modal" className="w-full h-full object-cover" />
+                        <button 
+                          type="button" 
+                          onClick={() => setSelectedModalUrl('')}
+                          className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-6 h-6 text-white" />
+                        </button>
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-zinc-700 p-4 text-center">
+                        <ImageIcon className="w-6 h-6 mb-2 opacity-30" />
+                        <span className="text-[10px] font-medium">Select from gallery below</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {galleryImages.map((url, i) => (
+                      <button 
+                        key={`modal-pick-${i}`} 
+                        type="button"
+                        onClick={() => setSelectedModalUrl(url)}
+                        className={`aspect-square rounded-md overflow-hidden border-2 transition-all ${selectedModalUrl === url ? 'border-green-500 scale-95' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                      >
+                        <img src={url} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* AI Generation (Moved to a collapsible or secondary section if needed, but keeping it for now) */}
+              <details className="bg-zinc-900/30 border border-zinc-800 rounded-xl p-4">
+                <summary className="text-xs font-medium text-zinc-500 cursor-pointer flex items-center gap-2">
+                  <Sparkles className="w-3 h-3" />
+                  AI Image Generation Tools
+                </summary>
+                <div className="pt-4 space-y-4">
+                  <textarea 
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    rows={2}
+                    disabled={isGenerating}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-purple-500 resize-none disabled:opacity-50"
+                    placeholder="e.g., Warm photo of Malay doctor with healthy baby..."
+                  />
+                  <button 
+                    type="button"
+                    onClick={handleGenerateImage}
+                    disabled={isGenerating || !aiPrompt}
+                    className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                  >
+                    {isGenerating ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</> : '✨ Generate AI Banner'}
+                  </button>
+
+                  {generatedImageBase64 && (
+                    <div className="mt-3 p-3 bg-zinc-900 border border-purple-500/30 rounded-lg space-y-3">
+                      <img src={generatedImageBase64} alt="AI Preview" className="w-full aspect-video object-cover rounded border border-zinc-700" />
+                      <button 
+                        type="button"
+                        onClick={async () => {
+                          if (!generatedImageBase64) return;
+                          setIsUploading(true);
+                          setUploadStatus('uploading');
+                          try {
+                            const blob = base64ToBlob(generatedImageBase64);
+                            const uniqueFileName = `ai-gen-${Date.now()}.jpg`;
+                            const storageRef = ref(storage, `services/gallery/${uniqueFileName}`);
+                            const uploadTask = uploadBytesResumable(storageRef, blob);
+                            
+                            const url = await new Promise<string>((resolve, reject) => {
+                              uploadTask.on('state_changed', null, reject, async () => {
+                                const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                                resolve(downloadUrl);
+                              });
+                            });
+                            
+                            setGalleryImages(prev => Array.from(new Set([...prev, url])));
+                            setGeneratedImageBase64(null);
+                            setAiPrompt('');
+                            setSuccessMsg('AI image added to gallery pool!');
+                            setTimeout(() => setSuccessMsg(null), 3000);
+                          } catch (err: any) {
+                            console.error('Error saving AI image:', err);
+                            setErrorMsg(`Failed to save AI image: ${err.message}`);
+                          } finally {
+                            setIsUploading(false);
+                          }
+                        }}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                        disabled={isUploading}
+                      >
+                        {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                        Add to Gallery Pool
+                      </button>
                     </div>
                   )}
                 </div>
-
-                <div className="grid grid-cols-1 gap-6 pt-4 border-t border-zinc-800/80">
-                  {/* Option 1: Pick from Gallery */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-zinc-300">Option 1: Pick from Gallery</h4>
-                    {[...modalImageUrls, ...existingImageUrls].length > 0 ? (
-                      <div className="flex flex-wrap gap-3">
-                        {[...modalImageUrls, ...existingImageUrls].map((url, i) => (
-                          <div key={`ext-hero-${i}`} className="relative w-20 h-20 rounded-lg overflow-hidden border border-zinc-700 group">
-                            <img src={url} alt="" className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity p-1">
-                              <button type="button" onClick={() => setHeroImageUrl(url)} className="text-[10px] bg-white text-black px-2 py-1 rounded font-bold hover:bg-zinc-200 text-center w-full">
-                                Set Hero
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-zinc-500 italic">Upload images in Zone 3 to pick one.</p>
-                    )}
-                  </div>
-
-                  {/* Option 2: Upload Custom Wide Image */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-zinc-300">Option 2: Upload Custom Wide Image</h4>
-                    <div className="flex items-center gap-4">
-                      <input 
-                        type="file" 
-                        accept="image/*"
-                        onChange={handleHeroImageUpload}
-                        disabled={isUploadingHero}
-                        className="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700 transition-colors"
-                      />
-                      {isUploadingHero && <Loader2 className="w-5 h-5 text-red-500 animate-spin" />}
-                    </div>
-                  </div>
-
-                  {/* Option 3: Generate with AI */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-zinc-300">Option 3: Generate with AI</h4>
-                    <textarea 
-                      value={aiPrompt}
-                      onChange={(e) => setAiPrompt(e.target.value)}
-                      rows={2}
-                      disabled={isGenerating || isUploadingHero}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-purple-500 resize-none disabled:opacity-50"
-                      placeholder="e.g., Warm photo of Malay doctor with healthy baby..."
-                    />
-                    <button 
-                      type="button"
-                      onClick={handleGenerateImage}
-                      disabled={isGenerating || !aiPrompt}
-                      className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
-                    >
-                      {isGenerating ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</> : '✨ Generate AI Banner'}
-                    </button>
-
-                    {generatedImageBase64 && heroImageUrl !== generatedImageBase64 && (
-                      <div className="mt-3 p-3 bg-zinc-900 border border-purple-500/30 rounded-lg space-y-3 animate-in fade-in zoom-in duration-300">
-                        <img src={generatedImageBase64} alt="AI Preview" className="w-full aspect-video object-cover rounded border border-zinc-700" />
-                        <button 
-                          type="button"
-                          onClick={() => setHeroImageUrl(generatedImageBase64)}
-                          className="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
-                        >
-                          <CheckCircle2 className="w-4 h-4" /> Use This Banner
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Zone 2: Thumbnail Image (Portrait 3:4) */}
-              <div className="bg-zinc-950/50 border border-zinc-800/80 p-5 rounded-xl space-y-4">
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5 text-blue-400" />
-                  <h3 className="text-sm font-semibold text-white">Zone 2: Thumbnail Image (Portrait 3:4)</h3>
-                </div>
-                <p className="text-xs text-zinc-500">This image appears on the homepage carousel cards.</p>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-24 h-32 rounded-lg border border-zinc-800 bg-zinc-900 overflow-hidden flex-shrink-0">
-                    {thumbnailPreview ? (
-                      <img src={thumbnailPreview} alt="Thumbnail" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-zinc-700">
-                        <ImageIcon className="w-6 h-6" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-grow space-y-3">
-                    <input 
-                      type="file" 
-                      accept="image/*"
-                      onChange={handleThumbnailChange}
-                      className="block w-full text-xs text-zinc-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700"
-                    />
-                    {thumbnailPreview && (
-                      <button type="button" onClick={removeThumbnail} className="text-xs text-red-500 hover:text-red-400 flex items-center gap-1">
-                        <Trash2 className="w-3 h-3" /> Remove Thumbnail
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Zone 3: Modal Gallery Images (Portrait 3:4) */}
-              <div className="bg-zinc-950/50 border border-zinc-800/80 p-5 rounded-xl space-y-4">
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5 text-green-400" />
-                  <h3 className="text-sm font-semibold text-white">Zone 3: Modal Gallery Images (Portrait 3:4)</h3>
-                </div>
-                <p className="text-xs text-zinc-500">These images appear in the popup gallery when a service is clicked.</p>
-
-                <div className="flex flex-wrap gap-3">
-                  {modalImageUrls.map((url, i) => (
-                    <div key={`modal-ext-${i}`} className="relative w-20 h-28 rounded-lg overflow-hidden border border-zinc-700 group">
-                      <img src={url} alt="" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => removeExistingModalImage(i)} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Trash2 className="w-5 h-5 text-red-500" />
-                      </button>
-                    </div>
-                  ))}
-                  {modalImagePreviews.map((preview, i) => (
-                    <div key={`modal-new-${i}`} className="relative w-20 h-28 rounded-lg overflow-hidden border border-green-500/50 group">
-                      <img src={preview} alt="" className="w-full h-full object-cover" />
-                      <div className="absolute top-0 right-0 bg-green-500 text-white text-[8px] px-1 font-bold">NEW</div>
-                      <button type="button" onClick={() => removeNewModalImage(i)} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Trash2 className="w-5 h-5 text-red-500" />
-                      </button>
-                    </div>
-                  ))}
-                  <label className="w-20 h-28 rounded-lg border-2 border-dashed border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 flex flex-col items-center justify-center cursor-pointer transition-colors">
-                    <Plus className="w-6 h-6 text-zinc-600" />
-                    <span className="text-[10px] text-zinc-500 font-medium">Add Image</span>
-                    <input type="file" accept="image/*" multiple onChange={handleModalImageChange} className="hidden" />
-                  </label>
-                </div>
-              </div>
+              </details>
 
               {/* Legacy Gallery (Optional) */}
               <div className="opacity-50 hover:opacity-100 transition-opacity">
@@ -1982,7 +2183,19 @@ export default function AdminUI({ user }: { user: User }) {
         {/* Bottom: Active Services List */}
         <div className="w-full">
           <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Active Services</h2>
+            <div className="flex items-center gap-4">
+              <h2 className="text-lg font-semibold text-white">Active Services</h2>
+              <button 
+                onClick={() => {
+                  setTempCategoryOrder(sortedCategories);
+                  setIsCategoryOrderModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-medium rounded-lg border border-zinc-700 transition-all"
+              >
+                <GripVertical className="w-3.5 h-3.5" />
+                Reorder Categories
+              </button>
+            </div>
             <div className="flex items-center gap-2 text-sm text-zinc-500">
               <AlertCircle className="w-4 h-4" />
               <span>Drag to reorder within categories</span>
@@ -1997,7 +2210,7 @@ export default function AdminUI({ user }: { user: User }) {
             </div>
           ) : (
             <div className="space-y-8">
-              {existingCategories.map(category => {
+              {sortedCategories.map(category => {
                 const categoryServices = services.filter(s => s.category === category).sort((a, b) => a.rankOrder - b.rankOrder);
                 if (categoryServices.length === 0) return null;
                 
@@ -3248,6 +3461,67 @@ export default function AdminUI({ user }: { user: User }) {
             </div>
           </div>
         </main>
+      )}
+
+      {/* Category Reorder Modal */}
+      {isCategoryOrderModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-500/10 rounded-full flex items-center justify-center text-purple-500">
+                  <GripVertical className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Reorder Categories</h3>
+                  <p className="text-xs text-zinc-500">Adjust the display order of service sections</p>
+                </div>
+              </div>
+              <button onClick={() => setIsCategoryOrderModalOpen(false)} className="text-zinc-500 hover:text-white p-1 hover:bg-zinc-800 rounded-md transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar mb-6">
+              {tempCategoryOrder.map((cat, idx) => (
+                <div key={cat} className="flex items-center justify-between p-3 bg-zinc-800/50 border border-zinc-700/50 rounded-xl group hover:border-purple-500/30 transition-colors">
+                  <span className="text-sm font-medium text-zinc-200 capitalize">{cat}</span>
+                  <div className="flex items-center gap-1">
+                    <button 
+                      onClick={() => moveCategory(idx, 'up')}
+                      disabled={idx === 0}
+                      className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-700 rounded-md disabled:opacity-20 transition-all"
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => moveCategory(idx, 'down')}
+                      disabled={idx === tempCategoryOrder.length - 1}
+                      className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-700 rounded-md disabled:opacity-20 transition-all"
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setIsCategoryOrderModalOpen(false)}
+                className="flex-1 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-xl transition-colors text-sm"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveCategoryOrder}
+                className="flex-1 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors text-sm shadow-lg shadow-purple-900/20"
+              >
+                Save Layout
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Delete Confirmation Modal */}
