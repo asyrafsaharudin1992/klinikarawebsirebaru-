@@ -2,7 +2,7 @@
 import { Link } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview, ServiceCategory } from '../types';
+import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview } from '../types';
 import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle, Phone, Share2, Check, Lock, ExternalLink, Database, Users, CreditCard, Settings, Github, Star, GitFork, Code } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -117,12 +117,12 @@ interface GithubRepo {
 
 export default function PublicUI() {
   const [services, setServices] = useState<Service[]>([]);
-  const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [panels, setPanels] = useState<Panel[]>([]);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [reviews, setReviews] = useState<GoogleReview[]>([]);
+  const [categoryOrder, setCategoryOrder] = useState<string[]>([]);
   const [settings, setSettings] = useState<AppSettings>({ 
     vendorSubheading: '', 
     carouselOrder: ['services', 'teamAra', 'vendors', 'panels'],
@@ -206,7 +206,7 @@ const handleShare = async (service: Service) => {
 
       const fetchServices = async () => {
         try {
-          const q = query(collection(db, 'services'), orderBy('rankOrder', 'asc'));
+          const q = query(collection(db, 'services'));
           const snapshot = await getDocs(q);
           const servicesData = snapshot.docs.map(doc => ({
             id: doc.id,
@@ -329,17 +329,14 @@ const handleShare = async (service: Service) => {
         }
       };
 
-      const fetchCategories = async () => {
+      const fetchCategoryOrder = async () => {
         try {
-          const q = query(collection(db, 'serviceCategories'), orderBy('rankOrder', 'asc'));
-          const snapshot = await getDocs(q);
-          const catData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as ServiceCategory[];
-          setServiceCategories(catData);
+          const docSnap = await getDoc(doc(db, 'settings', 'categoryOrder'));
+          if (docSnap.exists()) {
+            setCategoryOrder(docSnap.data().order || []);
+          }
         } catch (error) {
-          console.error("Failed to fetch categories:", error);
+          console.error("Failed to fetch category order:", error);
         }
       };
 
@@ -351,7 +348,7 @@ const handleShare = async (service: Service) => {
         fetchVendors(),
         fetchReviews(),
         fetchSettings(),
-        fetchCategories()
+        fetchCategoryOrder()
       ]);
 
       setLoading(false);
@@ -360,9 +357,19 @@ const handleShare = async (service: Service) => {
     loadAllData();
   }, []);
 
-  const uniqueCategories = serviceCategories.length > 0
-    ? serviceCategories.map(c => c.name)
-    : Array.from(new Set((services || []).map(s => s.category).filter(Boolean))) as string[];
+  const uniqueCategories = Array.from(new Set((services || []).map(s => s.category).filter(Boolean))) as string[];
+  
+  // Sort categories based on categoryOrder
+  const sortedCategories = [...uniqueCategories].sort((a, b) => {
+    const indexA = categoryOrder.indexOf(a);
+    const indexB = categoryOrder.indexOf(b);
+    
+    if (indexA === -1 && indexB === -1) return 0;
+    if (indexA === -1) return 1;
+    if (indexB === -1) return -1;
+    
+    return indexA - indexB;
+  });
   const featuredServices = (services || []).filter(s => s.isFeatured);
 
   // Initialize Fuse
@@ -679,7 +686,7 @@ const handleShare = async (service: Service) => {
             if (section === 'services') {
               return (
                 <div key="services">
-                  {hasContent ? uniqueCategories.map(category => {
+                  {hasContent ? sortedCategories.map(category => {
                     const categoryServices = (services || []).filter(s => s.category === category);
                     return (
                       <ServiceCarouselRow 

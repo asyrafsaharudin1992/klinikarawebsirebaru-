@@ -3,16 +3,19 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import admin from 'firebase-admin';
+import { getFirestore } from 'firebase-admin/firestore';
 import { createServer as createViteServer } from 'vite';
+
+import firebaseConfig from './firebase-applet-config.json';
 
 // Initialize Firebase Admin
 if (admin.apps.length === 0) {
   admin.initializeApp({
-    projectId: "new-website-7b8dd", 
+    projectId: firebaseConfig.projectId, 
   });
 }
 
-const db = admin.firestore();
+const db = getFirestore(firebaseConfig.firestoreDatabaseId);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -56,7 +59,7 @@ async function startServer() {
 
     let title = 'Klinik Ara 24 Jam';
     let description = 'Selamat datang ke laman sesawang Klinik Ara 24 Jam. Jom sertai TeamAra untuk menikmati pelbagai manfaat.';
-    let imageUrl = 'https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/locations%2F1774409163998-uha4uj0-%7BA3113931-E36A-4750-9461-CF9E820F4CE2%7D.png?alt=media&token=9ab31dee-069e-4b33-b21c-1feb457c916c';
+    let imageUrl = `https://firebasestorage.googleapis.com/v0/b/${firebaseConfig.storageBucket}/o/locations%2F1774409163998-uha4uj0-%7BA3113931-E36A-4750-9461-CF9E820F4CE2%7D.png?alt=media`;
     let fullUrl = 'https://klinikara24jam.hsohealthcare.com/';
 
     if (serviceId) {
