@@ -237,6 +237,7 @@ export default function AdminUI({ user }: { user: User }) {
 
   // AI Generation State
   const [heroImageUrl, setHeroImageUrl] = useState('');
+  const [useHeroForAll, setUseHeroForAll] = useState(true);
   const [isUploadingHero, setIsUploadingHero] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -515,6 +516,11 @@ export default function AdminUI({ user }: { user: User }) {
     setIsFeatured(service.isFeatured || false);
     
     setHeroImageUrl(service.heroImageUrl || '');
+    setUseHeroForAll(
+      !!service.heroImageUrl && 
+      service.heroImageUrl === service.carouselImageUrl && 
+      service.heroImageUrl === service.modalImageUrl
+    );
     setThumbnailUrl(service.thumbnailUrl || '');
     setThumbnailPreview(service.thumbnailUrl || null);
     setModalImageUrls(service.modalImageUrls || []);
@@ -544,6 +550,7 @@ export default function AdminUI({ user }: { user: User }) {
     setImageFiles([]);
     setImagePreviews([]);
     setHeroImageUrl('');
+    setUseHeroForAll(true);
     setThumbnailUrl('');
     setThumbnailFile(null);
     setThumbnailPreview(null);
@@ -1267,8 +1274,8 @@ export default function AdminUI({ user }: { user: User }) {
         });
       }
 
-      // 2. Upload Thumbnail Image
-      if (thumbnailFile) {
+      // 2. Upload Thumbnail Image (Only if not using Hero for all)
+      if (!useHeroForAll && thumbnailFile) {
         const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-thumbnail-${thumbnailFile.name}`;
         const storageRef = ref(storage, `services/${uniqueFileName}`);
         const uploadTask = uploadBytesResumable(storageRef, thumbnailFile);
@@ -1286,8 +1293,8 @@ export default function AdminUI({ user }: { user: User }) {
         });
       }
 
-      // 3. Upload Modal Gallery Images
-      if (modalImageFiles.length > 0) {
+      // 3. Upload Modal Gallery Images (Only if not using Hero for all)
+      if (!useHeroForAll && modalImageFiles.length > 0) {
         const uploadPromises = modalImageFiles.map(async (file) => {
           const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-modal-${file.name}`;
           const storageRef = ref(storage, `services/${uniqueFileName}`);
@@ -1309,7 +1316,19 @@ export default function AdminUI({ user }: { user: User }) {
         newlyUploadedModalUrls = await Promise.all(uploadPromises);
       }
 
-      const finalModalImageUrls = [...modalImageUrls, ...newlyUploadedModalUrls];
+      let finalModalImageUrls = [...modalImageUrls, ...newlyUploadedModalUrls];
+
+      // Logic for optimized fields
+      let carouselImageUrl = finalThumbnailUrl;
+      let modalImageUrl = finalModalImageUrls[0] || finalHeroImageUrl;
+
+      if (useHeroForAll) {
+        carouselImageUrl = finalHeroImageUrl;
+        modalImageUrl = finalHeroImageUrl;
+        // Keep backward compatibility fields in sync
+        finalThumbnailUrl = finalHeroImageUrl;
+        finalModalImageUrls = [finalHeroImageUrl];
+      }
 
       // 4. Upload Legacy Gallery Images
       if (imageFiles.length > 0) {
@@ -1349,6 +1368,8 @@ export default function AdminUI({ user }: { user: User }) {
         heroImageUrl: finalHeroImageUrl,
         thumbnailUrl: finalThumbnailUrl,
         modalImageUrls: finalModalImageUrls,
+        carouselImageUrl, // Optimized field
+        modalImageUrl,    // Optimized field
         price,
         teamAraPrice,
         showTeamAraDisclaimer,
@@ -1847,76 +1868,98 @@ export default function AdminUI({ user }: { user: User }) {
                       </div>
                     )}
                   </div>
-                </div>
-              </div>
 
-              {/* Zone 2: Thumbnail Image (Portrait 3:4) */}
-              <div className="bg-zinc-950/50 border border-zinc-800/80 p-5 rounded-xl space-y-4">
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5 text-blue-400" />
-                  <h3 className="text-sm font-semibold text-white">Zone 2: Thumbnail Image (Portrait 3:4)</h3>
-                </div>
-                <p className="text-xs text-zinc-500">This image appears on the homepage carousel cards.</p>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-24 h-32 rounded-lg border border-zinc-800 bg-zinc-900 overflow-hidden flex-shrink-0">
-                    {thumbnailPreview ? (
-                      <img src={thumbnailPreview} alt="Thumbnail" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-zinc-700">
-                        <ImageIcon className="w-6 h-6" />
+                  {/* Optimization Toggle */}
+                  <div className="pt-4 border-t border-zinc-800/80">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <div className="relative flex items-center">
+                        <input 
+                          type="checkbox" 
+                          checked={useHeroForAll}
+                          onChange={(e) => setUseHeroForAll(e.target.checked)}
+                          className="w-5 h-5 rounded border-zinc-700 bg-zinc-900 text-purple-600 focus:ring-purple-500 focus:ring-offset-zinc-950"
+                        />
                       </div>
-                    )}
-                  </div>
-                  <div className="flex-grow space-y-3">
-                    <input 
-                      type="file" 
-                      accept="image/*"
-                      onChange={handleThumbnailChange}
-                      className="block w-full text-xs text-zinc-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700"
-                    />
-                    {thumbnailPreview && (
-                      <button type="button" onClick={removeThumbnail} className="text-xs text-red-500 hover:text-red-400 flex items-center gap-1">
-                        <Trash2 className="w-3 h-3" /> Remove Thumbnail
-                      </button>
-                    )}
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-white group-hover:text-purple-400 transition-colors">Use this image for Carousel and Modal</span>
+                        <span className="text-[10px] text-zinc-500 italic">Recommended to save storage space and maintain consistency.</span>
+                      </div>
+                    </label>
                   </div>
                 </div>
               </div>
 
-              {/* Zone 3: Modal Gallery Images (Portrait 3:4) */}
-              <div className="bg-zinc-950/50 border border-zinc-800/80 p-5 rounded-xl space-y-4">
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5 text-green-400" />
-                  <h3 className="text-sm font-semibold text-white">Zone 3: Modal Gallery Images (Portrait 3:4)</h3>
-                </div>
-                <p className="text-xs text-zinc-500">These images appear in the popup gallery when a service is clicked.</p>
+              {!useHeroForAll && (
+                <>
+                  {/* Zone 2: Thumbnail Image (Portrait 3:4) */}
+                  <div className="bg-zinc-950/50 border border-zinc-800/80 p-5 rounded-xl space-y-4">
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="w-5 h-5 text-blue-400" />
+                      <h3 className="text-sm font-semibold text-white">Zone 2: Carousel Image (Portrait 3:4)</h3>
+                    </div>
+                    <p className="text-xs text-zinc-500">This image appears on the homepage carousel cards.</p>
 
-                <div className="flex flex-wrap gap-3">
-                  {modalImageUrls.map((url, i) => (
-                    <div key={`modal-ext-${i}`} className="relative w-20 h-28 rounded-lg overflow-hidden border border-zinc-700 group">
-                      <img src={url} alt="" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => removeExistingModalImage(i)} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Trash2 className="w-5 h-5 text-red-500" />
-                      </button>
+                    <div className="flex items-start gap-4">
+                      <div className="w-24 h-32 rounded-lg border border-zinc-800 bg-zinc-900 overflow-hidden flex-shrink-0">
+                        {thumbnailPreview ? (
+                          <img src={thumbnailPreview} alt="Thumbnail" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-zinc-700">
+                            <ImageIcon className="w-6 h-6" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-grow space-y-3">
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={handleThumbnailChange}
+                          className="block w-full text-xs text-zinc-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700"
+                        />
+                        {thumbnailPreview && (
+                          <button type="button" onClick={removeThumbnail} className="text-xs text-red-500 hover:text-red-400 flex items-center gap-1">
+                            <Trash2 className="w-3 h-3" /> Remove Image
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  ))}
-                  {modalImagePreviews.map((preview, i) => (
-                    <div key={`modal-new-${i}`} className="relative w-20 h-28 rounded-lg overflow-hidden border border-green-500/50 group">
-                      <img src={preview} alt="" className="w-full h-full object-cover" />
-                      <div className="absolute top-0 right-0 bg-green-500 text-white text-[8px] px-1 font-bold">NEW</div>
-                      <button type="button" onClick={() => removeNewModalImage(i)} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Trash2 className="w-5 h-5 text-red-500" />
-                      </button>
+                  </div>
+
+                  {/* Zone 3: Modal Gallery Images (Portrait 3:4) */}
+                  <div className="bg-zinc-950/50 border border-zinc-800/80 p-5 rounded-xl space-y-4">
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="w-5 h-5 text-green-400" />
+                      <h3 className="text-sm font-semibold text-white">Zone 3: Modal Image (Portrait 3:4)</h3>
                     </div>
-                  ))}
-                  <label className="w-20 h-28 rounded-lg border-2 border-dashed border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 flex flex-col items-center justify-center cursor-pointer transition-colors">
-                    <Plus className="w-6 h-6 text-zinc-600" />
-                    <span className="text-[10px] text-zinc-500 font-medium">Add Image</span>
-                    <input type="file" accept="image/*" multiple onChange={handleModalImageChange} className="hidden" />
-                  </label>
-                </div>
-              </div>
+                    <p className="text-xs text-zinc-500">This image appears in the popup gallery when a service is clicked.</p>
+
+                    <div className="flex flex-wrap gap-3">
+                      {modalImageUrls.map((url, i) => (
+                        <div key={`modal-ext-${i}`} className="relative w-20 h-28 rounded-lg overflow-hidden border border-zinc-700 group">
+                          <img src={url} alt="" className="w-full h-full object-cover" />
+                          <button type="button" onClick={() => removeExistingModalImage(i)} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Trash2 className="w-5 h-5 text-red-500" />
+                          </button>
+                        </div>
+                      ))}
+                      {modalImagePreviews.map((preview, i) => (
+                        <div key={`modal-new-${i}`} className="relative w-20 h-28 rounded-lg overflow-hidden border border-green-500/50 group">
+                          <img src={preview} alt="" className="w-full h-full object-cover" />
+                          <div className="absolute top-0 right-0 bg-green-500 text-white text-[8px] px-1 font-bold">NEW</div>
+                          <button type="button" onClick={() => removeNewModalImage(i)} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Trash2 className="w-5 h-5 text-red-500" />
+                          </button>
+                        </div>
+                      ))}
+                      <label className="w-20 h-28 rounded-lg border-2 border-dashed border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 flex flex-col items-center justify-center cursor-pointer transition-colors">
+                        <Plus className="w-6 h-6 text-zinc-600" />
+                        <span className="text-[10px] text-zinc-500 font-medium">Add Image</span>
+                        <input type="file" accept="image/*" multiple onChange={handleModalImageChange} className="hidden" />
+                      </label>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Legacy Gallery (Optional) */}
               <div className="opacity-50 hover:opacity-100 transition-opacity">

@@ -24,7 +24,8 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() && (
-        request.auth.token.email == "asyrafsaharudin@hsohealthcare.com" && request.auth.token.email_verified == true
+        (request.auth.token.email == "asyrafsaharudin@hsohealthcare.com") ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.token.email))
       );
     }
 
@@ -33,7 +34,7 @@ service cloud.firestore {
       return data.keys().hasAll(['title', 'category', 'imageUrl', 'rankOrder']) &&
              data.keys().hasOnly(['title', 'category', 'imageUrl', 'rankOrder']) &&
              data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
-             data.category is string && data.category in ['AraMommy', 'AraVax', 'AraSihat', 'Other'] &&
+             data.category is string && data.category.size() > 0 && data.category.size() < 50 &&
              data.imageUrl is string && data.imageUrl.size() > 0 && data.imageUrl.size() < 1000 &&
              data.rankOrder is number;
     }
@@ -66,6 +67,14 @@ service cloud.firestore {
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.location is string && data.location.size() > 0 && data.location.size() < 200 &&
              data.imageUrl is string && data.imageUrl.size() > 0 && data.imageUrl.size() < 1000;
+    }
+
+    function isValidCategory() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['name', 'rankOrder']) &&
+             data.keys().hasOnly(['name', 'rankOrder']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 50 &&
+             data.rankOrder is number;
     }
 
     match /services/{serviceId} {
@@ -117,9 +126,20 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    match /serviceCategories/{categoryId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidCategory();
+      allow update: if isAdmin() && isValidCategory();
+      allow delete: if isAdmin();
+    }
+
     match /admins/{adminId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
+    }
+
+    match /test/{docId} {
+      allow read: if true;
     }
   }
 }

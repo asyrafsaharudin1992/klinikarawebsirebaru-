@@ -6,6 +6,8 @@ export interface Service {
   imageUrls?: string[]; // Legacy support
   heroImageUrl?: string; // Zone 1: Horizontal Banner
   thumbnailUrl?: string; // Zone 2: Portrait Card
+  carouselImageUrl?: string; // Optimized Carousel Image
+  modalImageUrl?: string; // Optimized Modal Image
   modalImageUrls?: string[]; // Zone 3: Modal Gallery
   price: string;
   teamAraPrice: string;

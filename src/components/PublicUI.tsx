@@ -122,6 +122,7 @@ export default function PublicUI() {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [reviews, setReviews] = useState<GoogleReview[]>([]);
+  const [categoryOrder, setCategoryOrder] = useState<string[]>([]);
   const [settings, setSettings] = useState<AppSettings>({ 
     vendorSubheading: '', 
     carouselOrder: ['services', 'teamAra', 'vendors', 'panels'],
@@ -328,6 +329,17 @@ const handleShare = async (service: Service) => {
         }
       };
 
+      const fetchCategoryOrder = async () => {
+        try {
+          const docSnap = await getDoc(doc(db, 'settings', 'categoryOrder'));
+          if (docSnap.exists()) {
+            setCategoryOrder(docSnap.data().order || []);
+          }
+        } catch (error) {
+          console.error("Failed to fetch category order:", error);
+        }
+      };
+
       await Promise.all([
         fetchServices(),
         fetchLocations(),
@@ -335,7 +347,8 @@ const handleShare = async (service: Service) => {
         fetchCollaborators(),
         fetchVendors(),
         fetchReviews(),
-        fetchSettings()
+        fetchSettings(),
+        fetchCategoryOrder()
       ]);
 
       setLoading(false);
@@ -345,6 +358,18 @@ const handleShare = async (service: Service) => {
   }, []);
 
   const uniqueCategories = Array.from(new Set((services || []).map(s => s.category).filter(Boolean))) as string[];
+  
+  // Sort categories based on categoryOrder
+  const sortedCategories = [...uniqueCategories].sort((a, b) => {
+    const indexA = categoryOrder.indexOf(a);
+    const indexB = categoryOrder.indexOf(b);
+    
+    if (indexA === -1 && indexB === -1) return 0;
+    if (indexA === -1) return 1;
+    if (indexB === -1) return -1;
+    
+    return indexA - indexB;
+  });
   const featuredServices = (services || []).filter(s => s.isFeatured);
 
   // Initialize Fuse
@@ -661,7 +686,7 @@ const handleShare = async (service: Service) => {
             if (section === 'services') {
               return (
                 <div key="services">
-                  {hasContent ? uniqueCategories.map(category => {
+                  {hasContent ? sortedCategories.map(category => {
                     const categoryServices = (services || []).filter(s => s.category === category);
                     return (
                       <ServiceCarouselRow 
