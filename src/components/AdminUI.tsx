@@ -995,6 +995,7 @@ export default function AdminUI({ user }: { user: User }) {
       await updateDoc(doc(db, 'settings', 'homepage'), {
         vendorSubheading: settings.vendorSubheading || '',
         carouselOrder: settings.carouselOrder || ['services', 'teamAra', 'vendors', 'panels'],
+        categoryOrder: settings.categoryOrder || sortedCategories,
         categorySubheadings: settings.categorySubheadings || {},
         teamAraSub: settings.teamAraSub || '',
         panelsSub: settings.panelsSub || '',
@@ -1030,6 +1031,32 @@ export default function AdminUI({ user }: { user: User }) {
       [newOrder[index + 1], newOrder[index]] = [newOrder[index], newOrder[index + 1]];
     }
     setSettings({ ...settings, carouselOrder: newOrder });
+  };
+
+  // --- SMART CATEGORY SORTER ---
+  // 1. Discover categories dynamically (Safety Net)
+  const dynamicCategories = Array.from(new Set(services.map(s => s.category).filter(Boolean)));
+  
+  // 2. Sort them based on the saved layout, push unlisted ones to the bottom
+  const sortedCategories = [...dynamicCategories].sort((a, b) => {
+    const order = settings.categoryOrder || [];
+    const indexA = order.indexOf(a);
+    const indexB = order.indexOf(b);
+
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB; // Both exist, sort by preference
+    if (indexA !== -1) return -1; // A exists, put it higher
+    if (indexB !== -1) return 1;  // B exists, put it higher
+    return a.localeCompare(b);    // Neither exist, alphabetical fallback
+  });
+
+  const moveCategoryItem = (index: number, direction: 'up' | 'down') => {
+    const newOrder = [...sortedCategories];
+    if (direction === 'up' && index > 0) {
+      [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+    } else if (direction === 'down' && index < newOrder.length - 1) {
+      [newOrder[index + 1], newOrder[index]] = [newOrder[index], newOrder[index + 1]];
+    }
+    setSettings({ ...settings, categoryOrder: newOrder });
   };
 
   const addInternalApp = () => {
@@ -1906,7 +1933,7 @@ export default function AdminUI({ user }: { user: User }) {
             </div>
           ) : (
             <div className="space-y-8">
-              {existingCategories.map(category => {
+              {sortedCategories.map(category => {
                 const categoryServices = services.filter(s => s.category === category).sort((a, b) => a.rankOrder - b.rankOrder);
                 if (categoryServices.length === 0) return null;
                 
@@ -2680,6 +2707,34 @@ export default function AdminUI({ user }: { user: User }) {
                       <button
                         onClick={() => moveCarouselItem(index, 'down')}
                         disabled={index === settings.carouselOrder.length - 1}
+                        className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+                      >
+                        <ArrowDown className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* --- NEW CATEGORY REORDERING UI --- */}
+            <div className="mt-8">
+              <label className="block text-sm font-medium text-zinc-400 mb-3">Service Categories Order (e.g., AraMommy, AraVax)</label>
+              <div className="space-y-2">
+                {sortedCategories.map((categoryName, index) => (
+                  <div key={categoryName} className="flex items-center justify-between bg-zinc-950 border border-zinc-800 p-4 rounded-xl">
+                    <span className="text-white font-medium capitalize">{categoryName}</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => moveCategoryItem(index, 'up')}
+                        disabled={index === 0}
+                        className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => moveCategoryItem(index, 'down')}
+                        disabled={index === sortedCategories.length - 1}
                         className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
                       >
                         <ArrowDown className="w-4 h-4" />

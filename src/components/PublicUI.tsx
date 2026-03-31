@@ -344,7 +344,24 @@ const handleShare = async (service: Service) => {
     loadAllData();
   }, []);
 
-  const uniqueCategories = Array.from(new Set((services || []).map(s => s.category).filter(Boolean))) as string[];
+  // --- SMART CATEGORY SORTER (SAFETY NET) ---
+  const dynamicCategories = Array.from(new Set((services || []).map(s => s.category).filter(Boolean))) as string[];
+  
+  // Safely grab the saved order from settings
+  // Note: Ensure 'categoryOrder?: string[];' is added to AppSettings in your types.ts file!
+  const savedCategoryOrder = settings?.categoryOrder || [];
+
+  // Sort them securely
+  const sortedCategories = [...dynamicCategories].sort((a, b) => {
+    const indexA = savedCategoryOrder.indexOf(a);
+    const indexB = savedCategoryOrder.indexOf(b);
+
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB; // Both exist, respect saved order
+    if (indexA !== -1) return -1; // A exists, move it up
+    if (indexB !== -1) return 1;  // B exists, move it up
+    return a.localeCompare(b);    // Neither exist, fallback to alphabetical
+  });
+
   const featuredServices = (services || []).filter(s => s.isFeatured);
 
   // Initialize Fuse
@@ -661,7 +678,7 @@ const handleShare = async (service: Service) => {
             if (section === 'services') {
               return (
                 <div key="services">
-                  {hasContent ? uniqueCategories.map(category => {
+                  {hasContent ? sortedCategories.map(category => {
                     const categoryServices = (services || []).filter(s => s.category === category);
                     return (
                       <ServiceCarouselRow 

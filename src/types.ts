@@ -70,6 +70,7 @@ export interface AppSettings {
   vendorsSub?: string;
   reviewsSub?: string;
   internalApps?: InternalApp[];
+  categoryOrder?: string[];
 }
 
 export interface GoogleReview {
