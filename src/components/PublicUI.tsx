@@ -125,7 +125,8 @@ export default function PublicUI() {
   const [settings, setSettings] = useState<AppSettings>({ 
     vendorSubheading: '', 
     carouselOrder: ['services', 'teamAra', 'vendors', 'panels'],
-    internalApps: []
+    internalApps: [],
+    categoryOrder: []
   });
   const [selectedPanel, setSelectedPanel] = useState<Panel | null>(null);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
@@ -315,6 +316,7 @@ const handleShare = async (service: Service) => {
               ...data,
               vendorSubheading: data.vendorSubheading || '',
               carouselOrder: data.carouselOrder || ['services', 'teamAra', 'vendors', 'panels'],
+              categoryOrder: data.categoryOrder || [],
               categorySubheadings: data.categorySubheadings || {},
               teamAraSub: data.teamAraSub || '',
               panelsSub: data.panelsSub || '',
