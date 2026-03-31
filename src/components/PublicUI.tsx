@@ -205,7 +205,7 @@ const handleShare = async (service: Service) => {
 
       const fetchServices = async () => {
         try {
-          const q = query(collection(db, 'services'));
+          const q = query(collection(db, 'services'), orderBy('rankOrder', 'asc'));
           const snapshot = await getDocs(q);
           const servicesData = snapshot.docs.map(doc => ({
             id: doc.id,

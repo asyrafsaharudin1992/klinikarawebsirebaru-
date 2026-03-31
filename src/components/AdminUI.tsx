@@ -95,6 +95,13 @@ export default function AdminUI({ user }: { user: User }) {
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
 
  const [services, setServices] = useState<Service[]>([]);
+  const [hasUnsavedOrderChanges, setHasUnsavedOrderChanges] = useState(false);
+  const hasUnsavedOrderChangesRef = useRef(false);
+
+  // Sync ref with state
+  useEffect(() => {
+    hasUnsavedOrderChangesRef.current = hasUnsavedOrderChanges;
+  }, [hasUnsavedOrderChanges]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [panels, setPanels] = useState<Panel[]>([]);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
@@ -290,6 +297,8 @@ export default function AdminUI({ user }: { user: User }) {
 
     const qServices = query(collection(db, 'services'));
     const unsubscribeServices = onSnapshot(qServices, (snapshot) => {
+      if (hasUnsavedOrderChangesRef.current) return; // Ignore updates while reordering
+      
       const servicesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -1363,7 +1372,7 @@ export default function AdminUI({ user }: { user: User }) {
         setSuccessMsg('Service updated successfully!');
         setHighlightedServiceId(editingId);
       } else {
-        const newRankOrder = (services || []).length > 0 ? Math.max(...(services || []).map(s => s.rankOrder)) + 1 : 0;
+        const newRankOrder = (services || []).length > 0 ? Math.max(...(services || []).map(s => s.rankOrder || 0)) + 1 : 0;
         const docRef = await addDoc(collection(db, 'services'), {
           ...serviceData,
           rankOrder: newRankOrder
@@ -1410,7 +1419,7 @@ export default function AdminUI({ user }: { user: User }) {
     }
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
       const draggedService = services.find(s => s.id === active.id);
@@ -1418,7 +1427,7 @@ export default function AdminUI({ user }: { user: User }) {
 
       const category = draggedService.category;
       
-      const categoryServices = services.filter(s => s.category === category).sort((a, b) => a.rankOrder - b.rankOrder);
+      const categoryServices = services.filter(s => s.category === category).sort((a, b) => (a.rankOrder || 0) - (b.rankOrder || 0));
       
       const oldIndex = categoryServices.findIndex(s => s.id === active.id);
       const newIndex = categoryServices.findIndex(s => s.id === over.id);
@@ -1426,27 +1435,47 @@ export default function AdminUI({ user }: { user: User }) {
       if (oldIndex !== -1 && newIndex !== -1) {
         const newCategoryServices = arrayMove(categoryServices, oldIndex, newIndex) as Service[];
         
-        const updatedServices = [...services];
-        const batch = writeBatch(db);
+        // We need to re-assign rankOrder globally to preserve the order of other categories
+        const categories = Array.from(new Set(services.map(s => s.category).filter(Boolean)));
         
-        newCategoryServices.forEach((service, index) => {
-          const serviceIndex = updatedServices.findIndex(s => s.id === service.id);
-          if (serviceIndex !== -1) {
-            updatedServices[serviceIndex] = { ...service, rankOrder: index };
-          }
-          
-          const docRef = doc(db, 'services', service.id);
-          batch.update(docRef, { rankOrder: index });
+        let globalIndex = 0;
+        const updatedServices = [...services];
+        
+        categories.forEach(cat => {
+          const catServices = cat === category 
+            ? newCategoryServices 
+            : services.filter(s => s.category === cat).sort((a, b) => (a.rankOrder || 0) - (b.rankOrder || 0));
+            
+          catServices.forEach(service => {
+            const serviceIndex = updatedServices.findIndex(s => s.id === service.id);
+            if (serviceIndex !== -1) {
+              updatedServices[serviceIndex] = { ...service, rankOrder: globalIndex++ };
+            }
+          });
         });
         
         setServices(updatedServices);
-        
-        try {
-          await batch.commit();
-        } catch (error) {
-          handleFirestoreError(error, OperationType.UPDATE, 'services', auth);
-        }
+        setHasUnsavedOrderChanges(true);
       }
+    }
+  };
+
+  const handleSaveOrder = async () => {
+    try {
+      const batch = writeBatch(db);
+      
+      services.forEach((service) => {
+        const docRef = doc(db, 'services', service.id);
+        batch.update(docRef, { rankOrder: service.rankOrder });
+      });
+      
+      setHasUnsavedOrderChanges(false);
+      hasUnsavedOrderChangesRef.current = false;
+      await batch.commit();
+      setSuccessMsg('Service order saved successfully');
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'services', auth);
     }
   };
 
@@ -1983,9 +2012,19 @@ export default function AdminUI({ user }: { user: User }) {
         <div className="w-full">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-white">Active Services</h2>
-            <div className="flex items-center gap-2 text-sm text-zinc-500">
-              <AlertCircle className="w-4 h-4" />
-              <span>Drag to reorder within categories</span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-zinc-500">
+                <AlertCircle className="w-4 h-4" />
+                <span>Drag to reorder within categories</span>
+              </div>
+              {hasUnsavedOrderChanges && (
+                <button
+                  onClick={handleSaveOrder}
+                  className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Save Order
+                </button>
+              )}
             </div>
           </div>
 
@@ -1998,7 +2037,7 @@ export default function AdminUI({ user }: { user: User }) {
           ) : (
             <div className="space-y-8">
               {existingCategories.map(category => {
-                const categoryServices = services.filter(s => s.category === category).sort((a, b) => a.rankOrder - b.rankOrder);
+                const categoryServices = services.filter(s => s.category === category).sort((a, b) => (a.rankOrder || 0) - (b.rankOrder || 0));
                 if (categoryServices.length === 0) return null;
                 
                 return (
