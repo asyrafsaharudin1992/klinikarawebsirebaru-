@@ -13,7 +13,6 @@ import PublicUI from './components/PublicUI';
 import SharePage from './pages/SharePage';
 
 const AdminUI = lazy(() => import('./components/AdminUI'));
-const ServiceMediaAdmin = lazy(() => import('./pages/ServiceMediaAdmin'));
 const Login = lazy(() => import('./components/Login'));
 
 const LoadingSpinner = () => (
@@ -99,10 +98,6 @@ export default function App() {
               <Route 
                 path="/admin" 
                 element={user ? <AdminUI user={user} /> : <Navigate to="/login" replace />} 
-              />
-              <Route 
-                path="/admin/media" 
-                element={user ? <ServiceMediaAdmin /> : <Navigate to="/login" replace />} 
               />
               <Route 
                 path="/login" 
