@@ -32,15 +32,9 @@ export default function App() {
       try {
         await getDoc(doc(db, 'test', 'connection'));
       } catch (error) {
-        console.error("Firebase Connection Error:", error);
         if (error instanceof Error && error.message.includes('the client is offline')) {
+          console.error("Please check your Firebase configuration.");
           setDbError("Firestore Database is not enabled. Please go to your Firebase Console, click 'Build' > 'Firestore Database', and click 'Create database' (Start in Test Mode).");
-        } else if (error instanceof Error && error.message.includes('permission-denied')) {
-          // This might happen if rules are strict, but it means we ARE connected
-          console.log("Connected but permission denied for test doc (expected if rules are strict)");
-        } else {
-          // Other errors might be transient or related to named databases
-          console.warn("Non-fatal connection test error:", error);
         }
       }
     };
@@ -51,15 +45,7 @@ export default function App() {
       setLoading(false);
     });
 
-    // Fallback if onAuthStateChanged hangs
-    const authTimeout = setTimeout(() => {
-      setLoading(false);
-    }, 5000);
-
-    return () => {
-      unsubscribe();
-      clearTimeout(authTimeout);
-    };
+    return () => unsubscribe();
   }, []);
 
   if (dbError) {

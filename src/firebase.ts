@@ -1,19 +1,22 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { initializeFirestore, memoryLocalCache } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import firebaseConfig from '../firebase-applet-config.json';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAmmSouC3QXrUa0cTkaNMOJ_vWZA26w9VQ",
+  authDomain: "new-website-7b8dd.firebaseapp.com",
+  projectId: "new-website-7b8dd",
+  storageBucket: "new-website-7b8dd.firebasestorage.app",
+  messagingSenderId: "81459036171",
+  appId: "1:81459036171:web:a2ffb5c0d1be12a177470e",
+  measurementId: "G-DYRMRJ7SHN"
+};
 
 const app = initializeApp(firebaseConfig);
-
-// Ensure databaseId is a string, fallback to undefined (default database) if not present
-const databaseId = (firebaseConfig as any).firestoreDatabaseId || undefined;
-
-// Use initializeFirestore with memoryLocalCache to avoid potential indexedDB issues in the iframe environment
 export const db = initializeFirestore(app, {
-  localCache: memoryLocalCache(),
-}, databaseId);
-
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
