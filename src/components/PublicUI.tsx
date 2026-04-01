@@ -446,9 +446,9 @@ const handleShare = async (service: Service) => {
     const url = new URL(baseUrl);
     
     // Attach Tracking
-    const savedCode = localStorage.getItem('ara_affiliate_code');
-    if (savedCode) {
-      url.searchParams.set('ref', savedCode);
+    const savedRef = localStorage.getItem('ara_affiliate_code');
+    if (savedRef) {
+      url.searchParams.set('ref', savedRef);
     }
     
     // Pass Service ID
