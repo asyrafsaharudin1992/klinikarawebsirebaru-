@@ -441,22 +441,27 @@ const handleShare = async (service: Service) => {
     setSelectedService(null);
   };
 
-  const handleBookNow = (service: Service | null) => {
-    const baseUrl = 'https://arapower.hsohealthcare.com/';
-    const url = new URL(baseUrl);
+  const handleBookNow = (e: React.MouseEvent, service: Service | null) => {
+    e.preventDefault();
     
-    // Attach Tracking
-    const savedRef = localStorage.getItem('ara_affiliate_code');
-    if (savedRef) {
-      url.searchParams.set('ref', savedRef);
-    }
+    // Read Memory on the Fly
+    const savedRef = typeof window !== 'undefined' ? localStorage.getItem('ara_affiliate_code') : null;
     
-    // Pass Service ID
+    // Construct the URL
+    let destination = 'https://arapower.hsohealthcare.com/';
+    
+    // Attach Service ID
     if (service && service.id) {
-      url.searchParams.set('serviceId', service.id);
+      destination += '?serviceId=' + service.id;
     }
     
-    window.open(url.toString(), '_blank');
+    // Attach the Ref Code
+    if (savedRef) {
+      destination += (destination.includes('?') ? '&' : '?') + 'ref=' + savedRef;
+    }
+    
+    // Execute the Jump
+    window.location.href = destination;
   };
 
   const handleWhatsAppBooking = async (e: React.FormEvent) => {
@@ -1084,7 +1089,7 @@ const handleShare = async (service: Service) => {
                 {/* Desktop Sticky Footer (Hidden on Mobile) */}
                 <div className="hidden md:flex absolute bottom-0 left-0 w-full bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-transparent pt-20 pb-8 px-10 flex-col gap-3 z-50 pointer-events-none">
                   <button 
-                    onClick={() => handleBookNow(selectedService)}
+                    onClick={(e) => handleBookNow(e, selectedService)}
                     className="pointer-events-auto w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-lg transition-transform active:scale-95"
                   >
                     Saya nak tempah slot
@@ -1104,7 +1109,7 @@ const handleShare = async (service: Service) => {
             {/* Pure gradient fade without any hard blur lines or borders */}
             <div className="md:hidden absolute bottom-0 left-0 w-full bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-transparent pt-20 pb-6 px-4 flex flex-row gap-3 z-50 pointer-events-none">
               <button 
-                onClick={() => handleBookNow(selectedService)}
+                onClick={(e) => handleBookNow(e, selectedService)}
                 className="pointer-events-auto flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-sm sm:text-base transition-transform active:scale-95"
               >
                 Saya nak tempah slot
