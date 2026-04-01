@@ -21,7 +21,83 @@ const LoadingSpinner = () => (
   </div>
 );
 
+// Custom hook for Affiliate Tracking
+function useAffiliateTracking() {
+  useEffect(() => {
+    // 1. Check the URL for a ?ref= parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref');
+
+    // 2. Save to Memory if it exists
+    if (refCode) {
+      localStorage.setItem('ara_affiliate_code', refCode);
+    }
+
+    // Read the saved code
+    const savedCode = localStorage.getItem('ara_affiliate_code');
+
+    // 3. Modify Booking Links dynamically
+    if (savedCode) {
+      const modifyLinks = () => {
+        // Find all links on the page
+        const links = document.querySelectorAll('a');
+        
+        links.forEach(link => {
+          // Check if the link is a booking link (adjust the condition based on your actual booking URL)
+          // For example, checking if the text contains "Book Appointment" or "Tempah"
+          const linkText = link.textContent?.toLowerCase() || '';
+          if (
+            linkText.includes('book appointment') || 
+            linkText.includes('tempah') ||
+            link.href.includes('wa.me') || // For WhatsApp booking links
+            link.href.includes('booking-portal-url.com') // Replace with your actual booking portal domain
+          ) {
+            try {
+              const url = new URL(link.href);
+              // Only append if it doesn't already have the ref parameter
+              if (!url.searchParams.has('ref')) {
+                url.searchParams.set('ref', savedCode);
+                link.href = url.toString();
+              }
+            } catch (e) {
+              // Ignore invalid URLs
+            }
+          }
+        });
+      };
+
+      // Run initially
+      modifyLinks();
+
+      // Since React is a Single Page Application (SPA) and renders dynamically,
+      // we use a MutationObserver to watch for new links being added to the DOM
+      const observer = new MutationObserver((mutations) => {
+        let shouldModify = false;
+        for (const mutation of mutations) {
+          if (mutation.addedNodes.length > 0) {
+            shouldModify = true;
+            break;
+          }
+        }
+        if (shouldModify) {
+          modifyLinks();
+        }
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+
+      // Cleanup observer on unmount
+      return () => observer.disconnect();
+    }
+  }, []);
+}
+
 export default function App() {
+  useAffiliateTracking(); // Initialize the affiliate tracking
+
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);

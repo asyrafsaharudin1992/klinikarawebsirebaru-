@@ -463,7 +463,12 @@ const handleShare = async (service: Service) => {
 
     const formattedClinicPhone = formatPhoneNumber(leadData.locationPhone);
     const message = encodeURIComponent(`Hai, nama saya ${leadData.name}. Saya berminat dengan ${bookingModalService.title}.`);
-    const waUrl = `https://wa.me/${formattedClinicPhone}?text=${message}`;
+    
+    // Check for affiliate code
+    const savedCode = localStorage.getItem('ara_affiliate_code');
+    const affiliateParam = savedCode ? `&ref=${savedCode}` : '';
+    
+    const waUrl = `https://wa.me/${formattedClinicPhone}?text=${message}${affiliateParam}`;
 
     window.open(waUrl, '_blank');
 
