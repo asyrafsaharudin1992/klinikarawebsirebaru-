@@ -50,7 +50,7 @@ function useAffiliateTracking() {
             linkText.includes('book appointment') || 
             linkText.includes('tempah') ||
             link.href.includes('wa.me') || // For WhatsApp booking links
-            link.href.includes('booking-portal-url.com') // Replace with your actual booking portal domain
+            link.href.includes('arapower.hsohealthcare.com') // Booking portal domain
           ) {
             try {
               const url = new URL(link.href);

@@ -441,6 +441,24 @@ const handleShare = async (service: Service) => {
     setSelectedService(null);
   };
 
+  const handleBookNow = (service: Service | null) => {
+    const baseUrl = 'https://arapower.hsohealthcare.com/';
+    const url = new URL(baseUrl);
+    
+    // Attach Tracking
+    const savedCode = localStorage.getItem('ara_affiliate_code');
+    if (savedCode) {
+      url.searchParams.set('ref', savedCode);
+    }
+    
+    // Pass Service ID
+    if (service && service.id) {
+      url.searchParams.set('serviceId', service.id);
+    }
+    
+    window.open(url.toString(), '_blank');
+  };
+
   const handleWhatsAppBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!bookingModalService || !leadData.locationId || !leadData.name || !leadData.phone) return;
@@ -1066,7 +1084,7 @@ const handleShare = async (service: Service) => {
                 {/* Desktop Sticky Footer (Hidden on Mobile) */}
                 <div className="hidden md:flex absolute bottom-0 left-0 w-full bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-transparent pt-20 pb-8 px-10 flex-col gap-3 z-50 pointer-events-none">
                   <button 
-                    onClick={() => setBookingModalService(selectedService)}
+                    onClick={() => handleBookNow(selectedService)}
                     className="pointer-events-auto w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-lg transition-transform active:scale-95"
                   >
                     Saya nak tempah slot
@@ -1086,7 +1104,7 @@ const handleShare = async (service: Service) => {
             {/* Pure gradient fade without any hard blur lines or borders */}
             <div className="md:hidden absolute bottom-0 left-0 w-full bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-transparent pt-20 pb-6 px-4 flex flex-row gap-3 z-50 pointer-events-none">
               <button 
-                onClick={() => setBookingModalService(selectedService)}
+                onClick={() => handleBookNow(selectedService)}
                 className="pointer-events-auto flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-sm sm:text-base transition-transform active:scale-95"
               >
                 Saya nak tempah slot
