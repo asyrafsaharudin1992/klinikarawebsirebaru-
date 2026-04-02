@@ -4,6 +4,10 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { DynamicPageData, PageBlock } from '../types';
 import { ChevronLeft, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { CarouselCard } from '../types'; // make sure to import this at the top!
+  import { X } from 'lucide-react'; // ensure X is imported for the close button
+
+  const [selectedCard, setSelectedCard] = useState<CarouselCard | null>(null);
 
 export default function DynamicPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -116,6 +120,37 @@ export default function DynamicPage() {
           </section>
         );
 
+        case 'carousel':
+        if (!block.carouselCards || block.carouselCards.length === 0) return null;
+        return (
+          <section key={block.id} className="max-w-7xl mx-auto px-4 py-12">
+            <div className="flex overflow-x-auto pb-8 -mx-4 px-4 gap-6 snap-x snap-mandatory hide-scrollbar">
+              {block.carouselCards.map(card => (
+                <div 
+                  key={card.id} 
+                  onClick={() => setSelectedCard(card)}
+                  className="snap-start shrink-0 w-[280px] md:w-[350px] bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden cursor-pointer hover:border-zinc-700 transition-all duration-300 group hover:shadow-xl hover:-translate-y-1"
+                >
+                  <div className="relative h-48 w-full bg-zinc-950 overflow-hidden">
+                    {card.imageUrl ? (
+                      <img src={card.imageUrl} alt={card.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-zinc-800">No Image</div>
+                    )}
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-white mb-2">{card.title}</h3>
+                    {card.shortDescription && <p className="text-sm text-zinc-400 line-clamp-2">{card.shortDescription}</p>}
+                    <div className="mt-4 text-cyan-400 text-sm font-bold flex items-center gap-2">
+                      Baca Lanjut <ArrowRight className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+
       default:
         return null;
     }
@@ -156,6 +191,51 @@ export default function DynamicPage() {
       <main className="w-full">
         {pageData.blocks.map(block => renderBlock(block))}
       </main>
+      {/* ========================================== */}
+      {/* CAROUSEL CARD MODAL */}
+      {/* ========================================== */}
+      {selectedCard && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={() => setSelectedCard(null)}
+        >
+          <div 
+            className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()} // Prevent clicks inside from closing it
+          >
+            {selectedCard.imageUrl && (
+              <div className="relative h-64 md:h-80 w-full shrink-0">
+                <img src={selectedCard.imageUrl} alt={selectedCard.title} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent" />
+                <button 
+                  onClick={() => setSelectedCard(null)}
+                  className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/80 text-white rounded-full backdrop-blur-md transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+            
+            <div className="p-6 md:p-8 overflow-y-auto">
+              {!selectedCard.imageUrl && (
+                <div className="flex justify-between items-start mb-6">
+                  <h2 className="text-3xl font-bold text-white">{selectedCard.title}</h2>
+                  <button onClick={() => setSelectedCard(null)} className="p-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-full transition">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+              {selectedCard.imageUrl && (
+                <h2 className="text-3xl font-bold text-white mb-6 -mt-12 relative z-10 drop-shadow-md">{selectedCard.title}</h2>
+              )}
+              
+              <div className="prose prose-invert max-w-none whitespace-pre-wrap text-zinc-300 leading-relaxed text-lg">
+                {selectedCard.modalFullText || selectedCard.shortDescription || "Tiada maklumat lanjut."}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

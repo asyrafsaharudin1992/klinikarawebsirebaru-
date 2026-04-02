@@ -141,8 +141,15 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 }
 
 // --- DYNAMIC CMS TYPES ---
+export type BlockType = 'hero' | 'text' | 'cta' | 'image' | 'carousel'; // Added 'carousel'
 
-export type BlockType = 'hero' | 'text' | 'cta' | 'image';
+export interface CarouselCard {
+  id: string;
+  title: string;
+  shortDescription?: string;
+  modalFullText?: string;
+  imageUrl?: string;
+}
 
 export interface PageBlock {
   id: string;
@@ -156,6 +163,8 @@ export interface PageBlock {
   // CTA fields
   buttonText?: string;
   buttonLink?: string;
+  // Carousel fields
+  carouselCards?: CarouselCard[];
 }
 
 export interface DynamicPageData {

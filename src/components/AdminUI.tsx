@@ -1070,6 +1070,59 @@ export default function AdminUI({ user }: { user: User }) {
     setPageForm(prev => ({ ...prev, blocks: prev.blocks.filter(b => b.id !== id) }));
   };
 
+const addCarouselCard = (blockId: string) => {
+    setPageForm(prev => ({
+      ...prev,
+      blocks: prev.blocks.map(b => b.id === blockId ? {
+        ...b,
+        carouselCards: [...(b.carouselCards || []), { id: Date.now().toString(), title: '' }]
+      } : b)
+    }));
+  };
+
+  const updateCarouselCard = (blockId: string, cardId: string, field: keyof CarouselCard, value: string) => {
+    setPageForm(prev => ({
+      ...prev,
+      blocks: prev.blocks.map(b => b.id === blockId ? {
+        ...b,
+        carouselCards: b.carouselCards?.map(c => c.id === cardId ? { ...c, [field]: value } : c)
+      } : b)
+    }));
+  };
+
+  const removeCarouselCard = (blockId: string, cardId: string) => {
+    setPageForm(prev => ({
+      ...prev,
+      blocks: prev.blocks.map(b => b.id === blockId ? {
+        ...b,
+        carouselCards: b.carouselCards?.filter(c => c.id !== cardId)
+      } : b)
+    }));
+  };
+
+  const handleCarouselImageUpload = async (blockId: string, cardId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    setIsUploading(true);
+    try {
+      const uniqueFileName = `${Date.now()}-card-${file.name}`;
+      const storageRef = ref(storage, `pages/${uniqueFileName}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+      const url = await new Promise<string>((resolve, reject) => {
+        uploadTask.on('state_changed', null, reject, async () => {
+          resolve(await getDownloadURL(uploadTask.snapshot.ref));
+        });
+      });
+      updateCarouselCard(blockId, cardId, 'imageUrl', url);
+      setSuccessMsg('Card image uploaded!');
+    } catch (error) {
+      setErrorMsg('Failed to upload image.');
+    } finally {
+      setIsUploading(false);
+      setTimeout(() => setSuccessMsg(null), 3000);
+    }
+  };
+
   const moveBlock = (index: number, direction: 'up' | 'down') => {
     const newBlocks = [...pageForm.blocks];
     if (direction === 'up' && index > 0) {
@@ -3682,6 +3735,33 @@ export default function AdminUI({ user }: { user: User }) {
                             <input type="url" value={block.buttonLink || ''} onChange={e => updateBlock(block.id, 'buttonLink', e.target.value)} placeholder="Link URL (e.g., https://wa.me/...)" className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-white text-sm" />
                           </div>
                         )}
+
+                        {block.type === 'carousel' && (
+                          <div className="space-y-4">
+                            <div className="text-sm font-bold text-zinc-300 border-b border-zinc-800 pb-2">Carousel Cards</div>
+                            {(block.carouselCards || []).map((card, cIndex) => (
+                              <div key={card.id} className="bg-zinc-900 border border-zinc-700 rounded-lg p-3 relative group/card space-y-3">
+                                <button type="button" onClick={() => removeCarouselCard(block.id, card.id)} className="absolute top-2 right-2 text-red-500 opacity-50 hover:opacity-100 p-1"><Trash2 className="w-4 h-4" /></button>
+                                <span className="text-xs font-bold text-zinc-500">Card {cIndex + 1}</span>
+                                
+                                <input type="text" value={card.title} onChange={e => updateCarouselCard(block.id, card.id, 'title', e.target.value)} placeholder="Card Title" className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white text-sm" />
+                                <input type="text" value={card.shortDescription || ''} onChange={e => updateCarouselCard(block.id, card.id, 'shortDescription', e.target.value)} placeholder="Short Description (Thumbnail)" className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white text-sm" />
+                                <textarea value={card.modalFullText || ''} onChange={e => updateCarouselCard(block.id, card.id, 'modalFullText', e.target.value)} placeholder="Full Modal Text (Detailed info)" rows={3} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white text-sm whitespace-pre-wrap" />
+                                
+                                <div className="flex items-center gap-3">
+                                  <label className="bg-zinc-800 hover:bg-zinc-700 text-white text-xs px-3 py-2 rounded cursor-pointer transition-colors">
+                                    Upload Card Image
+                                    <input type="file" accept="image/*" className="hidden" onChange={e => handleCarouselImageUpload(block.id, card.id, e)} />
+                                  </label>
+                                  {card.imageUrl && <img src={card.imageUrl} className="h-8 rounded" alt="preview" />}
+                                </div>
+                              </div>
+                            ))}
+                            <button type="button" onClick={() => addCarouselCard(block.id)} className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-bold text-white transition-colors">+ Add Card</button>
+                          </div>
+                        )}
+
+                    
                       </div>
                     ))
                   )}
@@ -3693,6 +3773,7 @@ export default function AdminUI({ user }: { user: User }) {
                   <button type="button" onClick={() => addBlock('text')} className="bg-zinc-800 hover:bg-zinc-700 text-xs font-bold py-2 px-3 rounded flex items-center gap-1">+ Text Section</button>
                   <button type="button" onClick={() => addBlock('image')} className="bg-zinc-800 hover:bg-zinc-700 text-xs font-bold py-2 px-3 rounded flex items-center gap-1">+ Image Gallery</button>
                   <button type="button" onClick={() => addBlock('cta')} className="bg-zinc-800 hover:bg-zinc-700 text-xs font-bold py-2 px-3 rounded flex items-center gap-1">+ Action Button</button>
+                  <button type="button" onClick={() => addBlock('carousel')} className="bg-zinc-800 hover:bg-zinc-700 text-xs font-bold py-2 px-3 rounded flex items-center gap-1">+ Carousel</button>
                 </div>
               </div>
 
