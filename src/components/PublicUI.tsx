@@ -157,6 +157,9 @@ export default function PublicUI() {
         slug: doc.data().slug
       }));
       setCustomPages(activePages);
+    }, (error) => {
+      console.error("Public Pages Fetch Error:", error);
+      handleFirestoreError(error, OperationType.LIST, 'pages', auth);
     });
 
     return () => unsubscribePages();

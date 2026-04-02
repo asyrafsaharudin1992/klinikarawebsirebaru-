@@ -7,13 +7,12 @@ import { ChevronLeft, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { CarouselCard } from '../types'; // make sure to import this at the top!
   import { X } from 'lucide-react'; // ensure X is imported for the close button
 
-  const [selectedCard, setSelectedCard] = useState<CarouselCard | null>(null);
-
-export default function DynamicPage() {
+  export default function DynamicPage() {
   const { slug } = useParams<{ slug: string }>();
   const [pageData, setPageData] = useState<DynamicPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedCard, setSelectedCard] = useState<CarouselCard | null>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);

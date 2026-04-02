@@ -3,7 +3,7 @@ import { User, signOut } from 'firebase/auth';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, deleteDoc, writeBatch, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, auth, storage } from '../firebase';
-import { Service, Location, Panel, Collaborator, AdminUser, Vendor, AppSettings, InternalApp, GoogleReview, handleFirestoreError, OperationType, DynamicPageData, PageBlock, BlockType } from '../types';
+import { Service, Location, Panel, Collaborator, AdminUser, Vendor, AppSettings, InternalApp, GoogleReview, handleFirestoreError, OperationType, DynamicPageData, PageBlock, BlockType, CarouselCard } from '../types';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
