@@ -43,16 +43,42 @@ export default function DynamicPage() {
     switch (block.type) {
       case 'hero':
         return (
-          <section key={block.id} className="relative h-[50vh] md:h-[60vh] w-full flex items-center justify-center text-center overflow-hidden mb-12">
-            {block.imageUrl && (
-              <>
-                <img src={block.imageUrl} alt={block.heading} className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/60" /> {/* Dark overlay */}
-              </>
-            )}
-            <div className="relative z-10 px-4 max-w-4xl mx-auto">
-              {block.heading && <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">{block.heading}</h1>}
-              {block.subheading && <p className="text-lg md:text-xl text-zinc-300">{block.subheading}</p>}
+          <section key={block.id} className="relative h-[70vh] md:h-[85vh] w-full transition-all duration-1000 ease-in-out mb-12">
+            <div className="absolute inset-0 bg-zinc-950">
+              {block.imageUrl ? (
+                <img 
+                  src={block.imageUrl} 
+                  alt={block.heading || "Hero Banner"} 
+                  className="w-full h-full object-cover animate-fade-in"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-full h-full bg-zinc-900" /> /* Fallback if no image is uploaded */
+              )}
+              {/* Gradient overlays restricted to bottom and left for text readability */}
+              <div className="absolute inset-y-0 left-0 w-full md:w-2/3 bg-gradient-to-r from-zinc-950/90 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-zinc-950/90 to-transparent" />
+            </div>
+            
+            {/* Text Content matching the Homepage layout */}
+            <div className="absolute bottom-[15%] left-4 md:left-12 max-w-2xl z-10 pointer-events-none">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-red-600 font-bold tracking-widest text-sm drop-shadow-md">
+                  HALAMAN KHAS
+                </span>
+              </div>
+              
+              {block.heading && (
+                <h1 className="text-5xl md:text-7xl font-bold mb-4 tracking-tight drop-shadow-lg text-white">
+                  {block.heading}
+                </h1>
+              )}
+              
+              {block.subheading && (
+                <p className="text-lg md:text-xl text-zinc-300 max-w-xl drop-shadow-md">
+                  {block.subheading}
+                </p>
+              )}
             </div>
           </section>
         );
