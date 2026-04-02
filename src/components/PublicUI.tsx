@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview } from '../types';
-import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle, Phone, Share2, Check, Lock, ExternalLink, Database, Users, CreditCard, Settings, Github, Star, GitFork, Code } from 'lucide-react';
+import { Play, Info, ChevronRight, Menu, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle, Phone, Share2, Check, Lock, ExternalLink, Database, Users, CreditCard, Settings, Github, Star, GitFork, Code } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { GoogleGenAI, Type } from '@google/genai';
 import GoogleReviews from './GoogleReviews';
@@ -146,6 +146,7 @@ export default function PublicUI() {
   const [specialAccessError, setSpecialAccessError] = useState('');
   // --- CMS PAGE TABS STATE ---
   const [customPages, setCustomPages] = useState<{title: string, slug: string}[]>([]);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     // Real-time listener for published pages
@@ -581,6 +582,15 @@ const handleShare = async (service: Service) => {
             />
             KLINIK ARA 24 JAM
           </a>
+
+          {/* Mobile Hamburger Button */}
+          <button 
+            className="md:hidden p-2 text-zinc-400 hover:text-white"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-300">
             <a href="#" className="text-white font-semibold hover:text-white transition">Laman Utama</a>
             <a href="#services" className="hover:text-white transition">Perkhidmatan</a>
@@ -653,6 +663,38 @@ const handleShare = async (service: Service) => {
             </div>
           </div>
         </section>
+
+        {/* --- 🌟 MOBILE DROPDOWN MENU --- */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed top-[70px] left-0 w-full bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800 z-40 p-4 shadow-2xl flex flex-col gap-2 animate-in slide-in-from-top-2">
+          
+          {/* Default Scroll Links (Change 'services' to whatever your actual scroll function uses) */}
+          <button onClick={() => { /* scrollToSection('services'); */ setIsMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 text-lg font-medium text-white hover:bg-zinc-900 rounded-xl">
+            Perkhidmatan
+          </button>
+          <button onClick={() => { /* scrollToSection('locations'); */ setIsMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 text-lg font-medium text-white hover:bg-zinc-900 rounded-xl">
+            Cawangan
+          </button>
+
+          {/* Dynamic CMS Pages */}
+          {customPages.length > 0 && (
+            <>
+              <div className="h-px w-full bg-zinc-800 my-2" />
+              <div className="px-4 py-2 text-xs font-bold text-zinc-500 uppercase tracking-wider">Laman Khas</div>
+              {customPages.map(page => (
+                <Link 
+                  key={page.slug} 
+                  to={`/p/${page.slug}`} 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="block px-4 py-3 text-lg font-medium text-cyan-400 hover:bg-zinc-900 rounded-xl"
+                >
+                  {page.title}
+                </Link>
+              ))}
+            </>
+          )}
+        </div>
+      )}
 
       {/* Floating Search Bar */}
       <div className="-mt-8 relative z-20 mx-auto max-w-4xl px-4 w-full">
