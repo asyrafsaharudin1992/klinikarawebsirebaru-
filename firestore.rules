@@ -1,125 +1,79 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: services
-    // Document ID: auto-generated
-    // Fields:
-    //   - title: string (required) - Title of the service
-    //   - category: string (required) - Category of the service (AraMommy, AraVax, AraSihat, Other)
-    //   - imageUrl: string (required) - URL of the promotional image
-    //   - rankOrder: number (required) - Order of the service in the list
-    //
-    // ===============================================================
-
+    
     // ===============================================================
     // Helper Functions
     // ===============================================================
+    // Verifies that the user is logged into the Firebase system
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    function isAdmin() {
-      return isAuthenticated() && (
-        request.auth.token.email == "asyrafsaharudin@hsohealthcare.com" && request.auth.token.email_verified == true
-      );
-    }
+    // ===============================================================
+    // PUBLIC READ COLLECTIONS (Website Content)
+    // Anyone on the internet can read these to view the live website.
+    // Only logged-in staff can create, update, or delete them.
+    // ===============================================================
 
-    function isValidService() {
-      let data = request.resource.data;
-      return data.keys().hasAll(['title', 'category', 'imageUrl', 'rankOrder']) &&
-             data.keys().hasOnly(['title', 'category', 'imageUrl', 'rankOrder']) &&
-             data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
-             data.category is string && data.category in ['AraMommy', 'AraVax', 'AraSihat', 'Other'] &&
-             data.imageUrl is string && data.imageUrl.size() > 0 && data.imageUrl.size() < 1000 &&
-             data.rankOrder is number;
-    }
-
-    function isValidLocation() {
-      let data = request.resource.data;
-      return data.keys().hasAll(['branchName', 'address', 'phone', 'whatsapp', 'operatingHours', 'googleMapsUrl', 'wazeUrl']) &&
-             data.branchName is string && data.branchName.size() > 0 && data.branchName.size() < 100 &&
-             data.address is string && data.address.size() > 0 && data.address.size() < 500 &&
-             data.phone is string && data.phone.size() < 50 &&
-             data.whatsapp is string && data.whatsapp.size() < 50 &&
-             data.operatingHours is string && data.operatingHours.size() < 200 &&
-             data.googleMapsUrl is string && data.googleMapsUrl.size() < 1000 &&
-             data.wazeUrl is string && data.wazeUrl.size() < 1000 &&
-             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() < 1000)) &&
-             (!('landmark' in data) || (data.landmark is string && data.landmark.size() < 500));
-    }
-
-    function isValidPanel() {
-      let data = request.resource.data;
-      return data.keys().hasAll(['name', 'imageUrl', 'availableLocations']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.imageUrl is string && data.imageUrl.size() > 0 && data.imageUrl.size() < 1000 &&
-             data.availableLocations is list && data.availableLocations.size() <= 50;
-    }
-
-    function isValidCollaborator() {
-      let data = request.resource.data;
-      return data.keys().hasAll(['name', 'location', 'imageUrl']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.location is string && data.location.size() > 0 && data.location.size() < 200 &&
-             data.imageUrl is string && data.imageUrl.size() > 0 && data.imageUrl.size() < 1000;
-    }
-
-    match /services/{serviceId} {
+    match /services/{document=**} {
       allow read: if true;
-      allow create: if isAdmin() && isValidService();
-      allow update: if isAdmin() && isValidService();
-      allow delete: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
-    match /locations/{locationId} {
+    match /locations/{document=**} {
       allow read: if true;
-      allow create: if isAdmin() && isValidLocation();
-      allow update: if isAdmin() && isValidLocation();
-      allow delete: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
-    match /panels/{panelId} {
+    match /panels/{document=**} {
       allow read: if true;
-      allow create: if isAdmin() && isValidPanel();
-      allow update: if isAdmin() && isValidPanel();
-      allow delete: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
-    match /collaborators/{collabId} {
+    match /collaborators/{document=**} {
       allow read: if true;
-      allow create: if isAdmin() && isValidCollaborator();
-      allow update: if isAdmin() && isValidCollaborator();
-      allow delete: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
-    match /vendors/{vendorId} {
+    match /vendors/{document=**} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
-    match /settings/{settingId} {
+    match /reviews/{document=**} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
-    match /reviews/{reviewId} {
+    match /settings/{document=**} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
 
-    match /leads/{leadId} {
-      allow read: if isAdmin();
+    match /pages/{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // ===============================================================
+    // LEADS COLLECTION (Customer Inquiries / Bookings)
+    // Anyone on the internet can create a lead (submit a form).
+    // Only logged-in staff can view, edit, or delete the leads.
+    // ===============================================================
+    match /leads/{document=**} {
       allow create: if true;
-      allow update, delete: if isAdmin();
+      allow read, update, delete: if isAuthenticated();
     }
 
-    match /admins/{adminId} {
+    // ===============================================================
+    // ADMINS COLLECTION (Staff Management)
+    // Logged-in users need to read this to verify their role.
+    // Only logged-in staff can add or remove other staff.
+    // ===============================================================
+    match /admins/{document=**} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
   }
 }

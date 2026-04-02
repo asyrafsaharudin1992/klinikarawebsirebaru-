@@ -3,7 +3,7 @@ import { User, signOut } from 'firebase/auth';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, deleteDoc, writeBatch, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, auth, storage } from '../firebase';
-import { Service, Location, Panel, Collaborator, AdminUser, Vendor, AppSettings, InternalApp, GoogleReview, handleFirestoreError, OperationType } from '../types';
+import { Service, Location, Panel, Collaborator, AdminUser, Vendor, AppSettings, InternalApp, GoogleReview, handleFirestoreError, OperationType, DynamicPageData, PageBlock, BlockType } from '../types';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -89,7 +89,7 @@ const SortableServiceCard: React.FC<{ service: Service, onDelete: (id: string) =
 }
 
 export default function AdminUI({ user }: { user: User }) {
-  const [activeTab, setActiveTab] = useState<'services' | 'locations' | 'panels' | 'collaborators' | 'leads' | 'staff' | 'vendors' | 'layout' | 'reviews'>('services');
+  const [activeTab, setActiveTab] = useState<'services' | 'locations' | 'panels' | 'collaborators' | 'leads' | 'staff' | 'vendors' | 'layout' | 'reviews' | 'pages'>('services');
 
   const [currentAdminInfo, setCurrentAdminInfo] = useState<AdminUser | null>(null);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
@@ -144,6 +144,12 @@ export default function AdminUI({ user }: { user: User }) {
   const [deleteCollabConfirmId, setDeleteCollabConfirmId] = useState<string | null>(null);
   const [deleteLeadConfirmId, setDeleteLeadConfirmId] = useState<string | null>(null);
   const [deleteReviewConfirmId, setDeleteReviewConfirmId] = useState<string | null>(null);
+  const [pages, setPages] = useState<DynamicPageData[]>([]);
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
+  const [pageForm, setPageForm] = useState<{title: string, slug: string, status: 'draft'|'published', blocks: PageBlock[]}>({
+    title: '', slug: '', status: 'draft', blocks: []
+  });
+  const [deletePageConfirmId, setDeletePageConfirmId] = useState<string | null>(null);
 
   // Location Form state
   const [editingLocId, setEditingLocId] = useState<string | null>(null);
@@ -288,6 +294,16 @@ export default function AdminUI({ user }: { user: User }) {
       setAdminLoading(false);
     });
 
+    // Fetch CMS Pages
+    const qPages = query(collection(db, 'pages'));
+    const unsubscribePages = onSnapshot(qPages, (snapshot) => {
+      const pagesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as DynamicPageData[];
+      setPages(pagesData);
+    }, (error) => {
+      console.error("Admin Pages Fetch Error:", error);
+      handleFirestoreError(error, OperationType.LIST, 'pages', auth);
+    });
+
     const qServices = query(collection(db, 'services'));
     const unsubscribeServices = onSnapshot(qServices, (snapshot) => {
       const servicesData = snapshot.docs.map(doc => ({
@@ -418,6 +434,7 @@ export default function AdminUI({ user }: { user: User }) {
       unsubscribeSettings();
       unsubscribeReviews();
       unsubscribeLeads();
+      unsubscribePages();
     };
   }, [user, currentAdminInfo?.role, currentAdminInfo?.branchId]);
 
@@ -1023,6 +1040,113 @@ export default function AdminUI({ user }: { user: User }) {
     }
   };
 
+// ==========================================
+  // CMS PAGE BUILDER ENGINE
+  // ==========================================
+  const resetPageForm = () => {
+    setEditingPageId(null);
+    setPageForm({ title: '', slug: '', status: 'draft', blocks: [] });
+  };
+
+  const handleEditPage = (page: DynamicPageData) => {
+    setEditingPageId(page.id!);
+    setPageForm({ title: page.title, slug: page.slug, status: page.status, blocks: page.blocks || [] });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const addBlock = (type: BlockType) => {
+    const newBlock: PageBlock = { id: Date.now().toString(), type };
+    setPageForm(prev => ({ ...prev, blocks: [...prev.blocks, newBlock] }));
+  };
+
+  const updateBlock = (id: string, field: keyof PageBlock, value: string) => {
+    setPageForm(prev => ({
+      ...prev,
+      blocks: prev.blocks.map(b => b.id === id ? { ...b, [field]: value } : b)
+    }));
+  };
+
+  const removeBlock = (id: string) => {
+    setPageForm(prev => ({ ...prev, blocks: prev.blocks.filter(b => b.id !== id) }));
+  };
+
+  const moveBlock = (index: number, direction: 'up' | 'down') => {
+    const newBlocks = [...pageForm.blocks];
+    if (direction === 'up' && index > 0) {
+      [newBlocks[index - 1], newBlocks[index]] = [newBlocks[index], newBlocks[index - 1]];
+    } else if (direction === 'down' && index < newBlocks.length - 1) {
+      [newBlocks[index + 1], newBlocks[index]] = [newBlocks[index], newBlocks[index + 1]];
+    }
+    setPageForm(prev => ({ ...prev, blocks: newBlocks }));
+  };
+
+  const handleBlockImageUpload = async (blockId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    setIsUploading(true);
+    try {
+      const uniqueFileName = `${Date.now()}-block-${file.name}`;
+      const storageRef = ref(storage, `pages/${uniqueFileName}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+      const url = await new Promise<string>((resolve, reject) => {
+        uploadTask.on('state_changed', null, reject, async () => {
+          resolve(await getDownloadURL(uploadTask.snapshot.ref));
+        });
+      });
+      updateBlock(blockId, 'imageUrl', url);
+      setSuccessMsg('Block image uploaded!');
+    } catch (error) {
+      setErrorMsg('Failed to upload image.');
+    } finally {
+      setIsUploading(false);
+      setTimeout(() => setSuccessMsg(null), 3000);
+    }
+  };
+
+  const handleSavePage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      // Auto-format slug: make lowercase, replace spaces with dashes, remove weird characters
+      const formattedSlug = pageForm.slug.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+      
+      const pageData = {
+        title: pageForm.title,
+        slug: formattedSlug || 'untitled',
+        status: pageForm.status,
+        blocks: pageForm.blocks,
+        updatedAt: serverTimestamp()
+      };
+
+      if (editingPageId) {
+        await updateDoc(doc(db, 'pages', editingPageId), pageData);
+        setSuccessMsg('Page updated!');
+      } else {
+        await addDoc(collection(db, 'pages'), { ...pageData, createdAt: serverTimestamp() });
+        setSuccessMsg('Page created!');
+      }
+      resetPageForm();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to save page.');
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSuccessMsg(null), 3000);
+    }
+  };
+
+  const confirmDeletePage = async () => {
+    if (!deletePageConfirmId) return;
+    try {
+      await deleteDoc(doc(db, 'pages', deletePageConfirmId));
+      setSuccessMsg('Page deleted successfully!');
+    } catch (err) {
+      setErrorMsg('Failed to delete page.');
+    } finally {
+      setDeletePageConfirmId(null);
+      setTimeout(() => setSuccessMsg(null), 3000);
+    }
+  };
+
   const moveCarouselItem = (index: number, direction: 'up' | 'down') => {
     const newOrder = [...settings.carouselOrder];
     if (direction === 'up' && index > 0) {
@@ -1046,7 +1170,7 @@ export default function AdminUI({ user }: { user: User }) {
     if (indexA !== -1 && indexB !== -1) return indexA - indexB; // Both exist, sort by preference
     if (indexA !== -1) return -1; // A exists, put it higher
     if (indexB !== -1) return 1;  // B exists, put it higher
-    return a.localeCompare(b);    // Neither exist, alphabetical fallback
+    return (a as string).localeCompare(b as string);    // Neither exist, alphabetical fallback
   });
 
   const moveCategoryItem = (index: number, direction: 'up' | 'down') => {
@@ -1578,6 +1702,12 @@ export default function AdminUI({ user }: { user: User }) {
             className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'reviews' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
             Manage Reviews
+          </button>
+          <button
+            onClick={() => setActiveTab('pages')}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'pages' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          >
+            Manage Pages
           </button>
           <button
             onClick={() => setActiveTab('leads')}
@@ -3450,6 +3580,178 @@ export default function AdminUI({ user }: { user: User }) {
             </div>
           </div>
         </div>
+      )}
+        {/* ========================================== */}
+      {/* CMS PAGE BUILDER TAB */}
+      {/* ========================================== */}
+      {activeTab === 'pages' && (
+      <main className="max-w-6xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* Left Col: Page Settings & Block List */}
+        <div className="lg:col-span-8">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl mb-8">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-zinc-800">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                {editingPageId ? <Edit2 className="w-5 h-5 text-blue-500" /> : <Plus className="w-5 h-5 text-red-500" />}
+                {editingPageId ? 'Edit Page' : 'Create New Page'}
+              </h2>
+              {editingPageId && (
+                <button onClick={resetPageForm} className="text-xs text-zinc-400 hover:text-white flex items-center gap-1 transition-colors">
+                  <X className="w-3 h-3" /> Cancel Edit
+                </button>
+              )}
+            </div>
+
+            <form onSubmit={handleSavePage} className="space-y-6">
+              {/* PAGE METADATA */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">Page Title</label>
+                  <input type="text" required value={pageForm.title} onChange={e => setPageForm({...pageForm, title: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="e.g., Promosi Raya 2026" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">Status</label>
+                  <select value={pageForm.status} onChange={e => setPageForm({...pageForm, status: e.target.value as 'draft'|'published'})} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <option value="draft">Draft (Hidden)</option>
+                    <option value="published">Published (Live)</option>
+                  </select>
+                </div>
+                <div className="md:col-span-3">
+                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">URL Slug (e.g., /p/promosi-raya)</label>
+                  <div className="flex items-center">
+                    <span className="bg-zinc-800 border border-zinc-700 text-zinc-400 px-4 py-3 rounded-l-xl">/p/</span>
+                    <input type="text" required value={pageForm.slug} onChange={e => setPageForm({...pageForm, slug: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 rounded-r-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="promosi-raya" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="w-full h-px bg-zinc-800 my-4" />
+
+              {/* BLOCK BUILDER */}
+              <div>
+                <h3 className="text-lg font-bold text-white mb-4">Page Content (Blocks)</h3>
+                
+                <div className="space-y-4 mb-6">
+                  {pageForm.blocks.length === 0 ? (
+                    <div className="text-center py-8 bg-zinc-950 border border-zinc-800 border-dashed rounded-xl text-zinc-500">No blocks added yet. Click a button below to start building.</div>
+                  ) : (
+                    pageForm.blocks.map((block, index) => (
+                      <div key={block.id} className="bg-zinc-950 border border-zinc-700 rounded-xl p-4 relative group">
+                        {/* Block Header / Controls */}
+                        <div className="flex items-center justify-between mb-4 border-b border-zinc-800 pb-2">
+                          <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 bg-cyan-900/30 px-2 py-1 rounded">{block.type} Block</span>
+                          <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
+                            <button type="button" onClick={() => moveBlock(index, 'up')} disabled={index === 0} className="p-1 hover:text-white"><ArrowUp className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => moveBlock(index, 'down')} disabled={index === pageForm.blocks.length - 1} className="p-1 hover:text-white"><ArrowDown className="w-4 h-4" /></button>
+                            <button type="button" onClick={() => removeBlock(block.id)} className="p-1 text-red-500 hover:text-red-400 ml-2"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                        </div>
+
+                        {/* Dynamic Block Inputs */}
+                        {block.type === 'hero' && (
+                          <div className="space-y-3">
+                            <input type="text" value={block.heading || ''} onChange={e => updateBlock(block.id, 'heading', e.target.value)} placeholder="Main Heading (e.g., Welcome!)" className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-white text-sm" />
+                            <input type="text" value={block.subheading || ''} onChange={e => updateBlock(block.id, 'subheading', e.target.value)} placeholder="Subheading / Short Description" className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-white text-sm" />
+                            <div className="flex items-center gap-3">
+                              <label className="bg-zinc-800 hover:bg-zinc-700 text-white text-xs px-3 py-2 rounded cursor-pointer transition-colors">
+                                Upload Background Image
+                                <input type="file" accept="image/*" className="hidden" onChange={e => handleBlockImageUpload(block.id, e)} />
+                              </label>
+                              {block.imageUrl && <span className="text-xs text-green-400">✓ Image Attached</span>}
+                            </div>
+                          </div>
+                        )}
+
+                        {block.type === 'text' && (
+                          <textarea value={block.content || ''} onChange={e => updateBlock(block.id, 'content', e.target.value)} placeholder="Type your paragraphs here..." rows={4} className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-white text-sm whitespace-pre-wrap resize-y" />
+                        )}
+
+                        {block.type === 'image' && (
+                          <div className="flex items-center gap-3">
+                            <label className="bg-zinc-800 hover:bg-zinc-700 text-white text-xs px-3 py-2 rounded cursor-pointer transition-colors">
+                              Upload Standalone Image
+                              <input type="file" accept="image/*" className="hidden" onChange={e => handleBlockImageUpload(block.id, e)} />
+                            </label>
+                            {block.imageUrl && <img src={block.imageUrl} className="h-12 rounded" alt="preview" />}
+                          </div>
+                        )}
+
+                        {block.type === 'cta' && (
+                          <div className="grid grid-cols-2 gap-3">
+                            <input type="text" value={block.buttonText || ''} onChange={e => updateBlock(block.id, 'buttonText', e.target.value)} placeholder="Button Text (e.g., Book Now)" className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-white text-sm" />
+                            <input type="url" value={block.buttonLink || ''} onChange={e => updateBlock(block.id, 'buttonLink', e.target.value)} placeholder="Link URL (e.g., https://wa.me/...)" className="w-full bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-white text-sm" />
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Add Block Buttons */}
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={() => addBlock('hero')} className="bg-zinc-800 hover:bg-zinc-700 text-xs font-bold py-2 px-3 rounded flex items-center gap-1">+ Hero Banner</button>
+                  <button type="button" onClick={() => addBlock('text')} className="bg-zinc-800 hover:bg-zinc-700 text-xs font-bold py-2 px-3 rounded flex items-center gap-1">+ Text Section</button>
+                  <button type="button" onClick={() => addBlock('image')} className="bg-zinc-800 hover:bg-zinc-700 text-xs font-bold py-2 px-3 rounded flex items-center gap-1">+ Image Gallery</button>
+                  <button type="button" onClick={() => addBlock('cta')} className="bg-zinc-800 hover:bg-zinc-700 text-xs font-bold py-2 px-3 rounded flex items-center gap-1">+ Action Button</button>
+                </div>
+              </div>
+
+              <button type="submit" disabled={loading} className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3.5 rounded-xl transition-all disabled:opacity-50 mt-6">
+                {loading ? 'Saving...' : (editingPageId ? 'Update Page' : 'Publish Page')}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Right Col: Directory of Pages */}
+        <div className="lg:col-span-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl sticky top-24">
+            <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white">Live Pages</h2>
+              <span className="px-3 py-1 bg-zinc-800 text-zinc-400 text-xs font-medium rounded-full">{pages.length} Total</span>
+            </div>
+            <div className="divide-y divide-zinc-800">
+              {pages.length === 0 ? (
+                <div className="p-8 text-center text-zinc-500 text-sm">No custom pages created yet.</div>
+              ) : (
+                pages.map(page => (
+                  <div key={page.id} className="p-4 hover:bg-zinc-800/30 transition-colors group">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-bold text-white mb-1">{page.title}</h3>
+                        <a href={`/p/${page.slug}`} target="_blank" rel="noreferrer" className="text-xs text-blue-400 hover:underline">/p/{page.slug}</a>
+                        <div className="mt-2">
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${page.status === 'published' ? 'border-green-500/30 text-green-400 bg-green-500/10' : 'border-zinc-500/30 text-zinc-400 bg-zinc-800'}`}>
+                            {page.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <button onClick={() => handleEditPage(page)} className="p-1.5 text-zinc-400 hover:text-blue-400 hover:bg-blue-400/10 rounded"><Edit2 className="w-4 h-4" /></button>
+                        <button onClick={() => setDeletePageConfirmId(page.id!)} className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Delete Modal for Pages */}
+        {deletePageConfirmId && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+              <h3 className="text-xl font-bold text-white mb-2">Delete Page?</h3>
+              <p className="text-zinc-400 text-sm mb-6">This action cannot be undone. Any traffic to this URL will hit a 404 error.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setDeletePageConfirmId(null)} className="flex-1 px-4 py-2.5 bg-zinc-800 text-white rounded-xl">Cancel</button>
+                <button onClick={confirmDeletePage} className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl">Delete</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
       )}
     </div>
   );

@@ -139,3 +139,31 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   throw new Error(JSON.stringify(errInfo));
 }
+
+// --- DYNAMIC CMS TYPES ---
+
+export type BlockType = 'hero' | 'text' | 'cta' | 'image';
+
+export interface PageBlock {
+  id: string;
+  type: BlockType;
+  // Hero fields
+  heading?: string;
+  subheading?: string;
+  imageUrl?: string;
+  // Text fields
+  content?: string;
+  // CTA fields
+  buttonText?: string;
+  buttonLink?: string;
+}
+
+export interface DynamicPageData {
+  id?: string;
+  title: string;
+  slug: string;
+  status: 'draft' | 'published';
+  blocks: PageBlock[];
+  createdAt?: any;
+  updatedAt?: any;
+}

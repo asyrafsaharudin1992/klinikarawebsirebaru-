@@ -1,6 +1,6 @@
  import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview } from '../types';
 import { Play, Info, ChevronRight, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle, Phone, Share2, Check, Lock, ExternalLink, Database, Users, CreditCard, Settings, Github, Star, GitFork, Code } from 'lucide-react';
@@ -144,6 +144,22 @@ export default function PublicUI() {
   const [specialAccessPassword, setSpecialAccessPassword] = useState('');
   const [isSpecialAccessAuthenticated, setIsSpecialAccessAuthenticated] = useState(false);
   const [specialAccessError, setSpecialAccessError] = useState('');
+  // --- CMS PAGE TABS STATE ---
+  const [customPages, setCustomPages] = useState<{title: string, slug: string}[]>([]);
+
+  useEffect(() => {
+    // Real-time listener for published pages
+    const pagesQ = query(collection(db, 'pages'), where('status', '==', 'published'));
+    const unsubscribePages = onSnapshot(pagesQ, (snapshot) => {
+      const activePages = snapshot.docs.map(doc => ({
+        title: doc.data().title,
+        slug: doc.data().slug
+      }));
+      setCustomPages(activePages);
+    });
+
+    return () => unsubscribePages();
+  }, []);
 
 
 
@@ -569,6 +585,19 @@ const handleShare = async (service: Service) => {
             <a href="#" className="text-white font-semibold hover:text-white transition">Laman Utama</a>
             <a href="#services" className="hover:text-white transition">Perkhidmatan</a>
             <a href="#locations" className="hover:text-white transition">Cawangan</a>
+            {/* --- 🌟 DYNAMIC CMS PAGE TABS --- */}
+          {customPages.length > 0 && (
+            <div className="h-4 w-px bg-zinc-700 mx-2 hidden md:block" /> // Visual divider
+          )}
+          {customPages.map(page => (
+            <Link 
+              key={page.slug} 
+              to={`/p/${page.slug}`} 
+              className="text-sm font-medium text-cyan-400 hover:text-cyan-300 transition-colors"
+            >
+              {page.title}
+            </Link>
+          ))}
           </div>
         </div>
       </nav>
