@@ -15,6 +15,33 @@ import { CarouselCard } from '../types';
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedCard, setSelectedCard] = useState<CarouselCard | null>(null);
+  // --- 🌟 CUSTOM SHARE FUNCTION ---
+  const handleShare = async (card: CarouselCard) => {
+    // Note: We are passing BOTH the card ID and the page slug so your backend 
+    // knows exactly what image to fetch, and where to redirect the user afterwards!
+    const shareUrl = `${window.location.origin}/share?card=${card.id}&page=${slug}`;
+    const shareTitle = `${card.title} | Klinik Ara 24 Jam`;
+    const shareText = card.shortDescription || "Lihat promosi/info ini dari Klinik Ara 24 Jam!";
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+      } else if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareUrl);
+        alert(`Pautan telah disalin ke papan keratan!\n\n${shareUrl}`);
+      } else {
+        prompt("Sila salin pautan ini secara manual:", shareUrl);
+      }
+    } catch (error: any) {
+      if (error.name !== "AbortError") {
+        prompt("Sila salin pautan ini secara manual:", shareUrl);
+      }
+    }
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -297,38 +324,9 @@ import { CarouselCard } from '../types';
             {/* Floating Action Footer (Sticky Bottom, side-by-side buttons) */}
             <div className="absolute bottom-0 left-0 w-full md:w-1/2 md:left-1/2 bg-gradient-to-t from-zinc-900 via-zinc-900/95 to-zinc-900/0 md:bg-zinc-900/95 md:backdrop-blur-md md:border-t md:border-zinc-800 pt-12 md:pt-5 pb-6 md:pb-5 px-6 flex flex-row gap-3 z-50 pointer-events-none md:pointer-events-auto">
               
-             {/* 🌟 BULLETPROOF NATIVE SHARE BUTTON */}
+             {/* 🌟 REFINED SHARE BUTTON */}
               <button 
-                onClick={async () => {
-                  const shareUrl = `${window.location.origin}${window.location.pathname}?card=${selectedCard.id}`;
-                  const shareTitle = `${selectedCard.title} | Klinik Ara 24 Jam`;
-                  
-                  try {
-                    // 1. Try Mobile Native Share (Only works on HTTPS)
-                    if (navigator.share) {
-                      await navigator.share({
-                        title: shareTitle,
-                        text: selectedCard.shortDescription || "Lihat promosi/info ini dari Klinik Ara 24 Jam!",
-                        url: shareUrl,
-                      });
-                    } 
-                    // 2. Try Modern Clipboard Copy (Desktop or HTTPS)
-                    else if (navigator.clipboard && window.isSecureContext) {
-                      await navigator.clipboard.writeText(shareUrl);
-                      alert(`Pautan telah disalin ke papan keratan!\n\n${shareUrl}`);
-                    } 
-                    // 3. Ultimate Fallback (For HTTP local testing)
-                    else {
-                      prompt("Sila salin pautan ini secara manual:", shareUrl);
-                    }
-                  } catch (error: any) {
-                    // Ignore if the user just clicked "cancel" on the share menu
-                    if (error.name !== "AbortError") {
-                      console.log("Share failed, falling back...", error);
-                      prompt("Sila salin pautan ini secara manual:", shareUrl);
-                    }
-                  }
-                }}
+                onClick={() => handleShare(selectedCard)}
                 className="pointer-events-auto flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-4 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-zinc-950/50 text-sm md:text-base border border-zinc-700"
               >
                 <Share2 className="w-5 h-5" />
