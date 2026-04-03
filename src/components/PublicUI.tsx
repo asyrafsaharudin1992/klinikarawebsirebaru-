@@ -189,7 +189,7 @@ export default function PublicUI() {
     return Database;
   };
 const handleShare = async (service: Service) => {
-  const shareUrl = `${window.location.origin}/share?service=${service.id}`;
+  const shareUrl = `https://thumbnail-generator-81459036171.asia-southeast1.run.app/?service=${service.id}`;
   const warmSentence = `Jom lihat servis ini di Klinik Ara: ${service.title}`;
   
   // Create a combined message for copy-paste fallback

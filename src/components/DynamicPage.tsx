@@ -19,7 +19,7 @@ import { CarouselCard } from '../types';
   const handleShare = async (card: CarouselCard) => {
     // Note: We are passing BOTH the card ID and the page slug so your backend 
     // knows exactly what image to fetch, and where to redirect the user afterwards!
-    const shareUrl = `${window.location.origin}/share?card=${card.id}&page=${slug}`;
+    const shareUrl = `https://thumbnail-generator-81459036171.asia-southeast1.run.app/?card=${card.id}&page=${slug}`;
     const shareTitle = `${card.title} | Klinik Ara 24 Jam`;
     const shareText = card.shortDescription || "Lihat promosi/info ini dari Klinik Ara 24 Jam!";
 
