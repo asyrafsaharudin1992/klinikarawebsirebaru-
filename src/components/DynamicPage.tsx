@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { DynamicPageData, PageBlock } from '../types';
@@ -9,6 +9,8 @@ import { CarouselCard } from '../types';
 
   export default function DynamicPage() {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [pageData, setPageData] = useState<DynamicPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -127,20 +129,35 @@ import { CarouselCard } from '../types';
               {block.carouselCards.map(card => (
                 <div 
                   key={card.id} 
-                  onClick={() => setSelectedCard(card)}
-                  className="snap-start shrink-0 w-[280px] md:w-[350px] bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden cursor-pointer hover:border-zinc-700 transition-all duration-300 group hover:shadow-xl hover:-translate-y-1"
+                  onClick={() => {
+                    setSelectedCard(card);
+                    navigate(`${location.pathname}?card=${card.id}`, { replace: true });
+                  }}
+                  // Note: I slightly reduced the width (260px/300px) because portrait cards get very large on screen!
+                  className="snap-start shrink-0 w-[260px] md:w-[300px] bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden cursor-pointer hover:border-zinc-700 transition-all duration-300 group hover:shadow-xl hover:-translate-y-1 flex flex-col"
                 >
-                  <div className="relative h-48 w-full bg-zinc-950 overflow-hidden">
+                  {/* 🌟 CHANGED: Replaced h-48 with aspect-[4/5] for a perfect portrait poster shape */}
+                  <div className="relative aspect-[4/5] w-full bg-zinc-950 overflow-hidden">
                     {card.imageUrl ? (
-                      <img src={card.imageUrl} alt={card.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img 
+                        src={card.imageUrl} 
+                        alt={card.title} 
+                        // object-cover will now beautifully fill the portrait box
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-zinc-800">No Image</div>
+                      <div className="w-full h-full flex items-center justify-center bg-zinc-800 text-zinc-500 font-medium text-sm">
+                        Tiada Gambar
+                      </div>
                     )}
                   </div>
-                  <div className="p-6">
+                  
+                  <div className="p-6 flex-1 flex flex-col">
                     <h3 className="text-xl font-bold text-white mb-2">{card.title}</h3>
-                    {card.shortDescription && <p className="text-sm text-zinc-400 line-clamp-2">{card.shortDescription}</p>}
-                    <div className="mt-4 text-cyan-400 text-sm font-bold flex items-center gap-2">
+                    {card.shortDescription && (
+                      <p className="text-sm text-zinc-400 line-clamp-2">{card.shortDescription}</p>
+                    )}
+                    <div className="mt-4 text-cyan-400 text-sm font-bold flex items-center gap-2 mt-auto pt-2">
                       Baca Lanjut <ArrowRight className="w-4 h-4" />
                     </div>
                   </div>
@@ -280,12 +297,37 @@ import { CarouselCard } from '../types';
             {/* Floating Action Footer (Sticky Bottom, side-by-side buttons) */}
             <div className="absolute bottom-0 left-0 w-full md:w-1/2 md:left-1/2 bg-gradient-to-t from-zinc-900 via-zinc-900/95 to-zinc-900/0 md:bg-zinc-900/95 md:backdrop-blur-md md:border-t md:border-zinc-800 pt-12 md:pt-5 pb-6 md:pb-5 px-6 flex flex-row gap-3 z-50 pointer-events-none md:pointer-events-auto">
               
-              {/* The Share Link Button */}
+             {/* 🌟 BULLETPROOF NATIVE SHARE BUTTON */}
               <button 
-                onClick={() => {
-                  const url = `${window.location.origin}${window.location.pathname}?card=${selectedCard.id}`;
-                  navigator.clipboard.writeText(url);
-                  alert("Pautan telah disalin!"); 
+                onClick={async () => {
+                  const shareUrl = `${window.location.origin}${window.location.pathname}?card=${selectedCard.id}`;
+                  const shareTitle = `${selectedCard.title} | Klinik Ara 24 Jam`;
+                  
+                  try {
+                    // 1. Try Mobile Native Share (Only works on HTTPS)
+                    if (navigator.share) {
+                      await navigator.share({
+                        title: shareTitle,
+                        text: selectedCard.shortDescription || "Lihat promosi/info ini dari Klinik Ara 24 Jam!",
+                        url: shareUrl,
+                      });
+                    } 
+                    // 2. Try Modern Clipboard Copy (Desktop or HTTPS)
+                    else if (navigator.clipboard && window.isSecureContext) {
+                      await navigator.clipboard.writeText(shareUrl);
+                      alert(`Pautan telah disalin ke papan keratan!\n\n${shareUrl}`);
+                    } 
+                    // 3. Ultimate Fallback (For HTTP local testing)
+                    else {
+                      prompt("Sila salin pautan ini secara manual:", shareUrl);
+                    }
+                  } catch (error: any) {
+                    // Ignore if the user just clicked "cancel" on the share menu
+                    if (error.name !== "AbortError") {
+                      console.log("Share failed, falling back...", error);
+                      prompt("Sila salin pautan ini secara manual:", shareUrl);
+                    }
+                  }
                 }}
                 className="pointer-events-auto flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-4 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-zinc-950/50 text-sm md:text-base border border-zinc-700"
               >
