@@ -151,6 +151,8 @@ export interface CarouselCard {
   shortDescription?: string;
   modalFullText?: string;
   imageUrl?: string;
+  buttonText?: string;
+  buttonLink?: string;
 }
 
 export interface PageBlock {

@@ -3,9 +3,9 @@ import { useParams, Link } from 'react-router-dom';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { DynamicPageData, PageBlock } from '../types';
-import { ChevronLeft, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
-import { CarouselCard } from '../types'; // make sure to import this at the top!
-  import { X } from 'lucide-react'; // ensure X is imported for the close button
+import { ChevronLeft, ArrowRight, Loader2, AlertCircle, X, Share2, ExternalLink } from 'lucide-react';
+import SEO from './SEO';
+import { CarouselCard } from '../types';
 
   export default function DynamicPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -176,6 +176,9 @@ import { CarouselCard } from '../types'; // make sure to import this at the top!
     );
   }
 
+  const pageDesc = pageData.blocks.find(b => b.type === 'hero')?.subheading || pageData.blocks.find(b => b.type === 'text')?.content?.substring(0, 160) || "Halaman Khas Klinik Ara 24 Jam";
+  const pageImage = pageData.blocks.find(b => b.type === 'hero')?.imageUrl || pageData.blocks.find(b => b.type === 'image')?.imageUrl || "";
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white pb-20">
       {/* Sticky Top Nav */}
@@ -306,8 +309,6 @@ import { CarouselCard } from '../types'; // make sure to import this at the top!
             </div>
             
           </div>
-        </div>
-      )}
         </div>
       )}
     </div>
