@@ -43,6 +43,31 @@ import { CarouselCard } from '../types';
     }
   };
 
+ // --- 🕵️‍♂️ AUTO-OPEN MODAL FROM SHARED LINK ---
+  useEffect(() => {
+    // Only run if the Firebase data has finished loading
+    if (!pageData) return;
+
+    // Use React Router's location object to read the "?card=..."
+    const urlParams = new URLSearchParams(location.search);
+    const cardIdFromUrl = urlParams.get('card');
+
+    if (cardIdFromUrl) {
+      // Loop through the blocks to find the matching card
+      for (const block of pageData.blocks) {
+        if (block.type === 'carousel' && block.carouselCards) {
+          const foundCard = block.carouselCards.find(c => c.id === cardIdFromUrl);
+          if (foundCard) {
+            setSelectedCard(foundCard); // Open the modal!
+            break;
+          }
+        }
+      }
+    } else {
+      // If there is no card ID in the URL, make sure the modal is closed
+      setSelectedCard(null);
+    }
+  }, [pageData, location.search]); // The magic fix: It listens to changes in location.search!
   useEffect(() => {
     window.scrollTo(0, 0);
     const fetchPage = async () => {
