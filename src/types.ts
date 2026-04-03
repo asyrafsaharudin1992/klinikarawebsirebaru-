@@ -28,6 +28,8 @@ export interface Location {
   wazeUrl: string;
   imageUrl?: string;
   landmark?: string;
+  buttonText?: string; // <-- NEW
+  buttonLink?: string; // <-- NEW
 }
 
 export interface Panel {

@@ -3747,7 +3747,11 @@ const addCarouselCard = (blockId: string) => {
                                 <input type="text" value={card.title} onChange={e => updateCarouselCard(block.id, card.id, 'title', e.target.value)} placeholder="Card Title" className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white text-sm" />
                                 <input type="text" value={card.shortDescription || ''} onChange={e => updateCarouselCard(block.id, card.id, 'shortDescription', e.target.value)} placeholder="Short Description (Thumbnail)" className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white text-sm" />
                                 <textarea value={card.modalFullText || ''} onChange={e => updateCarouselCard(block.id, card.id, 'modalFullText', e.target.value)} placeholder="Full Modal Text (Detailed info)" rows={3} className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white text-sm whitespace-pre-wrap" />
-                                
+                                {/* NEW CTA BUTTON INPUTS */}
+                                <div className="grid grid-cols-2 gap-2">
+                                  <input type="text" value={card.buttonText || ''} onChange={e => updateCarouselCard(block.id, card.id, 'buttonText', e.target.value)} placeholder="Button Text (e.g. Daftar Sekarang)" className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white text-sm" />
+                                  <input type="text" value={card.buttonLink || ''} onChange={e => updateCarouselCard(block.id, card.id, 'buttonLink', e.target.value)} placeholder="Link URL (https://...)" className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white text-sm" />
+                                </div>
                                 <div className="flex items-center gap-3">
                                   <label className="bg-zinc-800 hover:bg-zinc-700 text-white text-xs px-3 py-2 rounded cursor-pointer transition-colors">
                                     Upload Card Image

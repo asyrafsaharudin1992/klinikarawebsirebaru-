@@ -191,48 +191,123 @@ import { CarouselCard } from '../types'; // make sure to import this at the top!
         {pageData.blocks.map(block => renderBlock(block))}
       </main>
       {/* ========================================== */}
-      {/* CAROUSEL CARD MODAL */}
+      {/* ========================================== */}
+      {/* CAROUSEL CARD MODAL (Refined Split UI) */}
       {/* ========================================== */}
       {selectedCard && (
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-          onClick={() => setSelectedCard(null)}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-0 md:p-6 overflow-hidden" 
+          onClick={() => {
+            setSelectedCard(null);
+            window.history.pushState(null, '', window.location.pathname);
+          }}
         >
+          {/* 🌟 SPECIFIC MODAL SEO */}
+          <SEO 
+            title={`${selectedCard.title} | Klinik Ara 24 Jam`} 
+            description={selectedCard.shortDescription || selectedCard.modalFullText?.substring(0, 150) || pageDesc} 
+            image={selectedCard.imageUrl || pageImage} 
+            url={`${window.location.origin}${window.location.pathname}?card=${selectedCard.id}`}
+          />
+
           <div 
-            className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200"
-            onClick={e => e.stopPropagation()} // Prevent clicks inside from closing it
+            className="w-full h-[95vh] md:h-auto md:max-h-[85vh] md:max-w-5xl rounded-t-[32px] md:rounded-3xl overflow-hidden flex flex-col md:flex-row relative bg-zinc-900 shadow-2xl animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300" 
+            onClick={e => e.stopPropagation()}
           >
-            {selectedCard.imageUrl && (
-              <div className="relative h-64 md:h-80 w-full shrink-0">
-                <img src={selectedCard.imageUrl} alt={selectedCard.title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent" />
-                <button 
-                  onClick={() => setSelectedCard(null)}
-                  className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/80 text-white rounded-full backdrop-blur-md transition"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            )}
-            
-            <div className="p-6 md:p-8 overflow-y-auto">
-              {!selectedCard.imageUrl && (
-                <div className="flex justify-between items-start mb-6">
-                  <h2 className="text-3xl font-bold text-white">{selectedCard.title}</h2>
-                  <button onClick={() => setSelectedCard(null)} className="p-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-full transition">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              )}
-              {selectedCard.imageUrl && (
-                <h2 className="text-3xl font-bold text-white mb-6 -mt-12 relative z-10 drop-shadow-md">{selectedCard.title}</h2>
-              )}
+            {/* Close Button (Top Right, Sticky) */}
+            <button 
+              onClick={() => {
+                setSelectedCard(null);
+                window.history.pushState(null, '', window.location.pathname);
+              }}
+              className="absolute top-4 right-4 z-[70] bg-black/40 hover:bg-black/60 md:bg-zinc-800 md:hover:bg-zinc-700 text-white p-2.5 rounded-full backdrop-blur-md transition-colors border border-white/20 md:border-zinc-700"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Unified Scroll Wrapper */}
+            <div className="w-full h-full overflow-y-auto md:overflow-hidden flex flex-col md:flex-row relative hide-scrollbar pb-32 md:pb-0">
               
-              <div className="prose prose-invert max-w-none whitespace-pre-wrap text-zinc-300 leading-relaxed text-lg">
-                {selectedCard.modalFullText || selectedCard.shortDescription || "Tiada maklumat lanjut."}
+              {/* Left Panel: Image (Dynamic height on desktop, square on mobile) */}
+              <div className="relative w-full aspect-square md:aspect-auto md:w-1/2 flex-shrink-0 bg-zinc-950 flex items-center justify-center overflow-hidden">
+                {selectedCard.imageUrl ? (
+                  <img 
+                    src={selectedCard.imageUrl} 
+                    alt={selectedCard.title} 
+                    className="w-full h-full md:h-auto md:max-h-[85vh] object-cover object-top md:object-contain block z-10 relative"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="text-zinc-600 font-medium">Tiada Gambar</div>
+                )}
+              </div>
+
+              {/* Right Panel: Content (Scrollable on desktop, matches image height) */}
+              <div className="w-full md:w-1/2 bg-zinc-900 flex flex-col min-h-0 relative z-30 rounded-t-[32px] md:rounded-none -mt-8 md:mt-0 border-t md:border-t-0 border-zinc-800">
+                <div className="flex-1 md:overflow-y-auto p-6 md:p-10 pb-48 md:pb-32 flex flex-col hide-scrollbar">
+                  
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="px-3 py-1 bg-zinc-950 border border-zinc-800 text-cyan-400 text-[10px] font-bold tracking-widest rounded-full uppercase shadow-sm">
+                      Maklumat Lanjut
+                    </span>
+                  </div>
+
+                  <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight mb-6">
+                    {selectedCard.title}
+                  </h2>
+
+                  {/* Highlight Block (Used for shortDescription) */}
+                  {selectedCard.shortDescription && (
+                    <div className="bg-zinc-950/50 border border-zinc-800 rounded-2xl p-5 mb-6">
+                      <p className="text-cyan-300 text-sm md:text-base leading-relaxed">
+                        {selectedCard.shortDescription}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Main Content Body */}
+                  <div className="prose prose-invert max-w-none text-zinc-300 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
+                    {selectedCard.modalFullText || "Tiada butiran tambahan disediakan untuk rekod ini."}
+                  </div>
+
+                </div>
               </div>
             </div>
+
+            {/* Floating Action Footer (Sticky Bottom, side-by-side buttons) */}
+            <div className="absolute bottom-0 left-0 w-full md:w-1/2 md:left-1/2 bg-gradient-to-t from-zinc-900 via-zinc-900/95 to-zinc-900/0 md:bg-zinc-900/95 md:backdrop-blur-md md:border-t md:border-zinc-800 pt-12 md:pt-5 pb-6 md:pb-5 px-6 flex flex-row gap-3 z-50 pointer-events-none md:pointer-events-auto">
+              
+              {/* The Share Link Button */}
+              <button 
+                onClick={() => {
+                  const url = `${window.location.origin}${window.location.pathname}?card=${selectedCard.id}`;
+                  navigator.clipboard.writeText(url);
+                  alert("Pautan telah disalin!"); 
+                }}
+                className="pointer-events-auto flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-4 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-zinc-950/50 text-sm md:text-base border border-zinc-700"
+              >
+                <Share2 className="w-5 h-5" />
+                Kongsi
+              </button>
+              
+              {/* The Dynamic Custom Button (Only shows if a link is provided!) */}
+              {selectedCard.buttonLink && (
+                <a 
+                  href={selectedCard.buttonLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="pointer-events-auto flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-4 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-cyan-900/20 text-sm md:text-base"
+                >
+                  <ExternalLink className="w-5 h-5" />
+                  {selectedCard.buttonText || "Pautan Lanjut"}
+                </a>
+              )}
+
+            </div>
+            
           </div>
+        </div>
+      )}
         </div>
       )}
     </div>

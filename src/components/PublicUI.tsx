@@ -1,5 +1,5 @@
  import React, { useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'
 import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview } from '../types';
