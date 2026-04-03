@@ -1,10 +1,13 @@
 {
   "version": 2,
-  "rewrites": [
+  "redirects": [
     {
       "source": "/share",
-      "destination": "https://thumbnail-generator-81459036171.asia-southeast1.run.app/"
-    },
+      "destination": "https://thumbnail-generator-81459036171.asia-southeast1.run.app/",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
