@@ -3752,6 +3752,10 @@ const addCarouselCard = (blockId: string) => {
                                   <input type="text" value={card.buttonText || ''} onChange={e => updateCarouselCard(block.id, card.id, 'buttonText', e.target.value)} placeholder="Button Text (e.g. Daftar Sekarang)" className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white text-sm" />
                                   <input type="text" value={card.buttonLink || ''} onChange={e => updateCarouselCard(block.id, card.id, 'buttonLink', e.target.value)} placeholder="Link URL (https://...)" className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white text-sm" />
                                 </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input type="text" value={card.button2Text || ''} onChange={e => updateCarouselCard(block.id, card.id, 'button2Text', e.target.value)} placeholder="Button 2 (e.g. WhatsApp)" className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white text-sm" />
+                                    <input type="text" value={card.button2Link || ''} onChange={e => updateCarouselCard(block.id, card.id, 'button2Link', e.target.value)} placeholder="Link 2 (https://wa.me/...)" className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white text-sm" />
+                                  </div>
                                 <div className="flex items-center gap-3">
                                   <label className="bg-zinc-800 hover:bg-zinc-700 text-white text-xs px-3 py-2 rounded cursor-pointer transition-colors">
                                     Upload Card Image

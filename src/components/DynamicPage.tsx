@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { DynamicPageData, PageBlock } from '../types';
-import { ChevronLeft, ArrowRight, Loader2, AlertCircle, X, Share2, ExternalLink } from 'lucide-react';
+import { ChevronLeft, ArrowRight, Loader2, AlertCircle, X, Share2, MessageCircle, ExternalLink } from 'lucide-react';
 import SEO from './SEO';
 import { CarouselCard } from '../types';
 
@@ -346,28 +346,42 @@ import { CarouselCard } from '../types';
               </div>
             </div>
 
-            {/* Floating Action Footer (Sticky Bottom, side-by-side buttons) */}
-            <div className="absolute bottom-0 left-0 w-full md:w-1/2 md:left-1/2 bg-gradient-to-t from-zinc-900 via-zinc-900/95 to-zinc-900/0 md:bg-zinc-900/95 md:backdrop-blur-md md:border-t md:border-zinc-800 pt-12 md:pt-5 pb-6 md:pb-5 px-6 flex flex-row gap-3 z-50 pointer-events-none md:pointer-events-auto">
+            {/* Floating Action Footer */}
+            <div className="absolute bottom-0 left-0 w-full md:w-1/2 md:left-1/2 bg-gradient-to-t from-zinc-900 via-zinc-900/95 to-zinc-900/0 md:bg-zinc-900/95 md:backdrop-blur-md md:border-t md:border-zinc-800 pt-12 md:pt-5 pb-6 md:pb-5 px-4 md:px-6 flex flex-wrap md:flex-nowrap flex-row gap-2 z-50 pointer-events-none md:pointer-events-auto">
               
-             {/* 🌟 REFINED SHARE BUTTON */}
+              {/* 🌟 BULLETPROOF NATIVE SHARE BUTTON */}
               <button 
                 onClick={() => handleShare(selectedCard)}
-                className="pointer-events-auto flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-4 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-zinc-950/50 text-sm md:text-base border border-zinc-700"
+                className="pointer-events-auto flex-1 min-w-[100px] bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3.5 md:py-4 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-zinc-950/50 text-xs sm:text-sm md:text-base border border-zinc-700"
               >
-                <Share2 className="w-5 h-5" />
-                Kongsi
+                <Share2 className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="hidden sm:inline">Kongsi</span>
               </button>
               
-              {/* The Dynamic Custom Button (Only shows if a link is provided!) */}
+              {/* 🌟 PRIMARY CUSTOM BUTTON */}
               {selectedCard.buttonLink && (
                 <a 
                   href={selectedCard.buttonLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="pointer-events-auto flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-4 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-cyan-900/20 text-sm md:text-base"
+                  className="pointer-events-auto flex-1 min-w-[120px] bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3.5 md:py-4 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-cyan-900/20 text-xs sm:text-sm md:text-base whitespace-nowrap px-2"
                 >
-                  <ExternalLink className="w-5 h-5" />
-                  {selectedCard.buttonText || "Pautan Lanjut"}
+                  <ExternalLink className="w-4 h-4 md:w-5 md:h-5" />
+                  {selectedCard.buttonText || "Lanjut"}
+                </a>
+              )}
+
+              {/* 🌟 SECONDARY CUSTOM BUTTON (NEW) */}
+              {selectedCard.button2Link && (
+                <a 
+                  href={selectedCard.button2Link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  // Using green here so it defaults perfectly as a WhatsApp CTA, but you can change it!
+                  className="pointer-events-auto flex-1 min-w-[120px] bg-green-600 hover:bg-green-500 text-white font-bold py-3.5 md:py-4 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-green-900/20 text-xs sm:text-sm md:text-base whitespace-nowrap px-2"
+                >
+                  <MessageCircle className="w-4 h-4 md:w-5 md:h-5" />
+                  {selectedCard.button2Text || "Hubungi"}
                 </a>
               )}
 

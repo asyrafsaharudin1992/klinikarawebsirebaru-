@@ -29,7 +29,9 @@ export interface Location {
   imageUrl?: string;
   landmark?: string;
   buttonText?: string; // <-- NEW
-  buttonLink?: string; // <-- NEW
+  buttonLink?: string;
+  button2Text?: string; // <-- NEW: Secondary button
+  button2Link?: string; // <-- NEW // <-- NEW
 }
 
 export interface Panel {
@@ -153,6 +155,8 @@ export interface CarouselCard {
   imageUrl?: string;
   buttonText?: string;
   buttonLink?: string;
+  button2Text?: string;
+  button2Link?: string;
 }
 
 export interface PageBlock {
