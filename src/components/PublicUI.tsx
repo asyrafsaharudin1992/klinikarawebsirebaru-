@@ -471,11 +471,14 @@ const handleShare = async (service: Service) => {
     const finalRef = urlRef || storageRef; 
     
     // 2. Build the exact AraPower link
-    let destination = 'https://arapower.hsohealthcare.com/';
+    let destination = 'https://arapower.hsohealthcare.com/book';
     const params = new URLSearchParams();
     
     // Append service ID
     if (service?.id) params.append('serviceId', service.id);
+    
+    // Append service Name
+    if (service?.title) params.append('serviceName', service.title);
     
     // Append the staff referral code
     if (finalRef) params.append('ref', finalRef);
