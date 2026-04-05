@@ -144,6 +144,8 @@ export default function PublicUI() {
   const [specialAccessPassword, setSpecialAccessPassword] = useState('');
   const [isSpecialAccessAuthenticated, setIsSpecialAccessAuthenticated] = useState(false);
   const [specialAccessError, setSpecialAccessError] = useState('');
+  // Tracks if the user is currently selecting a branch for WhatsApp
+  const [showBranchSelect, setShowBranchSelect] = useState(false);
   // --- CMS PAGE TABS STATE ---
   const [customPages, setCustomPages] = useState<{title: string, slug: string}[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -459,6 +461,7 @@ const handleShare = async (service: Service) => {
 
   const handleCloseModal = () => {
     setSelectedService(null);
+    setShowBranchSelect(false);
   };
 
   const handleBookNow = (e: React.MouseEvent, service: Service | null) => {
@@ -1164,44 +1167,64 @@ const handleShare = async (service: Service) => {
                     {selectedService.description || "No detailed description provided for this service."}
                   </div>
                 </div>
-
-                {/* Desktop Sticky Footer (Hidden on Mobile) */}
-                <div className="hidden md:flex absolute bottom-0 left-0 w-full bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-transparent pt-20 pb-8 px-10 flex-col gap-3 z-50 pointer-events-none">
-                  <button 
-                    onClick={(e) => handleBookNow(e, selectedService)}
-                    className="pointer-events-auto w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-lg transition-transform active:scale-95"
-                  >
-                    Saya nak tempah slot
-                  </button>
-                  <button 
-                    onClick={() => handleShare(selectedService)}
-                    className="pointer-events-auto w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 text-lg transition-transform active:scale-95"
-                  >
-                    {isCopied ? <Check className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
-                    {isCopied ? "Telah Disalin!" : "Kongsi"}
-                  </button>
-                </div>
               </div>
             </div>
 
-            {/* Mobile Floating Action Footer (Hidden on Desktop) */}
-            {/* Pure gradient fade without any hard blur lines or borders */}
-            <div className="md:hidden absolute bottom-0 left-0 w-full bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-transparent pt-20 pb-6 px-4 flex flex-row gap-3 z-50 pointer-events-none">
-              <button 
-                onClick={(e) => handleBookNow(e, selectedService)}
-                className="pointer-events-auto flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-sm sm:text-base transition-transform active:scale-95"
-              >
-                Saya nak tempah slot
-              </button>
-              <button 
-                onClick={() => handleShare(selectedService)}
-                className="pointer-events-auto shrink-0 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-5 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 text-sm sm:text-base transition-transform active:scale-95"
-              >
-                {isCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-                {isCopied ? "Telah Disalin!" : "Kongsi"}
-              </button>
-            </div>
-
+            {/* Unified Responsive Footer */}
+<div className="absolute bottom-0 left-0 w-full md:w-1/2 md:left-1/2 bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-zinc-950/0 md:bg-zinc-950/95 md:backdrop-blur-md md:border-t md:border-zinc-800 pt-20 md:pt-5 pb-6 md:pb-5 px-4 md:px-6 flex flex-col gap-3 z-50 pointer-events-none md:pointer-events-auto">
+  {showBranchSelect ? (
+    <div className="pointer-events-auto w-full bg-zinc-900/95 backdrop-blur-xl rounded-2xl p-4 border border-zinc-800 animate-in slide-in-from-bottom-4">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Pilih Cawangan WhatsApp</h4>
+        <button onClick={() => setShowBranchSelect(false)} className="text-zinc-500 hover:text-white">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {locations.map(loc => (
+          <a
+            key={loc.id}
+            href={`https://wa.me/${formatPhoneNumber(loc.whatsapp)}?text=${encodeURIComponent(`Hai, saya berminat dengan ${selectedService.title}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold py-3 px-2 rounded-xl text-center transition-all border border-zinc-700"
+          >
+            {loc.branchName}
+          </a>
+        ))}
+      </div>
+    </div>
+  ) : (
+    <div className="flex flex-row gap-3 w-full">
+      <button 
+        onClick={(e) => {
+          if (selectedService.isWalkInOnly) {
+            setShowBranchSelect(true);
+          } else {
+            handleBookNow(e, selectedService);
+          }
+        }}
+        className="pointer-events-auto flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 md:py-4 px-4 md:px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-sm md:text-lg transition-transform active:scale-95"
+      >
+        {selectedService.isWalkInOnly ? (
+          <>
+            <MessageCircle className="w-5 h-5" />
+            WhatsApp Kami
+          </>
+        ) : (
+          "Saya nak tempah slot"
+        )}
+      </button>
+      <button 
+        onClick={() => handleShare(selectedService)}
+        className="pointer-events-auto shrink-0 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 md:py-4 px-5 md:px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 text-sm md:text-lg transition-transform active:scale-95"
+      >
+        {isCopied ? <Check className="w-4 h-4 md:w-5 md:h-5" /> : <Share2 className="w-4 h-4 md:w-5 md:h-5" />}
+        <span className="hidden sm:inline ml-2">{isCopied ? "Telah Disalin!" : "Kongsi"}</span>
+      </button>
+    </div>
+  )}
+</div>
           </div>
         </div>
       )}

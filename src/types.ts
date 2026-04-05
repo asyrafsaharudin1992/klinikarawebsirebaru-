@@ -15,6 +15,7 @@ export interface Service {
   isFeatured: boolean;
   rankOrder: number;
   showTeamAraDisclaimer?: boolean;
+  isWalkInOnly?: boolean;
 }
 
 export interface Location {
@@ -31,7 +32,7 @@ export interface Location {
   buttonText?: string; // <-- NEW
   buttonLink?: string;
   button2Text?: string; // <-- NEW: Secondary button
-  button2Link?: string; // <-- NEW // <-- NEW
+  button2Link?: string;
 }
 
 export interface Panel {

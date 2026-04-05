@@ -224,6 +224,7 @@ export default function AdminUI({ user }: { user: User }) {
   const [endDate, setEndDate] = useState('');
   const [description, setDescription] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
+  const [isWalkInOnly, setIsWalkInOnly] = useState(false);
   
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -530,6 +531,7 @@ export default function AdminUI({ user }: { user: User }) {
     setEndDate(service.endDate || '');
     setDescription(service.description || '');
     setIsFeatured(service.isFeatured || false);
+    setIsWalkInOnly(service.isWalkInOnly || false);
     
     setHeroImageUrl(service.heroImageUrl || '');
     setThumbnailUrl(service.thumbnailUrl || '');
@@ -557,6 +559,7 @@ export default function AdminUI({ user }: { user: User }) {
     setEndDate('');
     setDescription('');
     setIsFeatured(false);
+    setIsWalkInOnly(false);
     setExistingImageUrls([]);
     setImageFiles([]);
     setImagePreviews([]);
@@ -1514,6 +1517,7 @@ const addCarouselCard = (blockId: string) => {
         endDate,
         description,
         isFeatured,
+        isWalkInOnly,
         thumbnailUrl: finalThumbnailUrl,      // Source of truth
         heroImageUrl: finalHeroImageUrl,        // Specific or Inherited
         modalImageUrls: finalModalImageUrls,    // Primary + Extras
@@ -1820,6 +1824,16 @@ const addCarouselCard = (blockId: string) => {
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
                 />
               </div>
+
+              <label className="flex items-center space-x-3 mt-4 mb-4 p-3 bg-zinc-900 border border-zinc-700 rounded-lg cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={isWalkInOnly}
+                  onChange={(e) => setIsWalkInOnly(e.target.checked)}
+                  className="w-5 h-5 text-cyan-600 bg-zinc-950 border-zinc-700 rounded focus:ring-cyan-600 focus:ring-2"
+                />
+                <span className="text-white font-medium">Servis ini adalah Walk-In Sahaja (Tutup butang 'Book Now')</span>
+              </label>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
