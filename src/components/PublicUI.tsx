@@ -471,20 +471,19 @@ const handleShare = async (service: Service) => {
     const finalRef = urlRef || storageRef; 
     
     // 2. Build the exact AraPower link
-    let destination = 'https://arapower.hsohealthcare.com/book';
-    const params = new URLSearchParams();
+    let destination = 'https://arapower.hsohealthcare.com/?';
+    const queryParts = [];
     
     // Append service ID
-    if (service?.id) params.append('serviceId', service.id);
+    if (service?.id) queryParts.push(`service=${encodeURIComponent(service.id)}`);
     
     // Append service Name
-    if (service?.title) params.append('serviceName', service.title);
+    if (service?.title) queryParts.push(`sName=${encodeURIComponent(service.title)}`);
     
     // Append the staff referral code
-    if (finalRef) params.append('ref', finalRef);
+    if (finalRef) queryParts.push(`ref=${encodeURIComponent(finalRef)}`);
     
-    const queryString = params.toString();
-    if (queryString) destination += '?' + queryString;
+    destination += queryParts.join('&');
     
     // 3. Force the redirect
     window.location.href = destination; 
