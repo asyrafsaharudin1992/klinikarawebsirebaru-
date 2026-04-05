@@ -10,6 +10,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { LogOut, Plus, GripVertical, Image as ImageIcon, Trash2, Loader2, AlertCircle, CheckCircle2, X, Edit2, Sparkles, MapPin, Phone, ArrowUp, ArrowDown, ChevronLeft } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { GoogleGenAI } from '@google/genai';
+import DashboardStats from './DashboardStats';
 
 // Sortable Card Component (Horizontal Swimlane)
 const SortableServiceCard: React.FC<{ service: Service, onDelete: (id: string) => void, onEdit: (service: Service) => void, isHighlighted?: boolean }> = ({ service, onDelete, onEdit, isHighlighted }) => {
@@ -89,7 +90,7 @@ const SortableServiceCard: React.FC<{ service: Service, onDelete: (id: string) =
 }
 
 export default function AdminUI({ user }: { user: User }) {
-  const [activeTab, setActiveTab] = useState<'services' | 'locations' | 'panels' | 'collaborators' | 'leads' | 'staff' | 'vendors' | 'layout' | 'reviews' | 'pages'>('services');
+  const [activeTab, setActiveTab] = useState<'stats' | 'services' | 'locations' | 'panels' | 'collaborators' | 'leads' | 'staff' | 'vendors' | 'layout' | 'reviews' | 'pages'>('stats');
 
   const [currentAdminInfo, setCurrentAdminInfo] = useState<AdminUser | null>(null);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
@@ -1717,71 +1718,81 @@ const addCarouselCard = (blockId: string) => {
             </button>
           </div>
         </div>
-        <div className="max-w-6xl mx-auto px-4 flex items-center gap-6 border-t border-zinc-800">
+        <div className="max-w-6xl mx-auto px-4 flex items-center gap-6 border-t border-zinc-800 overflow-x-auto hide-scrollbar">
+          <button
+            onClick={() => setActiveTab('stats')}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'stats' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          >
+            Statistik
+          </button>
           <button
             onClick={() => setActiveTab('services')}
-            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'services' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'services' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
             Manage Promotions
           </button>
           <button
             onClick={() => setActiveTab('locations')}
-            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'locations' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'locations' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
             Manage Locations
           </button>
           <button
             onClick={() => setActiveTab('panels')}
-            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'panels' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'panels' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
             Manage Panels
           </button>
           <button
             onClick={() => setActiveTab('collaborators')}
-            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'collaborators' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'collaborators' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
             Manage TeamAra
           </button>
           <button
             onClick={() => setActiveTab('vendors')}
-            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'vendors' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'vendors' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
             Manage Vendors
           </button>
           <button
             onClick={() => setActiveTab('layout')}
-            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'layout' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'layout' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
             Manage Layout
           </button>
           <button
             onClick={() => setActiveTab('reviews')}
-            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'reviews' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'reviews' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
             Manage Reviews
           </button>
           <button
             onClick={() => setActiveTab('pages')}
-            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'pages' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'pages' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
             Manage Pages
           </button>
           <button
             onClick={() => setActiveTab('leads')}
-            className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'leads' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'leads' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
             Patient Leads
           </button>
           {currentAdminInfo?.role === 'superadmin' && (
             <button
               onClick={() => setActiveTab('staff')}
-              className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'staff' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+              className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'staff' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
             >
               Manage Staff
             </button>
           )}
         </div>
       </header>
+
+      {activeTab === 'stats' && (
+        <DashboardStats />
+      )}
 
       {activeTab === 'services' && (
       <main className="max-w-6xl mx-auto px-4 mt-8 flex flex-col gap-8">
