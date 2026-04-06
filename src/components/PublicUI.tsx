@@ -467,29 +467,12 @@ const handleShare = async (service: Service) => {
   const handleBookNow = (e: React.MouseEvent, service: Service | null) => {
     e.preventDefault(); 
     
-    // 1. Grab the code from URL or Memory
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlRef = urlParams.get('ref');
-    const storageRef = typeof window !== 'undefined' ? localStorage.getItem('ara_affiliate_code') : null;
-    const finalRef = urlRef || storageRef; 
+    if (!service) return;
+
+    const savedRef = typeof window !== 'undefined' ? localStorage.getItem('ara_affiliate_code') : null;
+    const outboundUrl = 'https://arapower.hsohealthcare.com/?serviceId=' + service.id + (savedRef ? '&ref=' + savedRef : '');
     
-    // 2. Build the exact AraPower link
-    let destination = 'https://arapower.hsohealthcare.com/?';
-    const queryParts = [];
-    
-    // Append service ID
-    if (service?.id) queryParts.push(`service=${encodeURIComponent(service.id)}`);
-    
-    // Append service Name
-    if (service?.title) queryParts.push(`sName=${encodeURIComponent(service.title)}`);
-    
-    // Append the staff referral code
-    if (finalRef) queryParts.push(`ref=${encodeURIComponent(finalRef)}`);
-    
-    destination += queryParts.join('&');
-    
-    // 3. Force the redirect
-    window.location.href = destination; 
+    window.location.href = outboundUrl; 
   };
 
   const handleWhatsAppBooking = async (e: React.FormEvent) => {
