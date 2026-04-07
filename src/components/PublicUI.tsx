@@ -1024,12 +1024,12 @@ const handleShare = async (service: Service) => {
             <div className="w-full h-full overflow-y-auto md:overflow-hidden flex flex-col md:flex-row relative hide-scrollbar">
               
               {/* Left Section: Portrait Image & Overlays */}
-              <div className="relative w-full aspect-square md:aspect-auto md:w-1/2 shrink-0 group bg-zinc-950 overflow-hidden md:flex md:items-center">
+              <div className="relative w-full md:w-1/2 shrink-0 group bg-zinc-950 overflow-hidden md:flex md:items-center min-h-[50vw] md:min-h-0">
                 {(() => {
                   const carouselImages = selectedService 
                     ? [...(selectedService.modalImageUrls || []), ...(selectedService.imageUrls || []), selectedService.imageUrl].filter(Boolean) as string[]
                     : [];
-                  if (carouselImages.length === 0) return <div className="w-full h-full flex items-center justify-center text-zinc-600 bg-zinc-900">No Image</div>;
+                  if (carouselImages.length === 0) return <div className="w-full h-full flex items-center justify-center text-zinc-600 bg-zinc-900 py-20">No Image</div>;
                   
                   return (
                     <>
@@ -1042,7 +1042,7 @@ const handleShare = async (service: Service) => {
                       <img 
                         src={carouselImages[currentImageIndex]} 
                         alt={`${selectedService.title} - Image ${currentImageIndex + 1}`}
-                        className="w-full h-full md:h-auto md:max-h-[85vh] object-cover object-top md:object-contain block z-10 relative"
+                        className="w-full h-auto max-h-[70vh] md:max-h-[85vh] object-contain block z-10 relative"
                         referrerPolicy="no-referrer"
                         loading="lazy"
                       />
@@ -1233,11 +1233,11 @@ const handleShare = async (service: Service) => {
             <div className="w-full h-full overflow-y-auto md:overflow-hidden flex flex-col md:flex-row relative hide-scrollbar pb-32 md:pb-0">
               
               {/* Left Panel: Image (Dynamic height on desktop, square on mobile) */}
-              <div className="relative w-full aspect-square md:aspect-auto md:w-1/2 flex-shrink-0 bg-zinc-950 flex items-center overflow-hidden">
+              <div className="relative w-full md:w-1/2 flex-shrink-0 bg-zinc-950 flex items-center overflow-hidden min-h-[50vw] md:min-h-0">
                 <img 
                   src={selectedVendor.imageUrl} 
                   alt={selectedVendor.name} 
-                  className="w-full h-full md:h-auto md:max-h-[85vh] object-cover object-top md:object-contain block z-10 relative"
+                  className="w-full h-auto max-h-[70vh] md:max-h-[85vh] object-contain block z-10 relative"
                   referrerPolicy="no-referrer"
                 />
               </div>

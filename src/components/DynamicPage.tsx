@@ -7,6 +7,40 @@ import { ChevronLeft, ArrowRight, Loader2, AlertCircle, X, Share2, MessageCircle
 import SEO from './SEO';
 import { CarouselCard } from '../types';
 
+// --- ARACME SPECIFIC DATA ---
+export const ARACME_CAROUSEL_DATA = [
+  {
+    id: 'aracme-1',
+    type: 'video',
+    title: 'ARACME Video Presentation',
+    url: 'https://drive.google.com/file/d/123456789/view', // Replace with actual Google Drive video link
+    thumbnail: 'https://picsum.photos/seed/aracme1/400/500',
+    description: 'Watch our latest ARACME video presentation.'
+  },
+  {
+    id: 'aracme-2',
+    type: 'slide',
+    title: 'ARACME Slide Deck',
+    url: 'https://docs.google.com/presentation/d/123456789/edit', // Replace with actual Google Slides link
+    thumbnail: 'https://picsum.photos/seed/aracme2/400/500',
+    description: 'Review the ARACME slide deck for more details.'
+  }
+];
+
+// Helper to convert Google Drive links to embeddable preview links
+const getEmbedUrl = (url: string) => {
+  if (!url) return '';
+  if (url.includes('drive.google.com/file/d/')) {
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match) return `https://drive.google.com/file/d/${match[1]}/preview`;
+  }
+  if (url.includes('docs.google.com/presentation/d/')) {
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match) return `https://docs.google.com/presentation/d/${match[1]}/embed`;
+  }
+  return url;
+};
+
   export default function DynamicPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -15,6 +49,7 @@ import { CarouselCard } from '../types';
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedCard, setSelectedCard] = useState<CarouselCard | null>(null);
+  const [activeMediaUrl, setActiveMediaUrl] = useState<string | null>(null);
   // --- 🌟 CUSTOM SHARE FUNCTION ---
   const handleShare = async (card: CarouselCard) => {
     // Note: We are passing BOTH the card ID and the page slug so your backend 
@@ -40,6 +75,15 @@ import { CarouselCard } from '../types';
       if (error.name !== "AbortError") {
         prompt("Sila salin pautan ini secara manual:", shareUrl);
       }
+    }
+  };
+
+  // --- 🎥 MEDIA CLICK HANDLER ---
+  const handleMediaClick = (e: React.MouseEvent, url: string | undefined) => {
+    if (!url) return;
+    if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
+      e.preventDefault();
+      setActiveMediaUrl(url);
     }
   };
 
@@ -174,6 +218,7 @@ import { CarouselCard } from '../types';
         );
 
         case 'carousel':
+        if (slug?.toLowerCase() === 'aracme') return null; // Hide dynamic carousel for ARACME
         if (!block.carouselCards || block.carouselCards.length === 0) return null;
         return (
           <section key={block.id} className="max-w-7xl mx-auto px-4 py-12">
@@ -232,14 +277,29 @@ import { CarouselCard } from '../types';
     );
   }
 
+  const isAracme = slug?.toLowerCase() === 'aracme';
+  
+  const t = {
+    backToHome: isAracme ? 'Back to Home' : 'Laman Utama',
+    pageNotFound: isAracme ? 'Page not found.' : 'Halaman tidak dijumpai.',
+    backButton: isAracme ? 'Back to Home' : 'Kembali ke Laman Utama',
+    noImage: isAracme ? 'No Image' : 'Tiada Gambar',
+    learnMore: isAracme ? 'Learn More' : 'Baca Lanjut',
+    moreInfo: isAracme ? 'Learn More' : 'Maklumat Lanjut',
+    noDetails: isAracme ? 'No additional details provided.' : 'Tiada butiran tambahan disediakan untuk rekod ini.',
+    share: isAracme ? 'Share' : 'Kongsi',
+    contactUs: isAracme ? 'Contact Us' : 'Hubungi',
+    bookNow: isAracme ? 'Book Now' : 'Lanjut'
+  };
+
   if (error || !pageData) {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-white px-4 text-center">
         <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
         <h1 className="text-3xl font-bold mb-2">404</h1>
-        <p className="text-zinc-400 mb-8">{error || "Halaman tidak dijumpai."}</p>
+        <p className="text-zinc-400 mb-8">{error || t.pageNotFound}</p>
         <Link to="/" className="bg-white text-black px-6 py-3 rounded-full font-bold hover:bg-zinc-200 transition-colors">
-          Kembali ke Laman Utama
+          {t.backButton}
         </Link>
       </div>
     );
@@ -254,13 +314,65 @@ import { CarouselCard } from '../types';
       <nav className="fixed top-0 w-full z-50 bg-gradient-to-b from-black/90 to-transparent pt-4 pb-8 px-4 md:px-12 pointer-events-none">
         <Link to="/" className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors pointer-events-auto bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
           <ChevronLeft className="w-5 h-5" />
-          <span className="text-sm font-medium">Laman Utama</span>
+          <span className="text-sm font-medium">{t.backToHome}</span>
         </Link>
       </nav>
 
       {/* Render all blocks dynamically */}
       <main className="w-full">
         {pageData.blocks.map(block => renderBlock(block))}
+        
+        {/* ARACME Custom Carousel */}
+        {isAracme && (
+          <section className="max-w-7xl mx-auto px-4 py-12">
+            <div className="flex overflow-x-auto pb-8 -mx-4 px-4 gap-6 snap-x snap-mandatory hide-scrollbar">
+              {ARACME_CAROUSEL_DATA.map(item => (
+                <div 
+                  key={item.id} 
+                  onClick={() => {
+                    setSelectedCard({
+                      id: item.id,
+                      title: item.title,
+                      shortDescription: item.description,
+                      imageUrl: item.thumbnail,
+                      buttonLink: item.url,
+                      isAracmeItem: true,
+                      aracmeType: item.type
+                    } as any);
+                    window.history.pushState(null, '', `${location.pathname}?card=${item.id}`);
+                  }}
+                  className="snap-start shrink-0 w-[260px] md:w-[300px] bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden cursor-pointer hover:border-zinc-700 transition-all duration-300 group hover:shadow-xl hover:-translate-y-1 flex flex-col"
+                >
+                  <div className="relative aspect-[4/5] w-full bg-zinc-950 overflow-hidden">
+                    <img 
+                      src={item.thumbnail} 
+                      alt={item.title} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100" 
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-12 h-12 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20">
+                        <div className="w-0 h-0 border-t-8 border-t-transparent border-l-[12px] border-l-white border-b-8 border-b-transparent ml-1"></div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-6 flex-1 flex flex-col">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="px-2 py-1 bg-zinc-800 text-cyan-400 text-[10px] font-bold tracking-widest rounded uppercase">
+                        {item.type}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
+                    <p className="text-sm text-zinc-400 line-clamp-2">{item.description}</p>
+                    <div className="mt-4 text-cyan-400 text-sm font-bold flex items-center gap-2 mt-auto pt-2">
+                      {t.learnMore} <ArrowRight className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
       {/* ========================================== */}
       {/* ========================================== */}
@@ -300,17 +412,28 @@ import { CarouselCard } from '../types';
             {/* Unified Scroll Wrapper */}
             <div className="w-full h-full overflow-y-auto md:overflow-hidden flex flex-col md:flex-row relative hide-scrollbar pb-32 md:pb-0">
               
-              {/* Left Panel: Image (Dynamic height on desktop, square on mobile) */}
-              <div className="relative w-full aspect-square md:aspect-auto md:w-1/2 flex-shrink-0 bg-zinc-950 flex items-center justify-center overflow-hidden">
-                {selectedCard.imageUrl ? (
+              {/* Left Panel: Image or Iframe */}
+              <div className="relative w-full md:w-1/2 flex-shrink-0 bg-zinc-950 flex items-center justify-center overflow-hidden min-h-[50vw] md:min-h-0">
+                {(selectedCard as any).isAracmeItem && (selectedCard as any).buttonLink ? (
+                  <div className="w-full px-4 md:px-8 py-8 md:py-0">
+                    <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-2xl border border-zinc-800">
+                      <iframe 
+                        src={getEmbedUrl((selectedCard as any).buttonLink)} 
+                        className="absolute inset-0 w-full h-full border-0" 
+                        allow="autoplay; encrypted-media" 
+                        allowFullScreen
+                      ></iframe>
+                    </div>
+                  </div>
+                ) : selectedCard.imageUrl ? (
                   <img 
                     src={selectedCard.imageUrl} 
                     alt={selectedCard.title} 
-                    className="w-full h-full md:h-auto md:max-h-[85vh] object-cover object-top md:object-contain block z-10 relative"
+                    className="w-full h-auto max-h-[70vh] md:max-h-[85vh] object-contain block z-10 relative"
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="text-zinc-600 font-medium">Tiada Gambar</div>
+                  <div className="text-zinc-600 font-medium py-20">{t.noImage}</div>
                 )}
               </div>
 
@@ -320,7 +443,7 @@ import { CarouselCard } from '../types';
                   
                   <div className="flex items-center gap-2 mb-4">
                     <span className="px-3 py-1 bg-zinc-950 border border-zinc-800 text-cyan-400 text-[10px] font-bold tracking-widest rounded-full uppercase shadow-sm">
-                      Maklumat Lanjut
+                      {t.moreInfo}
                     </span>
                   </div>
 
@@ -339,7 +462,7 @@ import { CarouselCard } from '../types';
 
                   {/* Main Content Body */}
                   <div className="prose prose-invert max-w-none text-zinc-300 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
-                    {selectedCard.modalFullText || "Tiada butiran tambahan disediakan untuk rekod ini."}
+                    {selectedCard.modalFullText || t.noDetails}
                   </div>
 
                 </div>
@@ -355,38 +478,60 @@ import { CarouselCard } from '../types';
                 className="pointer-events-auto flex-1 min-w-[100px] bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3.5 md:py-4 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-zinc-950/50 text-xs sm:text-sm md:text-base border border-zinc-700"
               >
                 <Share2 className="w-4 h-4 md:w-5 md:h-5" />
-                <span className="hidden sm:inline">Kongsi</span>
+                <span className="hidden sm:inline">{t.share}</span>
               </button>
               
               {/* 🌟 PRIMARY CUSTOM BUTTON */}
-              {selectedCard.buttonLink && (
+              {selectedCard.buttonLink && !(selectedCard as any).isAracmeItem && (
                 <a 
                   href={selectedCard.buttonLink}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => handleMediaClick(e, selectedCard.buttonLink)}
                   className="pointer-events-auto flex-1 min-w-[120px] bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3.5 md:py-4 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-cyan-900/20 text-xs sm:text-sm md:text-base whitespace-nowrap px-2"
                 >
                   <ExternalLink className="w-4 h-4 md:w-5 md:h-5" />
-                  {selectedCard.buttonText || "Lanjut"}
+                  {selectedCard.buttonText || t.bookNow}
                 </a>
               )}
 
               {/* 🌟 SECONDARY CUSTOM BUTTON (NEW) */}
-              {selectedCard.button2Link && (
+              {selectedCard.button2Link && !(selectedCard as any).isAracmeItem && (
                 <a 
                   href={selectedCard.button2Link}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => handleMediaClick(e, selectedCard.button2Link)}
                   // Using green here so it defaults perfectly as a WhatsApp CTA, but you can change it!
                   className="pointer-events-auto flex-1 min-w-[120px] bg-green-600 hover:bg-green-500 text-white font-bold py-3.5 md:py-4 rounded-full flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-green-900/20 text-xs sm:text-sm md:text-base whitespace-nowrap px-2"
                 >
                   <MessageCircle className="w-4 h-4 md:w-5 md:h-5" />
-                  {selectedCard.button2Text || "Hubungi"}
+                  {selectedCard.button2Text || t.contactUs}
                 </a>
               )}
 
             </div>
             
+          </div>
+        </div>
+      )}
+
+      {/* --- FULLSCREEN MEDIA MODAL --- */}
+      {activeMediaUrl && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 md:p-10">
+          <button 
+            onClick={() => setActiveMediaUrl(null)}
+            className="absolute top-6 right-6 z-[210] bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <div className="w-full h-full max-w-6xl flex items-center justify-center">
+            <iframe 
+              src={getEmbedUrl(activeMediaUrl)} 
+              className="w-full h-full rounded-2xl border border-white/10 shadow-2xl"
+              allow="autoplay; encrypted-media" 
+              allowFullScreen
+            ></iframe>
           </div>
         </div>
       )}
