@@ -56,6 +56,7 @@ async function startServer() {
     }
 
     const serviceId = req.query.service as string;
+    const refId = req.query.ref as string;
     const indexPath = isProduction 
       ? path.join(__dirname, 'dist', 'index.html')
       : path.join(__dirname, 'index.html');
@@ -83,7 +84,7 @@ async function startServer() {
           title = service?.title ? `${service.title} | Klinik Ara 24 Jam` : title;
           description = service?.description || description;
           imageUrl = service?.heroImageUrl || service?.imageUrl || service?.imageUrls?.[0] || imageUrl;
-          fullUrl = `https://klinikara24jam.hsohealthcare.com/?service=${serviceId}`;
+          fullUrl = `https://klinikara24jam.hsohealthcare.com/?service=${serviceId}${refId ? `&ref=${refId}` : ''}`;
         }
       } catch (error) {
         console.error('Error fetching service:', error);
