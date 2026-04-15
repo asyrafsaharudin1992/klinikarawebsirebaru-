@@ -1,6 +1,6 @@
  import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom'
-import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs, getDocsFromCache, getDocsFromServer, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview } from '../types';
 import { Play, Info, ChevronRight, Menu, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle, Phone, Share2, Check, Lock, ExternalLink, Database, Users, CreditCard, Settings, Github, Star, GitFork, Code } from 'lucide-react';
@@ -223,13 +223,23 @@ const handleShare = async (service: Service) => {
 };
 
   useEffect(() => {
+    const fetchWithCache = async (q: any) => {
+      try {
+        const snapshot = await getDocsFromCache(q);
+        if (!snapshot.empty) return snapshot;
+      } catch (e) {
+        // Cache miss
+      }
+      return await getDocsFromServer(q);
+    };
+
     const loadAllData = async () => {
       setLoading(true);
 
       const fetchServices = async () => {
         try {
           const q = query(collection(db, 'services'));
-          const snapshot = await getDocs(q);
+          const snapshot = await fetchWithCache(q);
           const servicesData = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
@@ -256,7 +266,7 @@ const handleShare = async (service: Service) => {
       const fetchLocations = async () => {
         try {
           const q = query(collection(db, 'locations'));
-          const snapshot = await getDocs(q);
+          const snapshot = await fetchWithCache(q);
           const locData = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
@@ -270,7 +280,7 @@ const handleShare = async (service: Service) => {
       const fetchPanels = async () => {
         try {
           const q = query(collection(db, 'panels'));
-          const snapshot = await getDocs(q);
+          const snapshot = await fetchWithCache(q);
           const panelData = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
@@ -287,7 +297,7 @@ const handleShare = async (service: Service) => {
       const fetchCollaborators = async () => {
         try {
           const q = query(collection(db, 'collaborators'));
-          const snapshot = await getDocs(q);
+          const snapshot = await fetchWithCache(q);
           const collabData = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
@@ -301,7 +311,7 @@ const handleShare = async (service: Service) => {
       const fetchVendors = async () => {
         try {
           const q = query(collection(db, 'vendors'));
-          const snapshot = await getDocs(q);
+          const snapshot = await fetchWithCache(q);
           const vendorData = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
@@ -318,7 +328,7 @@ const handleShare = async (service: Service) => {
       const fetchReviews = async () => {
         try {
           const q = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'));
-          const snapshot = await getDocs(q);
+          const snapshot = await fetchWithCache(q);
           const reviewData = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
@@ -466,11 +476,24 @@ const handleShare = async (service: Service) => {
 
   const handleBookNow = (e: React.MouseEvent, service: Service | null) => {
     e.preventDefault(); 
-    
     if (!service) return;
 
+    // PROPER EXTRACTION: Look at the URL first, then fallback to localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlRef = urlParams.get('ref');
     const savedRef = typeof window !== 'undefined' ? localStorage.getItem('ara_affiliate_code') : null;
-    const outboundUrl = 'https://arapower.hsohealthcare.com/?serviceId=' + service.id + (savedRef ? '&ref=' + savedRef : '');
+    
+    // Use URL first, fallback to cached
+    const finalRef = urlRef || savedRef;
+
+    // Build the outbound URL, explicitly attaching the service code and the captured ref
+    let outboundUrl = `https://arapower.hsohealthcare.com/?serviceId=${service.id}`;
+    outboundUrl += `&serviceName=${encodeURIComponent(service.name || service.title || '')}`;
+    outboundUrl += `&serviceCode=${service.id}`;
+    
+    if (finalRef) {
+      outboundUrl += `&ref=${finalRef}`;
+    }
     
     window.location.href = outboundUrl; 
   };
@@ -528,8 +551,20 @@ const handleShare = async (service: Service) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+      <div className="min-h-screen bg-zinc-950 flex flex-col">
+        {/* Skeleton Nav */}
+        <div className="h-20 w-full bg-zinc-900 animate-pulse border-b border-zinc-800"></div>
+        {/* Skeleton Hero */}
+        <div className="h-[70vh] md:h-[85vh] w-full bg-zinc-900 animate-pulse"></div>
+        {/* Skeleton Grid */}
+        <div className="max-w-7xl mx-auto px-4 py-12 w-full">
+          <div className="h-8 w-48 bg-zinc-800 animate-pulse rounded mb-8"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl h-80 animate-pulse"></div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

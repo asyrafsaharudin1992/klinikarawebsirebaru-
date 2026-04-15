@@ -9,9 +9,9 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { getDoc, doc } from 'firebase/firestore';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import PublicUI from './components/PublicUI';
-import SharePage from './pages/SharePage';
 
+const PublicUI = lazy(() => import('./components/PublicUI'));
+const SharePage = lazy(() => import('./pages/SharePage'));
 const AdminUI = lazy(() => import('./components/AdminUI'));
 const Login = lazy(() => import('./components/Login'));
 const DynamicPage = lazy(() => import('./components/DynamicPage'));

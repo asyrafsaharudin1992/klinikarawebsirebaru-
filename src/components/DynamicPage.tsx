@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, getDocsFromCache, getDocsFromServer } from 'firebase/firestore';
 import { db } from '../firebase';
 import { DynamicPageData, PageBlock } from '../types';
 import { ChevronLeft, ArrowRight, Loader2, AlertCircle, X, Share2, MessageCircle, ExternalLink } from 'lucide-react';
@@ -50,6 +50,8 @@ const getEmbedUrl = (url: string) => {
   const [error, setError] = useState('');
   const [selectedCard, setSelectedCard] = useState<CarouselCard | null>(null);
   const [activeMediaUrl, setActiveMediaUrl] = useState<string | null>(null);
+  const [showIframe, setShowIframe] = useState(false);
+
   // --- 🌟 CUSTOM SHARE FUNCTION ---
   const handleShare = async (card: CarouselCard) => {
     // Note: We are passing BOTH the card ID and the page slug so your backend 
@@ -114,12 +116,22 @@ const getEmbedUrl = (url: string) => {
   }, [pageData, location.search]); // The magic fix: It listens to changes in location.search!
   useEffect(() => {
     window.scrollTo(0, 0);
+    const fetchWithCache = async (q: any) => {
+      try {
+        const snapshot = await getDocsFromCache(q);
+        if (!snapshot.empty) return snapshot;
+      } catch (e) {
+        // Cache miss
+      }
+      return await getDocsFromServer(q);
+    };
+
     const fetchPage = async () => {
       if (!slug) return;
       try {
         // Find the page in Firebase where the slug matches the URL
         const q = query(collection(db, 'pages'), where('slug', '==', slug), where('status', '==', 'published'));
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await fetchWithCache(q);
 
         if (querySnapshot.empty) {
           setError('Halaman tidak dijumpai.'); // 404 Not Found
@@ -196,7 +208,7 @@ const getEmbedUrl = (url: string) => {
       case 'image':
         return block.imageUrl ? (
           <section key={block.id} className="max-w-4xl mx-auto px-4 py-8">
-            <img src={block.imageUrl} alt="Content" className="w-full h-auto rounded-2xl shadow-2xl border border-zinc-800" />
+            <img src={block.imageUrl} alt="Content" className="w-full h-auto rounded-2xl shadow-2xl border border-zinc-800" loading="lazy" />
           </section>
         ) : null;
 
@@ -241,6 +253,7 @@ const getEmbedUrl = (url: string) => {
                         alt={card.title} 
                         // object-cover will now beautifully fill the portrait box
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-zinc-800 text-zinc-500 font-medium text-sm">
@@ -271,8 +284,17 @@ const getEmbedUrl = (url: string) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <Loader2 className="w-10 h-10 text-cyan-500 animate-spin" />
+      <div className="min-h-screen bg-zinc-950 flex flex-col">
+        {/* Skeleton Nav */}
+        <div className="h-20 w-full bg-zinc-900 animate-pulse border-b border-zinc-800"></div>
+        {/* Skeleton Hero */}
+        <div className="h-[70vh] md:h-[85vh] w-full bg-zinc-900 animate-pulse"></div>
+        {/* Skeleton Content */}
+        <div className="max-w-3xl mx-auto px-4 py-12 w-full space-y-6">
+          <div className="h-6 w-full bg-zinc-800 animate-pulse rounded"></div>
+          <div className="h-6 w-5/6 bg-zinc-800 animate-pulse rounded"></div>
+          <div className="h-6 w-4/6 bg-zinc-800 animate-pulse rounded"></div>
+        </div>
       </div>
     );
   }
@@ -348,6 +370,7 @@ const getEmbedUrl = (url: string) => {
                       src={item.thumbnail} 
                       alt={item.title} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100" 
+                      loading="lazy"
                     />
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="w-12 h-12 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20">
@@ -383,6 +406,7 @@ const getEmbedUrl = (url: string) => {
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-0 md:p-6 overflow-hidden" 
           onClick={() => {
             setSelectedCard(null);
+            setShowIframe(false);
             window.history.pushState(null, '', window.location.pathname);
           }}
         >
@@ -402,6 +426,7 @@ const getEmbedUrl = (url: string) => {
             <button 
               onClick={() => {
                 setSelectedCard(null);
+                setShowIframe(false);
                 window.history.pushState(null, '', window.location.pathname);
               }}
               className="absolute top-4 right-4 z-[70] bg-black/40 hover:bg-black/60 md:bg-zinc-800 md:hover:bg-zinc-700 text-white p-2.5 rounded-full backdrop-blur-md transition-colors border border-white/20 md:border-zinc-700"
@@ -416,13 +441,32 @@ const getEmbedUrl = (url: string) => {
               <div className="relative w-full md:w-1/2 flex-shrink-0 bg-zinc-950 flex items-center justify-center overflow-hidden min-h-[50vw] md:min-h-0 pb-8 md:pb-0">
                 {(selectedCard as any).isAracmeItem && (selectedCard as any).buttonLink ? (
                   <div className="w-full px-4 md:px-8 py-8 md:py-0">
-                    <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-2xl border border-zinc-800">
-                      <iframe 
-                        src={getEmbedUrl((selectedCard as any).buttonLink)} 
-                        className="absolute inset-0 w-full h-full border-0" 
-                        allow="autoplay; encrypted-media" 
-                        allowFullScreen
-                      ></iframe>
+                    <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-2xl border border-zinc-800 bg-zinc-900">
+                      {showIframe ? (
+                        <iframe 
+                          src={getEmbedUrl((selectedCard as any).buttonLink)} 
+                          className="absolute inset-0 w-full h-full border-0" 
+                          allow="autoplay; encrypted-media" 
+                          allowFullScreen
+                        ></iframe>
+                      ) : (
+                        <div 
+                          className="absolute inset-0 cursor-pointer group"
+                          onClick={() => setShowIframe(true)}
+                        >
+                          <img 
+                            src={selectedCard.imageUrl} 
+                            alt={selectedCard.title} 
+                            className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-16 h-16 bg-cyan-600/90 hover:bg-cyan-500 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-transform group-hover:scale-110 shadow-xl shadow-cyan-900/50">
+                              <div className="w-0 h-0 border-t-8 border-t-transparent border-l-[14px] border-l-white border-b-8 border-b-transparent ml-1"></div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : selectedCard.imageUrl ? (
