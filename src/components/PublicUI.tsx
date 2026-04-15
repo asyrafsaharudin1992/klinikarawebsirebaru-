@@ -153,9 +153,11 @@ export default function PublicUI() {
     const params = new URLSearchParams(window.location.search);
     const ref = params.get('ref');
     if (ref) {
-      localStorage.setItem('ara_affiliate_code', ref);
+      setAffiliateRef(ref);                           // in-memory, guaranteed available
+      localStorage.setItem('ara_affiliate_code', ref); // persistent backup
     }
   }, []);
+  const [affiliateRef, setAffiliateRef] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -492,10 +494,10 @@ const handleShare = async (service: Service) => {
     e.preventDefault(); 
     if (!service) return;
 
-    // Pull from localStorage first, fallback to live URL in case storage is unavailable
-    const savedRef = typeof window !== 'undefined' ? localStorage.getItem('ara_affiliate_code') : null;
+    // Priority: React state → localStorage → live URL (belt and suspenders)
+    const lsRef = typeof window !== 'undefined' ? localStorage.getItem('ara_affiliate_code') : null;
     const urlRef = new URLSearchParams(window.location.search).get('ref');
-    const finalRef = savedRef || urlRef;
+    const finalRef = affiliateRef || lsRef || urlRef;
 
     let outboundUrl = `https://arapower.hsohealthcare.com/?serviceId=${service.id}`;
     outboundUrl += `&serviceName=${encodeURIComponent(service.title || '')}`;
@@ -504,6 +506,7 @@ const handleShare = async (service: Service) => {
     if (finalRef) {
       outboundUrl += `&ref=${finalRef}`;
       // Clear after use to prevent stale attribution on future organic visits
+      setAffiliateRef(null);
       localStorage.removeItem('ara_affiliate_code');
     }
     
@@ -533,8 +536,8 @@ const handleShare = async (service: Service) => {
     const formattedClinicPhone = formatPhoneNumber(leadData.locationPhone);
     const message = encodeURIComponent(`Hai, nama saya ${leadData.name}. Saya berminat dengan ${bookingModalService.title}.`);
     
-    // Check for affiliate code
-    const savedCode = localStorage.getItem('ara_affiliate_code');
+    // Check for affiliate code — Priority: React state → localStorage
+    const savedCode = affiliateRef || localStorage.getItem('ara_affiliate_code');
     const affiliateParam = savedCode ? `&ref=${savedCode}` : '';
     
     const waUrl = `https://wa.me/${formattedClinicPhone}?text=${message}${affiliateParam}`;
@@ -543,6 +546,7 @@ const handleShare = async (service: Service) => {
 
     // Clear after use to prevent stale attribution on future organic visits
     if (savedCode) {
+      setAffiliateRef(null);
       localStorage.removeItem('ara_affiliate_code');
     }
 
