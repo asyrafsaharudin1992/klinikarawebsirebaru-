@@ -148,6 +148,14 @@ export default function PublicUI() {
   const [showBranchSelect, setShowBranchSelect] = useState(false);
   // --- CMS PAGE TABS STATE ---
   const [customPages, setCustomPages] = useState<{title: string, slug: string}[]>([]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      localStorage.setItem('ara_affiliate_code', ref);
+    }
+  }, []);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -484,19 +492,16 @@ const handleShare = async (service: Service) => {
     e.preventDefault(); 
     if (!service) return;
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlRef = urlParams.get('ref');
+    // Aggressively pull from localStorage
     const savedRef = typeof window !== 'undefined' ? localStorage.getItem('ara_affiliate_code') : null;
     
-    // Use cached code first, fallback to URL
-    const finalRef = savedRef || urlRef;
-
     let outboundUrl = `https://arapower.hsohealthcare.com/?serviceId=${service.id}`;
     outboundUrl += `&serviceName=${encodeURIComponent(service.title || '')}`;
     outboundUrl += `&serviceCode=${service.id}`;
     
-    if (finalRef) {
-      outboundUrl += `&ref=${finalRef}`;
+    // Attach the cached code!
+    if (savedRef) {
+      outboundUrl += `&ref=${savedRef}`;
     }
     
     window.location.href = outboundUrl; 
