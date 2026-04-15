@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom'
+import React, { useEffect, useState, useRef, useContext } from 'react';
+import { Link } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs, getDocsFromCache, getDocsFromServer, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview } from '../types';
@@ -8,6 +8,7 @@ import Fuse from 'fuse.js';
 import { GoogleGenAI, Type } from '@google/genai';
 import GoogleReviews from './GoogleReviews';
 import SEO from './SEO';
+import { AffiliateContext } from '../App';
 
 const CarouselWrapper = ({ children }: { children: React.ReactNode }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -149,15 +150,9 @@ export default function PublicUI() {
   // --- CMS PAGE TABS STATE ---
   const [customPages, setCustomPages] = useState<{title: string, slug: string}[]>([]);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const ref = params.get('ref');
-    if (ref) {
-      setAffiliateRef(ref);                           // in-memory, guaranteed available
-      localStorage.setItem('ara_affiliate_code', ref); // persistent backup
-    }
-  }, []);
-  const [affiliateRef, setAffiliateRef] = useState<string | null>(null);
+  // Read affiliate ref from App-level context — set synchronously before any renders
+  const { affiliateRef, clearAffiliateRef } = useContext(AffiliateContext);
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -260,12 +255,6 @@ const handleShare = async (service: Service) => {
 
           const urlParams = new URLSearchParams(window.location.search);
           const serviceIdFromUrl = urlParams.get('service');
-
-          // FIX: Catch the affiliate code before the URL is wiped clean!
-          const refFromUrl = urlParams.get('ref');
-          if (refFromUrl) {
-            localStorage.setItem('ara_affiliate_code', refFromUrl);
-          }
 
           if (serviceIdFromUrl) {
             const serviceToOpen = sortedServices.find(s => s.id === serviceIdFromUrl);
@@ -494,7 +483,8 @@ const handleShare = async (service: Service) => {
     e.preventDefault(); 
     if (!service) return;
 
-    // Priority: React state → localStorage → live URL (belt and suspenders)
+    // Read from context (set synchronously at App level — most reliable)
+    // Fallback chain: context → localStorage → live URL
     const lsRef = typeof window !== 'undefined' ? localStorage.getItem('ara_affiliate_code') : null;
     const urlRef = new URLSearchParams(window.location.search).get('ref');
     const finalRef = affiliateRef || lsRef || urlRef;
@@ -506,8 +496,7 @@ const handleShare = async (service: Service) => {
     if (finalRef) {
       outboundUrl += `&ref=${finalRef}`;
       // Clear after use to prevent stale attribution on future organic visits
-      setAffiliateRef(null);
-      localStorage.removeItem('ara_affiliate_code');
+      clearAffiliateRef();
     }
     
     window.location.href = outboundUrl; 
@@ -536,7 +525,7 @@ const handleShare = async (service: Service) => {
     const formattedClinicPhone = formatPhoneNumber(leadData.locationPhone);
     const message = encodeURIComponent(`Hai, nama saya ${leadData.name}. Saya berminat dengan ${bookingModalService.title}.`);
     
-    // Check for affiliate code — Priority: React state → localStorage
+    // Check for affiliate code — context is primary source, localStorage is fallback
     const savedCode = affiliateRef || localStorage.getItem('ara_affiliate_code');
     const affiliateParam = savedCode ? `&ref=${savedCode}` : '';
     
@@ -546,8 +535,7 @@ const handleShare = async (service: Service) => {
 
     // Clear after use to prevent stale attribution on future organic visits
     if (savedCode) {
-      setAffiliateRef(null);
-      localStorage.removeItem('ara_affiliate_code');
+      clearAffiliateRef();
     }
 
     setBookingModalService(null);

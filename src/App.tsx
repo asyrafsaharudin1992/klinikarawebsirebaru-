@@ -3,14 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { HelmetProvider } from 'react-helmet-async';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useState, createContext, lazy, Suspense } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { getDoc, doc } from 'firebase/firestore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 const PublicUI = lazy(() => import('./components/PublicUI'));
+
+// Affiliate Context — single source of truth for the entire app
+export const AffiliateContext = createContext<{
+  affiliateRef: string | null;
+  clearAffiliateRef: () => void;
+}>({ affiliateRef: null, clearAffiliateRef: () => {} });
 const SharePage = lazy(() => import('./pages/SharePage'));
 const AdminUI = lazy(() => import('./components/AdminUI'));
 const Login = lazy(() => import('./components/Login'));
@@ -22,28 +28,26 @@ const LoadingSpinner = () => (
   </div>
 );
 
-// Component for Affiliate Tracking
-function AffiliateTracker() {
-  const location = useLocation();
-
-  useEffect(() => {
-    // The Save Logic: Check URLSearchParams for 'ref'
-    const urlParams = new URLSearchParams(window.location.search);
-    const refValue = urlParams.get('ref');
-
-    // If it exists, immediately save to localStorage
-    if (refValue) {
-      localStorage.setItem('ara_affiliate_code', refValue);
-    }
-  }, [location.search]);
-
-  return null;
-}
-
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);
+
+  // Capture ref synchronously before any renders or lazy loading
+  const [affiliateRef, setAffiliateRef] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      localStorage.setItem('ara_affiliate_code', ref);
+      return ref;
+    }
+    return localStorage.getItem('ara_affiliate_code');
+  });
+
+  const clearAffiliateRef = () => {
+    setAffiliateRef(null);
+    localStorage.removeItem('ara_affiliate_code');
+  };
 
   useEffect(() => {
     // Test connection
@@ -107,27 +111,28 @@ export default function App() {
   }
 
   return (
-    <ErrorBoundary>
-      <HelmetProvider>
-        <BrowserRouter>
-          <AffiliateTracker />
-          <Suspense fallback={<LoadingSpinner />}>
-            <Routes>
-              <Route path="/" element={<PublicUI />} />
-              <Route path="/p/:slug" element={<DynamicPage />} />
-              <Route path="/share" element={<SharePage />} />
-              <Route 
-                path="/admin" 
-                element={user ? <AdminUI user={user} /> : <Navigate to="/login" replace />} 
-              />
-              <Route 
-                path="/login" 
-                element={!user ? <Login /> : <Navigate to="/admin" replace />} 
-              />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </HelmetProvider>   {/* <--- ADD THIS LINE HERE */}
-    </ErrorBoundary>
+    <AffiliateContext.Provider value={{ affiliateRef, clearAffiliateRef }}>
+      <ErrorBoundary>
+        <HelmetProvider>
+          <BrowserRouter>
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                <Route path="/" element={<PublicUI />} />
+                <Route path="/p/:slug" element={<DynamicPage />} />
+                <Route path="/share" element={<SharePage />} />
+                <Route 
+                  path="/admin" 
+                  element={user ? <AdminUI user={user} /> : <Navigate to="/login" replace />} 
+                />
+                <Route 
+                  path="/login" 
+                  element={!user ? <Login /> : <Navigate to="/admin" replace />} 
+                />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </HelmetProvider>
+      </ErrorBoundary>
+    </AffiliateContext.Provider>
   );
 }
