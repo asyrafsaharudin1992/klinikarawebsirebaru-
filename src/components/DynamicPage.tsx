@@ -138,7 +138,7 @@ const getEmbedUrl = (url: string) => {
         } else {
           // Grab the first matching document
           const doc = querySnapshot.docs[0];
-          setPageData({ id: doc.id, ...doc.data() } as DynamicPageData);
+          setPageData({ id: doc.id, ...(doc.data() as any) } as DynamicPageData);
         }
       } catch (err) {
         console.error("Error fetching page:", err);

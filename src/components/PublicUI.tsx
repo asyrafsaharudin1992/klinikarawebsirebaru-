@@ -240,9 +240,9 @@ const handleShare = async (service: Service) => {
         try {
           const q = query(collection(db, 'services'));
           const snapshot = await fetchWithCache(q);
-          const servicesData = snapshot.docs.map(doc => ({
+          const servicesData = snapshot.docs.map((doc: any) => ({
             id: doc.id,
-            ...doc.data()
+            ...(doc.data() as any)
           })) as Service[];
           
           const sortedServices = [...servicesData].sort((a, b) => (a.rankOrder || 0) - (b.rankOrder || 0));
@@ -250,6 +250,12 @@ const handleShare = async (service: Service) => {
 
           const urlParams = new URLSearchParams(window.location.search);
           const serviceIdFromUrl = urlParams.get('service');
+
+          // FIX: Catch the affiliate code before the URL is wiped clean!
+          const refFromUrl = urlParams.get('ref');
+          if (refFromUrl) {
+            localStorage.setItem('ara_affiliate_code', refFromUrl);
+          }
 
           if (serviceIdFromUrl) {
             const serviceToOpen = sortedServices.find(s => s.id === serviceIdFromUrl);
@@ -267,9 +273,9 @@ const handleShare = async (service: Service) => {
         try {
           const q = query(collection(db, 'locations'));
           const snapshot = await fetchWithCache(q);
-          const locData = snapshot.docs.map(doc => ({
+          const locData = snapshot.docs.map((doc: any) => ({
             id: doc.id,
-            ...doc.data()
+            ...(doc.data() as any)
           })) as Location[];
           setLocations(locData);
         } catch (error) {
@@ -281,9 +287,9 @@ const handleShare = async (service: Service) => {
         try {
           const q = query(collection(db, 'panels'));
           const snapshot = await fetchWithCache(q);
-          const panelData = snapshot.docs.map(doc => ({
+          const panelData = snapshot.docs.map((doc: any) => ({
             id: doc.id,
-            ...doc.data()
+            ...(doc.data() as any)
           })) as Panel[];
           
           // Sort in memory to handle missing rankOrder fields without excluding them from the query
@@ -298,9 +304,9 @@ const handleShare = async (service: Service) => {
         try {
           const q = query(collection(db, 'collaborators'));
           const snapshot = await fetchWithCache(q);
-          const collabData = snapshot.docs.map(doc => ({
+          const collabData = snapshot.docs.map((doc: any) => ({
             id: doc.id,
-            ...doc.data()
+            ...(doc.data() as any)
           })) as Collaborator[];
           setCollaborators(collabData);
         } catch (error) {
@@ -312,9 +318,9 @@ const handleShare = async (service: Service) => {
         try {
           const q = query(collection(db, 'vendors'));
           const snapshot = await fetchWithCache(q);
-          const vendorData = snapshot.docs.map(doc => ({
+          const vendorData = snapshot.docs.map((doc: any) => ({
             id: doc.id,
-            ...doc.data()
+            ...(doc.data() as any)
           })) as Vendor[];
           
           // Sort by name by default
@@ -329,9 +335,9 @@ const handleShare = async (service: Service) => {
         try {
           const q = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'));
           const snapshot = await fetchWithCache(q);
-          const reviewData = snapshot.docs.map(doc => ({
+          const reviewData = snapshot.docs.map((doc: any) => ({
             id: doc.id,
-            ...doc.data()
+            ...(doc.data() as any)
           })) as GoogleReview[];
           setReviews(reviewData);
         } catch (error) {
@@ -478,17 +484,15 @@ const handleShare = async (service: Service) => {
     e.preventDefault(); 
     if (!service) return;
 
-    // PROPER EXTRACTION: Look at the URL first, then fallback to localStorage
     const urlParams = new URLSearchParams(window.location.search);
     const urlRef = urlParams.get('ref');
     const savedRef = typeof window !== 'undefined' ? localStorage.getItem('ara_affiliate_code') : null;
     
-    // Use URL first, fallback to cached
-    const finalRef = urlRef || savedRef;
+    // Use cached code first, fallback to URL
+    const finalRef = savedRef || urlRef;
 
-    // Build the outbound URL, explicitly attaching the service code and the captured ref
     let outboundUrl = `https://arapower.hsohealthcare.com/?serviceId=${service.id}`;
-    outboundUrl += `&serviceName=${encodeURIComponent(service.name || service.title || '')}`;
+    outboundUrl += `&serviceName=${encodeURIComponent(service.title || '')}`;
     outboundUrl += `&serviceCode=${service.id}`;
     
     if (finalRef) {
