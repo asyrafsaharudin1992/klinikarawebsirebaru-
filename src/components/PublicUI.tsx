@@ -1,4 +1,4 @@
- import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom'
 import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs, getDocsFromCache, getDocsFromServer, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
@@ -492,16 +492,19 @@ const handleShare = async (service: Service) => {
     e.preventDefault(); 
     if (!service) return;
 
-    // Aggressively pull from localStorage
+    // Pull from localStorage first, fallback to live URL in case storage is unavailable
     const savedRef = typeof window !== 'undefined' ? localStorage.getItem('ara_affiliate_code') : null;
-    
+    const urlRef = new URLSearchParams(window.location.search).get('ref');
+    const finalRef = savedRef || urlRef;
+
     let outboundUrl = `https://arapower.hsohealthcare.com/?serviceId=${service.id}`;
     outboundUrl += `&serviceName=${encodeURIComponent(service.title || '')}`;
     outboundUrl += `&serviceCode=${service.id}`;
     
-    // Attach the cached code!
-    if (savedRef) {
-      outboundUrl += `&ref=${savedRef}`;
+    if (finalRef) {
+      outboundUrl += `&ref=${finalRef}`;
+      // Clear after use to prevent stale attribution on future organic visits
+      localStorage.removeItem('ara_affiliate_code');
     }
     
     window.location.href = outboundUrl; 
@@ -537,6 +540,11 @@ const handleShare = async (service: Service) => {
     const waUrl = `https://wa.me/${formattedClinicPhone}?text=${message}${affiliateParam}`;
 
     window.open(waUrl, '_blank');
+
+    // Clear after use to prevent stale attribution on future organic visits
+    if (savedCode) {
+      localStorage.removeItem('ara_affiliate_code');
+    }
 
     setBookingModalService(null);
     setSelectedService(null);
