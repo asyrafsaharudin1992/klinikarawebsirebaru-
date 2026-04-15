@@ -5,12 +5,14 @@ import { Helmet } from 'react-helmet-async';
 const SharePage = () => {
   const [searchParams] = useSearchParams();
   const serviceId = searchParams.get('service');
+  const refId = searchParams.get('ref');
 
   useEffect(() => {
     if (serviceId) {
-      window.location.href = `/?service=${serviceId}`;
+      const refParam = refId ? `&ref=${refId}` : '';
+      window.location.href = `/?service=${serviceId}${refParam}`;
     }
-  }, [serviceId]);
+  }, [serviceId, refId]);
 
   return (
     <Helmet>
