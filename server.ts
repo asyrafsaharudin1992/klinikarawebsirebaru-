@@ -20,6 +20,22 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  app.use(express.json());
+
+  // API Routes
+  app.patch('/api/services/:id', async (req, res) => {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    try {
+      await db.collection('services').doc(id).update(updates);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error updating service:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   let vite: any;
   const isProduction = process.env.NODE_ENV === 'production';
 

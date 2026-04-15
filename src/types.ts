@@ -16,6 +16,8 @@ export interface Service {
   rankOrder: number;
   showTeamAraDisclaimer?: boolean;
   isWalkInOnly?: boolean;
+  is_arapower_linked?: boolean;
+  commission_rate?: string;
 }
 
 export interface Location {

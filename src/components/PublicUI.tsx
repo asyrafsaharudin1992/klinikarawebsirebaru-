@@ -1024,7 +1024,7 @@ const handleShare = async (service: Service) => {
             <div className="w-full h-full overflow-y-auto md:overflow-hidden flex flex-col md:flex-row relative hide-scrollbar">
               
               {/* Left Section: Portrait Image & Overlays */}
-              <div className="relative w-full md:w-1/2 shrink-0 group bg-zinc-950 overflow-hidden md:flex md:items-center min-h-[50vw] md:min-h-0">
+              <div className="relative w-full md:w-1/2 shrink-0 group bg-zinc-950 overflow-hidden md:flex md:items-center min-h-[50vw] md:min-h-0 pb-8 md:pb-0">
                 {(() => {
                   const carouselImages = selectedService 
                     ? [...(selectedService.modalImageUrls || []), ...(selectedService.imageUrls || []), selectedService.imageUrl].filter(Boolean) as string[]

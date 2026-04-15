@@ -413,7 +413,7 @@ const getEmbedUrl = (url: string) => {
             <div className="w-full h-full overflow-y-auto md:overflow-hidden flex flex-col md:flex-row relative hide-scrollbar pb-32 md:pb-0">
               
               {/* Left Panel: Image or Iframe */}
-              <div className="relative w-full md:w-1/2 flex-shrink-0 bg-zinc-950 flex items-center justify-center overflow-hidden min-h-[50vw] md:min-h-0">
+              <div className="relative w-full md:w-1/2 flex-shrink-0 bg-zinc-950 flex items-center justify-center overflow-hidden min-h-[50vw] md:min-h-0 pb-8 md:pb-0">
                 {(selectedCard as any).isAracmeItem && (selectedCard as any).buttonLink ? (
                   <div className="w-full px-4 md:px-8 py-8 md:py-0">
                     <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-2xl border border-zinc-800">

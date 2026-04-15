@@ -17,6 +17,39 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      document.addEventListener('click', function(e) {
+        // Find the closest anchor tag that was clicked
+        const target = e.target.closest('a');
+        if (!target || !target.href) return;
+
+        // Check if the link points to our booking app
+        if (target.href.includes('arapower.hsohealthcare.com')) {
+          try {
+            const currentUrl = new URL(window.location.href);
+            const destinationUrl = new URL(target.href);
+
+            // The list of parameters we want to carry over
+            const paramsToForward = ['ref', 'serviceName', 'serviceCode', 'serviceId', 'service'];
+            
+            let hasChanges = false;
+            paramsToForward.forEach(param => {
+              if (currentUrl.searchParams.has(param)) {
+                destinationUrl.searchParams.set(param, currentUrl.searchParams.get(param));
+                hasChanges = true;
+              }
+            });
+
+            // If we added parameters, silently update the href right before navigation happens
+            if (hasChanges) {
+              target.href = destinationUrl.toString();
+            }
+          } catch(err) {
+            console.error('Error forwarding tracking params:', err);
+          }
+        }
+      });
+    </script>
   </body>
 </html>
 

@@ -11,6 +11,7 @@ import { LogOut, Plus, GripVertical, Image as ImageIcon, Trash2, Loader2, AlertC
 import imageCompression from 'browser-image-compression';
 import { GoogleGenAI } from '@google/genai';
 import DashboardStats from './DashboardStats';
+import ServiceRouting from './ServiceRouting';
 
 // Sortable Card Component (Horizontal Swimlane)
 const SortableServiceCard: React.FC<{ service: Service, onDelete: (id: string) => void, onEdit: (service: Service) => void, isHighlighted?: boolean }> = ({ service, onDelete, onEdit, isHighlighted }) => {
@@ -90,7 +91,8 @@ const SortableServiceCard: React.FC<{ service: Service, onDelete: (id: string) =
 }
 
 export default function AdminUI({ user }: { user: User }) {
-  const [activeTab, setActiveTab] = useState<'stats' | 'services' | 'locations' | 'panels' | 'collaborators' | 'leads' | 'staff' | 'vendors' | 'layout' | 'reviews' | 'pages'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'services' | 'locations' | 'panels' | 'collaborators' | 'leads' | 'staff' | 'vendors' | 'layout' | 'reviews' | 'pages' | 'setup'>('stats');
+  const [setupSubTab, setSetupSubTab] = useState<'general' | 'service-links'>('general');
 
   const [currentAdminInfo, setCurrentAdminInfo] = useState<AdminUser | null>(null);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
@@ -226,6 +228,7 @@ export default function AdminUI({ user }: { user: User }) {
   const [description, setDescription] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
   const [isWalkInOnly, setIsWalkInOnly] = useState(false);
+  const [is_arapower_linked, setIsArapowerLinked] = useState(true);
   
   const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -533,6 +536,7 @@ export default function AdminUI({ user }: { user: User }) {
     setDescription(service.description || '');
     setIsFeatured(service.isFeatured || false);
     setIsWalkInOnly(service.isWalkInOnly || false);
+    setIsArapowerLinked(service.is_arapower_linked ?? true);
     
     setHeroImageUrl(service.heroImageUrl || '');
     setThumbnailUrl(service.thumbnailUrl || '');
@@ -561,6 +565,7 @@ export default function AdminUI({ user }: { user: User }) {
     setDescription('');
     setIsFeatured(false);
     setIsWalkInOnly(false);
+    setIsArapowerLinked(true);
     setExistingImageUrls([]);
     setImageFiles([]);
     setImagePreviews([]);
@@ -1519,6 +1524,7 @@ const addCarouselCard = (blockId: string) => {
         description,
         isFeatured,
         isWalkInOnly,
+        is_arapower_linked,
         thumbnailUrl: finalThumbnailUrl,      // Source of truth
         heroImageUrl: finalHeroImageUrl,        // Specific or Inherited
         modalImageUrls: finalModalImageUrls,    // Primary + Extras
@@ -1774,6 +1780,12 @@ const addCarouselCard = (blockId: string) => {
             Manage Pages
           </button>
           <button
+            onClick={() => setActiveTab('setup')}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'setup' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          >
+            Setup
+          </button>
+          <button
             onClick={() => setActiveTab('leads')}
             className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'leads' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
@@ -1789,6 +1801,25 @@ const addCarouselCard = (blockId: string) => {
           )}
         </div>
       </header>
+
+      {activeTab === 'setup' && (
+        <div className="bg-zinc-900 border-b border-zinc-800">
+          <div className="max-w-6xl mx-auto px-4 flex items-center gap-6">
+            <button
+              onClick={() => setSetupSubTab('general')}
+              className={`py-3 text-xs font-bold uppercase tracking-widest transition-colors ${setupSubTab === 'general' ? 'text-red-500' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              General Settings
+            </button>
+            <button
+              onClick={() => setSetupSubTab('service-links')}
+              className={`py-3 text-xs font-bold uppercase tracking-widest transition-colors ${setupSubTab === 'service-links' ? 'text-red-500' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              Service Routing
+            </button>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'stats' && (
         <DashboardStats />
@@ -1844,6 +1875,19 @@ const addCarouselCard = (blockId: string) => {
                   className="w-5 h-5 text-cyan-600 bg-zinc-950 border-zinc-700 rounded focus:ring-cyan-600 focus:ring-2"
                 />
                 <span className="text-white font-medium">Servis ini adalah Walk-In Sahaja (Tutup butang 'Book Now')</span>
+              </label>
+
+              <label className="flex items-center space-x-3 mt-4 mb-4 p-3 bg-zinc-900 border border-zinc-700 rounded-lg cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={is_arapower_linked}
+                  onChange={(e) => setIsArapowerLinked(e.target.checked)}
+                  className="w-5 h-5 text-blue-600 bg-zinc-950 border-zinc-700 rounded focus:ring-blue-600 focus:ring-2"
+                />
+                <div className="flex flex-col">
+                  <span className="text-white font-medium">Link to AraPower Booking System</span>
+                  <span className="text-xs text-zinc-500">If unchecked, service will default to WhatsApp Only (Warm Leads).</span>
+                </div>
               </label>
 
               <div className="grid grid-cols-2 gap-4">
@@ -3866,6 +3910,21 @@ const addCarouselCard = (blockId: string) => {
           </div>
         )}
       </main>
+      )}
+
+      {activeTab === 'setup' && (
+        <main className="max-w-6xl mx-auto px-4 mt-8">
+          {setupSubTab === 'service-links' && (
+            <ServiceRouting services={services} fetchServices={() => {}} />
+          )}
+          {setupSubTab === 'general' && (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-12 text-center">
+              <AlertCircle className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+              <h3 className="text-zinc-300 font-medium mb-1">General Settings</h3>
+              <p className="text-zinc-500 text-sm">General configuration options will appear here.</p>
+            </div>
+          )}
+        </main>
       )}
     </div>
   );
