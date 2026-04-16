@@ -1,3 +1,7 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
 import React, { useEffect, useState, useRef, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs, getDocsFromCache, getDocsFromServer, where } from 'firebase/firestore';
@@ -23,7 +27,6 @@ const CarouselWrapper = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="relative group">
-      {/* Left Arrow (Hidden on mobile, shows on group hover on desktop) */}
       <button 
         onClick={() => scroll('left')}
         className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-30 bg-black/50 hover:bg-black/80 backdrop-blur text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all border border-zinc-700 shadow-xl"
@@ -31,7 +34,6 @@ const CarouselWrapper = ({ children }: { children: React.ReactNode }) => {
         <ChevronLeft className="w-6 h-6" />
       </button>
 
-      {/* Scrollable Container */}
       <div 
         ref={scrollRef}
         className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pb-6 hide-scrollbar scroll-smooth relative z-20"
@@ -39,7 +41,6 @@ const CarouselWrapper = ({ children }: { children: React.ReactNode }) => {
         {children}
       </div>
 
-      {/* Right Arrow */}
       <button 
         onClick={() => scroll('right')}
         className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-30 bg-black/50 hover:bg-black/80 backdrop-blur text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all border border-zinc-700 shadow-xl"
@@ -99,7 +100,7 @@ const ServiceCarouselRow = ({ title, services, onSelect, subheading }: { title: 
 };
 
 const formatPhoneNumber = (phone: string) => {
-  let cleaned = phone.replace(/\D/g, ''); // Remove all non-digits
+  let cleaned = phone.replace(/\D/g, '');
   if (cleaned.startsWith('0')) { cleaned = '60' + cleaned.substring(1); }
   if (!cleaned.startsWith('60')) { cleaned = '60' + cleaned; }
   return cleaned;
@@ -145,18 +146,14 @@ export default function PublicUI() {
   const [specialAccessPassword, setSpecialAccessPassword] = useState('');
   const [isSpecialAccessAuthenticated, setIsSpecialAccessAuthenticated] = useState(false);
   const [specialAccessError, setSpecialAccessError] = useState('');
-  // Tracks if the user is currently selecting a branch for WhatsApp
   const [showBranchSelect, setShowBranchSelect] = useState(false);
-  // --- CMS PAGE TABS STATE ---
   const [customPages, setCustomPages] = useState<{title: string, slug: string}[]>([]);
 
-  // Read affiliate ref from App-level context — set synchronously before any renders
   const { affiliateRef, clearAffiliateRef } = useContext(AffiliateContext);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Real-time listener for published pages
     const pagesQ = query(collection(db, 'pages'), where('status', '==', 'published'));
     const unsubscribePages = onSnapshot(pagesQ, (snapshot) => {
       const activePages = snapshot.docs.map(doc => ({
@@ -171,9 +168,6 @@ export default function PublicUI() {
 
     return () => unsubscribePages();
   }, []);
-
-
-
 
   const handleSpecialAccessSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,37 +189,34 @@ export default function PublicUI() {
     if (text.includes('admin') || text.includes('tetapan') || text.includes('setting')) return Settings;
     return Database;
   };
-const handleShare = async (service: Service) => {
-  const shareUrl = `https://share.klinikara24jam.hsohealthcare.com/?service=${service.id}`;
-  const warmSentence = `Jom lihat servis ini di Klinik Ara: ${service.title}`;
-  
-  // Create a combined message for copy-paste fallback
-  const fullMessage = `${shareUrl}\n\n${warmSentence}`;
 
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: `Klinik Ara 24 Jam - ${service.title}`,
-        text: warmSentence, // The text part
-        url: shareUrl,      // The URL part (Forces the preview)
-      });
-      return;
-    } catch (error) {
-      if (error instanceof Error && error.name !== 'AbortError') {
-        console.log('Error sharing', error);
+  const handleShare = async (service: Service) => {
+    const shareUrl = `https://share.klinikara24jam.hsohealthcare.com/?service=${service.id}`;
+    const warmSentence = `Jom lihat servis ini di Klinik Ara: ${service.title}`;
+    const fullMessage = `${shareUrl}\n\n${warmSentence}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Klinik Ara 24 Jam - ${service.title}`,
+          text: warmSentence,
+          url: shareUrl,
+        });
+        return;
+      } catch (error) {
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.log('Error sharing', error);
+        }
       }
     }
-  }
 
-  // OPTIONAL: Fallback if navigator.share fails (Desktop/Old Phones)
-  // Copy to clipboard or open a simple WhatsApp link
-  try {
-    await navigator.clipboard.writeText(fullMessage);
-    alert("Link disalin! Sila tampal di WhatsApp.");
-  } catch (err) {
-    console.error('Failed to copy', err);
-  }
-};
+    try {
+      await navigator.clipboard.writeText(fullMessage);
+      alert("Link disalin! Sila tampal di WhatsApp.");
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
+  };
 
   useEffect(() => {
     const fetchWithCache = async (q: any) => {
@@ -291,7 +282,6 @@ const handleShare = async (service: Service) => {
             ...(doc.data() as any)
           })) as Panel[];
           
-          // Sort in memory to handle missing rankOrder fields without excluding them from the query
           const sortedPanels = panelData.sort((a, b) => (a.rankOrder ?? 9999) - (b.rankOrder ?? 9999));
           setPanels(sortedPanels);
         } catch (error) {
@@ -322,7 +312,6 @@ const handleShare = async (service: Service) => {
             ...(doc.data() as any)
           })) as Vendor[];
           
-          // Sort by name by default
           const sortedVendors = [...vendorData].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
           setVendors(sortedVendors);
         } catch (error) {
@@ -383,27 +372,20 @@ const handleShare = async (service: Service) => {
     loadAllData();
   }, []);
 
-  // --- SMART CATEGORY SORTER (SAFETY NET) ---
   const dynamicCategories = Array.from(new Set((services || []).map(s => s.category).filter(Boolean))) as string[];
-  
-  // Safely grab the saved order from settings
-  // Note: Ensure 'categoryOrder?: string[];' is added to AppSettings in your types.ts file!
   const savedCategoryOrder = settings?.categoryOrder || [];
 
-  // Sort them securely
   const sortedCategories = [...dynamicCategories].sort((a, b) => {
     const indexA = savedCategoryOrder.indexOf(a);
     const indexB = savedCategoryOrder.indexOf(b);
-
-    if (indexA !== -1 && indexB !== -1) return indexA - indexB; // Both exist, respect saved order
-    if (indexA !== -1) return -1; // A exists, move it up
-    if (indexB !== -1) return 1;  // B exists, move it up
-    return a.localeCompare(b);    // Neither exist, fallback to alphabetical
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    return a.localeCompare(b);
   });
 
   const featuredServices = (services || []).filter(s => s.isFeatured);
 
-  // Initialize Fuse
   const fuse = new Fuse(services || [], {
     keys: ['title', 'category', 'description'],
     threshold: 0.3,
@@ -419,7 +401,6 @@ const handleShare = async (service: Service) => {
     setAiResults([]);
     
     try {
-      // Prioritize a custom key to bypass the platform's restrictive Secrets UI
       const apiKey = import.meta.env.VITE_CUSTOM_API_KEY || process.env.GEMINI_API_KEY;
         
       if (!apiKey || apiKey === 'undefined') {
@@ -446,7 +427,6 @@ const handleShare = async (service: Service) => {
       });
       
       const text = response.text || "[]";
-      // Clean up potential markdown formatting if the model still includes it
       const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
       const ids = JSON.parse(cleanedText);
       
@@ -461,7 +441,6 @@ const handleShare = async (service: Service) => {
     }
   };
 
-  // Auto-playing hero section
   useEffect(() => {
     if (featuredServices.length <= 1) return;
     const interval = setInterval(() => {
@@ -483,8 +462,6 @@ const handleShare = async (service: Service) => {
     e.preventDefault(); 
     if (!service) return;
 
-    // Read from context (set synchronously at App level — most reliable)
-    // Fallback chain: context → localStorage → live URL
     const lsRef = typeof window !== 'undefined' ? localStorage.getItem('ara_affiliate_code') : null;
     const urlRef = new URLSearchParams(window.location.search).get('ref');
     const finalRef = affiliateRef || lsRef || urlRef;
@@ -495,7 +472,6 @@ const handleShare = async (service: Service) => {
     
     if (finalRef) {
       outboundUrl += `&ref=${finalRef}`;
-      // Clear after use to prevent stale attribution on future organic visits
       clearAffiliateRef();
     }
     
@@ -519,13 +495,11 @@ const handleShare = async (service: Service) => {
       });
     } catch (error) {
       console.error("Error saving lead:", error);
-      // Continue to WhatsApp anyway
     }
 
     const formattedClinicPhone = formatPhoneNumber(leadData.locationPhone);
     const message = encodeURIComponent(`Hai, nama saya ${leadData.name}. Saya berminat dengan ${bookingModalService.title}.`);
     
-    // Check for affiliate code — context is primary source, localStorage is fallback
     const savedCode = affiliateRef || localStorage.getItem('ara_affiliate_code');
     const affiliateParam = savedCode ? `&ref=${savedCode}` : '';
     
@@ -533,7 +507,6 @@ const handleShare = async (service: Service) => {
 
     window.open(waUrl, '_blank');
 
-    // Clear after use to prevent stale attribution on future organic visits
     if (savedCode) {
       clearAffiliateRef();
     }
@@ -561,11 +534,8 @@ const handleShare = async (service: Service) => {
   if (loading) {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col">
-        {/* Skeleton Nav */}
         <div className="h-20 w-full bg-zinc-900 animate-pulse border-b border-zinc-800"></div>
-        {/* Skeleton Hero */}
         <div className="h-[70vh] md:h-[85vh] w-full bg-zinc-900 animate-pulse"></div>
-        {/* Skeleton Grid */}
         <div className="max-w-7xl mx-auto px-4 py-12 w-full">
           <div className="h-8 w-48 bg-zinc-800 animate-pulse rounded mb-8"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -592,11 +562,9 @@ const handleShare = async (service: Service) => {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white overflow-x-hidden font-sans">
-      <SEO 
-        title="Klinik Ara 24 Jam"
-        description="Selamat datang ke laman sesawang Klinik Ara 24 Jam, Ayuh sertai TeamAra untuk menikmati pelbagai manfaat."
-      />
-     {/* Navbar */}
+      {/* FIX 1: Empty SEO tag pulls optimized defaults from SEO.tsx */}
+      <SEO />
+     
       {/* Navbar */}
       <nav className="fixed top-0 w-full z-50 bg-gradient-to-b from-black/90 via-black/40 to-transparent px-4 md:px-12 pt-4 pb-8 flex items-center justify-between pointer-events-none">
         <div className="flex items-center gap-8 pointer-events-auto">
@@ -618,7 +586,6 @@ const handleShare = async (service: Service) => {
             KLINIK ARA 24 JAM
           </a>
 
-          {/* Mobile Hamburger Button */}
           <button 
             className="md:hidden p-2 text-zinc-400 hover:text-white"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -630,19 +597,18 @@ const handleShare = async (service: Service) => {
             <a href="#" className="text-white font-semibold hover:text-white transition">Laman Utama</a>
             <a href="#services" className="hover:text-white transition">Perkhidmatan</a>
             <a href="#locations" className="hover:text-white transition">Cawangan</a>
-            {/* --- 🌟 DYNAMIC CMS PAGE TABS --- */}
-          {customPages.length > 0 && (
-            <div className="h-4 w-px bg-zinc-700 mx-2 hidden md:block" /> // Visual divider
-          )}
-          {customPages.map(page => (
-            <Link 
-              key={page.slug} 
-              to={`/p/${page.slug}`} 
-              className="text-sm font-medium text-cyan-400 hover:text-cyan-300 transition-colors"
-            >
-              {page.title}
-            </Link>
-          ))}
+            {customPages.length > 0 && (
+              <div className="h-4 w-px bg-zinc-700 mx-2 hidden md:block" />
+            )}
+            {customPages.map(page => (
+              <Link 
+                key={page.slug} 
+                to={`/p/${page.slug}`} 
+                className="text-sm font-medium text-cyan-400 hover:text-cyan-300 transition-colors"
+              >
+                {page.title}
+              </Link>
+            ))}
           </div>
         </div>
       </nav>
@@ -658,39 +624,49 @@ const handleShare = async (service: Service) => {
               className="w-full h-full object-cover animate-fade-in"
               referrerPolicy="no-referrer"
             />
-            {/* Gradient overlays restricted to bottom and left for text readability */}
             <div className="absolute inset-y-0 left-0 w-full md:w-2/3 bg-gradient-to-r from-zinc-950/90 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-zinc-950/90 to-transparent" />
           </div>
           
-          <div className="absolute bottom-[15%] left-4 md:left-12 max-w-2xl z-10">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-red-600 font-bold tracking-widest text-sm drop-shadow-md">
+                    <div className="absolute bottom-[15%] left-4 md:left-12 max-w-2xl z-10">
+            <div className="flex items-center gap-2 mb-3 sm:mb-4">
+              {/* Made category text slightly smaller on mobile */}
+              <span className="text-red-600 font-bold tracking-widest text-xs sm:text-sm drop-shadow-md">
                 {(currentHero?.category || defaultHero.category).toUpperCase()}
               </span>
               {currentHero?.isFeatured && (
                 <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">PILIHAN UTAMA</span>
               )}
             </div>
-            <h1 className="text-5xl md:text-7xl font-bold mb-4 tracking-tight drop-shadow-lg">
-              {currentHero?.title || defaultHero.title}
+            
+            {/* H1: Starts at text-xl (20px) on mobile, scales to 5xl on large desktop */}
+            <h1 className="text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold mb-1 sm:mb-2 tracking-tight drop-shadow-lg text-white/90">
+              Klinik Ara 24 Jam
             </h1>
-            <p className="text-lg md:text-xl text-zinc-300 mb-8 max-w-xl drop-shadow-md line-clamp-3">
+            
+            {/* H2: Starts at text-3xl (30px) on mobile, scales to 7xl on large desktop */}
+            <h2 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-4 tracking-tight drop-shadow-lg leading-tight">
+              {currentHero?.title || defaultHero.title}
+            </h2>
+
+            {/* Paragraph: Starts at text-sm on mobile, scales to xl on desktop */}
+            <p className="text-sm sm:text-base md:text-xl text-zinc-300 mb-6 sm:mb-8 max-w-xl drop-shadow-md line-clamp-3">
               {currentHero?.description || defaultHero.description}
             </p>
+            
             <div className="flex items-center gap-4">
               {currentHero ? (
                 <button 
                   onClick={() => handleOpenModal(currentHero)}
-                  className="bg-white text-black px-6 md:px-8 py-2 md:py-3 rounded md:rounded-md font-bold flex items-center gap-2 hover:bg-white/90 transition"
+                  className="bg-white text-black text-sm sm:text-base md:text-lg px-5 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 rounded md:rounded-md font-bold flex items-center gap-2 hover:bg-white/90 transition"
                 >
-                  <Play className="w-5 h-5 md:w-6 md:h-6 fill-black" />
+                  <Play className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 fill-black" />
                   Baca Lanjut
                 </button>
               ) : (
                 <a 
                   href="/admin"
-                  className="bg-white text-black px-6 md:px-8 py-2 md:py-3 rounded md:rounded-md font-bold flex items-center gap-2 hover:bg-white/90 transition"
+                  className="bg-white text-black text-sm sm:text-base md:text-lg px-5 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 rounded md:rounded-md font-bold flex items-center gap-2 hover:bg-white/90 transition"
                 >
                   Get Started (Admin)
                 </a>
@@ -699,354 +675,374 @@ const handleShare = async (service: Service) => {
           </div>
         </section>
 
-        {/* --- 🌟 MOBILE DROPDOWN MENU --- */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden fixed top-[70px] left-0 w-full bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800 z-40 p-4 shadow-2xl flex flex-col gap-2 animate-in slide-in-from-top-2">
-          
-          {/* Default Scroll Links (Change 'services' to whatever your actual scroll function uses) */}
-          <button onClick={() => { /* scrollToSection('services'); */ setIsMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 text-lg font-medium text-white hover:bg-zinc-900 rounded-xl">
-            Perkhidmatan
-          </button>
-          <button onClick={() => { /* scrollToSection('locations'); */ setIsMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 text-lg font-medium text-white hover:bg-zinc-900 rounded-xl">
-            Cawangan
-          </button>
+        {/* --- MOBILE DROPDOWN MENU --- */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden fixed top-[70px] left-0 w-full bg-zinc-950/95 backdrop-blur-xl border-b border-zinc-800 z-40 p-4 shadow-2xl flex flex-col gap-2 animate-in slide-in-from-top-2">
+            <button onClick={() => { setIsMobileMenuOpen(false); window.scrollTo({top: document.getElementById('services')?.offsetTop || 0, behavior: 'smooth'}) }} className="w-full text-left px-4 py-3 text-lg font-medium text-white hover:bg-zinc-900 rounded-xl">
+              Perkhidmatan
+            </button>
+            <button onClick={() => { setIsMobileMenuOpen(false); window.scrollTo({top: document.getElementById('locations')?.offsetTop || 0, behavior: 'smooth'}) }} className="w-full text-left px-4 py-3 text-lg font-medium text-white hover:bg-zinc-900 rounded-xl">
+              Cawangan
+            </button>
 
-          {/* Dynamic CMS Pages */}
-          {customPages.length > 0 && (
-            <>
-              <div className="h-px w-full bg-zinc-800 my-2" />
-              <div className="px-4 py-2 text-xs font-bold text-zinc-500 uppercase tracking-wider">Laman Khas</div>
-              {customPages.map(page => (
-                <Link 
-                  key={page.slug} 
-                  to={`/p/${page.slug}`} 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="block px-4 py-3 text-lg font-medium text-cyan-400 hover:bg-zinc-900 rounded-xl"
-                >
-                  {page.title}
-                </Link>
-              ))}
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Floating Search Bar */}
-      <div className="-mt-8 relative z-20 mx-auto max-w-4xl px-4 w-full">
-        <div className="bg-zinc-900 rounded-2xl p-2 shadow-2xl border border-zinc-800 flex flex-col sm:flex-row items-center gap-2">
-          <div className="relative flex-grow w-full">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-            <input 
-              type="text" 
-              placeholder="Tanya kami" 
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setAiResults([]); // Clear AI results when typing
-              }}
-              className="w-full bg-transparent text-white text-sm sm:text-base rounded-xl pl-12 pr-4 py-4 focus:outline-none placeholder:text-zinc-500"
-            />
-          </div>
-          <button 
-            onClick={handleAskAI}
-            disabled={!searchQuery || isAiSearching}
-            className="w-full sm:w-auto bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-          >
-            <Sparkles className="w-5 h-5" />
-            TeamAra jawab
-          </button>
-        </div>
-      </div>
-
-      {isAiSearching ? (
-        <section className="pt-16 pb-20 min-h-[40vh] flex flex-col items-center justify-center text-zinc-400">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mb-4"></div>
-          <p className="text-xl animate-pulse">AI is analyzing your symptoms...</p>
-        </section>
-      ) : searchQuery || aiResults.length > 0 ? (
-        <section className="pt-16 px-4 md:px-12 pb-20 min-h-[40vh]">
-          <h2 className="text-2xl md:text-3xl font-bold mb-6">
-            {aiResults.length > 0 ? "AI Recommendations" : `Search Results for "${searchQuery}"`}
-          </h2>
-          {searchResults.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {searchResults.map(service => {
-                const displayImage = service.imageUrls?.[0] || service.imageUrl;
-                return (
-                  <div 
-                    key={service.id} 
-                    onClick={() => handleOpenModal(service)}
-                    className="aspect-[2/3] relative group rounded-md overflow-hidden cursor-pointer transition-transform duration-300 md:hover:scale-105 md:hover:z-20"
+            {customPages.length > 0 && (
+              <>
+                <div className="h-px w-full bg-zinc-800 my-2" />
+                <div className="px-4 py-2 text-xs font-bold text-zinc-500 uppercase tracking-wider">Laman Khas</div>
+                {customPages.map(page => (
+                  <Link 
+                    key={page.slug} 
+                    to={`/p/${page.slug}`} 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-4 py-3 text-lg font-medium text-cyan-400 hover:bg-zinc-900 rounded-xl"
                   >
-                    {displayImage ? (
-                      <img 
-                        src={displayImage} 
-                        alt={`${service.title} - Klinik Ara 24 Jam Service`} 
-                        className="w-full h-full object-contain bg-zinc-900"
-                        referrerPolicy="no-referrer"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-zinc-800 flex items-center justify-center">No Image</div>
-                    )}
-                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                      <h4 className="font-bold text-sm md:text-base mb-1 line-clamp-2">{service.title}</h4>
-                      <div className="flex items-center gap-2 text-xs font-medium">
-                        {service.teamAraPrice ? (
-                          <span className="text-green-500">RM{service.teamAraPrice}</span>
-                        ) : (
-                          <span className="text-green-500">Available</span>
-                        )}
-                        <span className="border border-zinc-600 px-1 text-zinc-300">24/7</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                    {page.title}
+                  </Link>
+                ))}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Floating Search Bar */}
+        <div className="-mt-8 relative z-20 mx-auto max-w-4xl px-4 w-full">
+          <div className="bg-zinc-900 rounded-2xl p-2 shadow-2xl border border-zinc-800 flex flex-col sm:flex-row items-center gap-2">
+            <div className="relative flex-grow w-full">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+              <input 
+                type="text" 
+                placeholder="Tanya kami" 
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setAiResults([]);
+                }}
+                className="w-full bg-transparent text-white text-sm sm:text-base rounded-xl pl-12 pr-4 py-4 focus:outline-none placeholder:text-zinc-500"
+              />
             </div>
-          ) : (
-            <div className="text-zinc-400 mt-12 text-center">
-              <p className="text-xl">No services found matching your search.</p>
-              <p className="mt-2">Try adjusting your keywords.</p>
-            </div>
-          )}
-        </section>
-      ) : (
-        <section id="services" className="pt-16 pb-20 relative z-10">
-          {settings.carouselOrder.map(section => {
-            if (section === 'services') {
-              return (
-                <div key="services">
-                  {hasContent ? sortedCategories.map(category => {
-                    const categoryServices = (services || []).filter(s => s.category === category);
-                    return (
-                      <ServiceCarouselRow 
-                        key={category} 
-                        title={category} 
-                        services={categoryServices as Service[]} 
-                        onSelect={handleOpenModal}
-                        subheading={settings?.categorySubheadings?.[category] || ""}
-                      />
-                    );
-                  }) : (
-                    <div className="px-4 md:px-12 py-12 text-center">
-                      <div className="bg-zinc-900/50 rounded-2xl p-12 border border-zinc-800 border-dashed max-w-2xl mx-auto">
-                        <Sparkles className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-                        <h3 className="text-xl font-bold mb-2">No Services Added Yet</h3>
-                        <p className="text-zinc-500 mb-6">Log in to the Admin panel to start adding your clinic's services and promotions.</p>
-                        <a href="/admin" className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-bold transition inline-block">
-                          Go to Admin Panel
-                        </a>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            }
-            if (section === 'teamAra') {
-              return collaborators.length > 0 ? (
-                <section key="teamAra" className="mb-4 md:mb-6 pt-6 border-t border-zinc-800/50 px-4 md:px-12">
-                  <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Keluarga TeamAra</h2>
-                  <p className="text-sm text-gray-400 mb-6">{settings?.teamAraSub || 'Pelan kesihatan eksklusif untuk keluarga anda'}</p>
-                 <CarouselWrapper>
-                    {collaborators.map(collab => (
-                      <div key={collab.id} className="w-[280px] sm:w-[300px] flex-shrink-0 flex flex-col bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden snap-center group">
-                        <div className="h-48 w-full overflow-hidden bg-zinc-800">
-                          <img 
-                            src={collab.imageUrl} 
-                            alt={`${collab.name} - TeamAra Collaborator`} 
-                            // CHANGED: object-contain to object-cover
-                            className="w-full h-full object-cover bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
-                            referrerPolicy="no-referrer"
-                            loading="lazy"
-                          />
-                        </div>
-                        <div className="p-5 flex flex-col flex-1">
-                          <h4 className="text-lg font-bold text-white mb-2">{collab.name}</h4>
-                          <div className="flex items-start gap-2 text-sm text-zinc-400 mt-auto">
-                            <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                            <p className="line-clamp-2">{collab.location}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </CarouselWrapper>
-                </section>
-              ) : null;
-            }
-            if (section === 'vendors') {
-              return vendors.length > 0 ? (
-                <section key="vendors" className="mb-4 md:mb-6 pt-6 border-t border-zinc-800/50 px-4 md:px-12">
-                  <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Rakan Vendor</h2>
-                  <p className="text-sm text-gray-400 mb-6">{settings?.vendorsSub || settings?.vendorSubheading || 'Entiti perniagaan yang memberi keistimewaan kepada ahli TeamAra'}</p>
-                  <CarouselWrapper>
-                    {vendors.map(vendor => (
-                      <div 
-                        key={vendor.id} 
-                        onClick={() => setSelectedVendor(vendor)}
-                        className="w-[280px] sm:w-[300px] flex-shrink-0 flex flex-col bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden snap-center group cursor-pointer hover:border-zinc-700 transition-colors"
-                      >
-                        <div className="h-48 w-full overflow-hidden bg-zinc-800">
-                          <img 
-                            src={vendor.imageUrl} 
-                            alt={`${vendor.name} - Vendor TeamAra`} 
-                            // CHANGED: object-contain to object-cover to completely fill the box
-                            className="w-full h-full object-cover bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
-                            referrerPolicy="no-referrer"
-                            loading="lazy"
-                          />
-                        </div>
-                        <div className="p-5 flex flex-col flex-1">
-                          <h4 className="text-lg font-bold text-white mb-2">{vendor.name}</h4>
-                          <div className="flex items-start gap-2 text-sm text-zinc-400 mt-auto">
-                            <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                            <p className="line-clamp-2">{vendor.address}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </CarouselWrapper>
-                </section>
-              ) : null;
-            }
-            if (section === 'panels') {
-              return panels.length > 0 ? (
-                <section key="panels" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
-                  <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Panel Kesihatan</h2>
-                  <p className="text-sm text-gray-400 mb-6">{settings?.panelsSub || 'Klik untuk melihat cawangan'}</p>
-                  <CarouselWrapper>
-                    {panels.map((panel) => (
-                      <div 
-                        key={panel.id} 
-                        onClick={() => setSelectedPanel(panel)}
-                        className="bg-white rounded-xl h-24 w-32 flex items-center justify-center p-2 cursor-pointer hover:scale-105 transition-transform flex-shrink-0 snap-center shadow-lg border border-zinc-800"
-                      >
+            <button 
+              onClick={handleAskAI}
+              disabled={!searchQuery || isAiSearching}
+              className="w-full sm:w-auto bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              <Sparkles className="w-5 h-5" />
+              TeamAra jawab
+            </button>
+          </div>
+        </div>
+
+        {isAiSearching ? (
+          <section className="pt-16 pb-20 min-h-[40vh] flex flex-col items-center justify-center text-zinc-400">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mb-4"></div>
+            <p className="text-xl animate-pulse">AI is analyzing your symptoms...</p>
+          </section>
+        ) : searchQuery || aiResults.length > 0 ? (
+          <section className="pt-16 px-4 md:px-12 pb-20 min-h-[40vh]">
+            <h2 className="text-2xl md:text-3xl font-bold mb-6">
+              {aiResults.length > 0 ? "AI Recommendations" : `Search Results for "${searchQuery}"`}
+            </h2>
+            {searchResults.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {searchResults.map(service => {
+                  const displayImage = service.imageUrls?.[0] || service.imageUrl;
+                  return (
+                    <div 
+                      key={service.id} 
+                      onClick={() => handleOpenModal(service)}
+                      className="aspect-[2/3] relative group rounded-md overflow-hidden cursor-pointer transition-transform duration-300 md:hover:scale-105 md:hover:z-20"
+                    >
+                      {displayImage ? (
                         <img 
-                          src={panel.imageUrl} 
-                          alt={`${panel.name} logo`} 
-                          className="max-w-full max-h-full object-contain"
+                          src={displayImage} 
+                          alt={`${service.title} - Klinik Ara 24 Jam Service`} 
+                          className="w-full h-full object-contain bg-zinc-900"
                           referrerPolicy="no-referrer"
                           loading="lazy"
                         />
-                      </div>
-                    ))}
-                  </CarouselWrapper>
-                </section>
-              ) : null;
-            }
-            return null;
-          })}
-
-          {/* Google Reviews Section */}
-          <GoogleReviews reviews={reviews} subheading={settings?.reviewsSub} />
-
-          {/* Locations Section */}
-          <section id="locations" className="mb-4 md:mb-6 pt-6 border-t border-zinc-800/50 px-4 md:px-12">
-            <h2 className="text-xl md:text-2xl font-bold text-white mb-6">Cawangan Ara</h2>
-            <CarouselWrapper>
-              {locations?.length > 0 ? (
-                locations?.map(loc => (
-                  <div key={loc.id} className="w-[300px] sm:w-[320px] flex-shrink-0 flex flex-col bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden min-h-[450px] snap-center group">
-                    {loc.imageUrl && (
-                      <div className="h-52 w-full overflow-hidden bg-zinc-800">
-  <img 
-    src={loc.imageUrl} 
-    alt={`${loc.branchName} - Klinik Ara 24 Jam Branch`} 
-    // CHANGED: object-contain to object-cover
-    className="w-full h-full object-cover bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
-    referrerPolicy="no-referrer"
-    loading="lazy"
-  />
-</div>
-                    )}
-                    <div className="flex-1 p-5 flex flex-col">
-                      <h4 className="text-lg font-bold text-white mb-1">{loc.branchName}</h4>
-                      <div className="inline-block bg-zinc-900 text-zinc-300 text-[10px] font-medium px-2 py-0.5 rounded border border-zinc-800 mb-3 w-fit">
-                        {loc.operatingHours}
-                      </div>
-                      <p className="text-sm text-gray-400 line-clamp-3 mb-2">
-                        {loc.address}
-                      </p>
-                      {loc.landmark && (
-                        <p className="text-zinc-500 text-[10px] italic mb-4">
-                          Remark: {loc.landmark}
-                        </p>
+                      ) : (
+                        <div className="w-full h-full bg-zinc-800 flex items-center justify-center">No Image</div>
                       )}
-                      
-                      <div className="mt-auto">
-                        {loc.whatsapp && (
-                          <a 
-                            href={`https://wa.me/${loc.whatsapp.replace(/[^0-9]/g, '')}`} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-2 rounded-lg flex justify-center items-center mb-2 transition-colors"
-                          >
-                            <MessageCircle className="w-4 h-4 mr-2" />
-                            WhatsApp
-                          </a>
-                        )}
-                        <div className="grid grid-cols-2 gap-2">
-                          {loc.googleMapsUrl && (
-                            <a 
-                              href={loc.googleMapsUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 rounded-lg font-medium text-center flex items-center justify-center gap-2 transition-colors"
-                            >
-                              <MapPin className="w-4 h-4" />
-                              Maps
-                            </a>
+                      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                        <h4 className="font-bold text-sm md:text-base mb-1 line-clamp-2">{service.title}</h4>
+                        <div className="flex items-center gap-2 text-xs font-medium">
+                          {service.teamAraPrice ? (
+                            <span className="text-green-500">RM{service.teamAraPrice}</span>
+                          ) : (
+                            <span className="text-green-500">Available</span>
                           )}
-                          {loc.wazeUrl && (
-                            <a 
-                              href={loc.wazeUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 rounded-lg font-medium text-center flex items-center justify-center gap-2 transition-colors"
-                            >
-                              <Navigation className="w-4 h-4" />
-                              Waze
-                            </a>
-                          )}
+                          <span className="border border-zinc-600 px-1 text-zinc-300">24/7</span>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))
-              ) : (
-                <div className="w-full text-center py-12 text-zinc-500 bg-zinc-900/50 rounded-xl border border-zinc-800 border-dashed">
-                  <p>Locations are currently being updated.</p>
-                </div>
-              )}
-            </CarouselWrapper>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-zinc-400 mt-12 text-center">
+                <p className="text-xl">No services found matching your search.</p>
+                <p className="mt-2">Try adjusting your keywords.</p>
+              </div>
+            )}
           </section>
+        ) : (
+          <section id="services" className="pt-16 pb-20 relative z-10">
+            {settings.carouselOrder.map(section => {
+              if (section === 'services') {
+                return (
+                  <div key="services">
+                    {hasContent ? sortedCategories.map(category => {
+                      const categoryServices = (services || []).filter(s => s.category === category);
+                      return (
+                        <ServiceCarouselRow 
+                          key={category} 
+                          title={category} 
+                          services={categoryServices as Service[]} 
+                          onSelect={handleOpenModal}
+                          subheading={settings?.categorySubheadings?.[category] || ""}
+                        />
+                      );
+                    }) : (
+                      <div className="px-4 md:px-12 py-12 text-center">
+                        <div className="bg-zinc-900/50 rounded-2xl p-12 border border-zinc-800 border-dashed max-w-2xl mx-auto">
+                          <Sparkles className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+                          <h3 className="text-xl font-bold mb-2">No Services Added Yet</h3>
+                          <p className="text-zinc-500 mb-6">Log in to the Admin panel to start adding your clinic's services and promotions.</p>
+                          <a href="/admin" className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-bold transition inline-block">
+                            Go to Admin Panel
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              if (section === 'teamAra') {
+                return collaborators.length > 0 ? (
+                  <section key="teamAra" className="mb-4 md:mb-6 pt-6 border-t border-zinc-800/50 px-4 md:px-12">
+                    <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Keluarga TeamAra</h2>
+                    <p className="text-sm text-gray-400 mb-6">{settings?.teamAraSub || 'Pelan kesihatan eksklusif untuk keluarga anda'}</p>
+                    <CarouselWrapper>
+                      {collaborators.map(collab => (
+                        <div key={collab.id} className="w-[280px] sm:w-[300px] flex-shrink-0 flex flex-col bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden snap-center group">
+                          <div className="h-48 w-full overflow-hidden bg-zinc-800">
+                            <img 
+                              src={collab.imageUrl} 
+                              alt={`${collab.name} - TeamAra Collaborator`} 
+                              className="w-full h-full object-cover bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
+                              referrerPolicy="no-referrer"
+                              loading="lazy"
+                            />
+                          </div>
+                          <div className="p-5 flex flex-col flex-1">
+                            <h4 className="text-lg font-bold text-white mb-2">{collab.name}</h4>
+                            <div className="flex items-start gap-2 text-sm text-zinc-400 mt-auto">
+                              <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                              <p className="line-clamp-2">{collab.location}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </CarouselWrapper>
+                  </section>
+                ) : null;
+              }
+              if (section === 'vendors') {
+                return vendors.length > 0 ? (
+                  <section key="vendors" className="mb-4 md:mb-6 pt-6 border-t border-zinc-800/50 px-4 md:px-12">
+                    <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Rakan Vendor</h2>
+                    <p className="text-sm text-gray-400 mb-6">{settings?.vendorsSub || settings?.vendorSubheading || 'Entiti perniagaan yang memberi keistimewaan kepada ahli TeamAra'}</p>
+                    <CarouselWrapper>
+                      {vendors.map(vendor => (
+                        <div 
+                          key={vendor.id} 
+                          onClick={() => setSelectedVendor(vendor)}
+                          className="w-[280px] sm:w-[300px] flex-shrink-0 flex flex-col bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden snap-center group cursor-pointer hover:border-zinc-700 transition-colors"
+                        >
+                          <div className="h-48 w-full overflow-hidden bg-zinc-800">
+                            <img 
+                              src={vendor.imageUrl} 
+                              alt={`${vendor.name} - Vendor TeamAra`} 
+                              className="w-full h-full object-cover bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
+                              referrerPolicy="no-referrer"
+                              loading="lazy"
+                            />
+                          </div>
+                          <div className="p-5 flex flex-col flex-1">
+                            <h4 className="text-lg font-bold text-white mb-2">{vendor.name}</h4>
+                            <div className="flex items-start gap-2 text-sm text-zinc-400 mt-auto">
+                              <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                              <p className="line-clamp-2">{vendor.address}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </CarouselWrapper>
+                  </section>
+                ) : null;
+              }
+              if (section === 'panels') {
+                return panels.length > 0 ? (
+                  <section key="panels" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
+                    <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Panel Kesihatan</h2>
+                    <p className="text-sm text-gray-400 mb-6">{settings?.panelsSub || 'Klik untuk melihat cawangan'}</p>
+                    <CarouselWrapper>
+                      {panels.map((panel) => (
+                        <div 
+                          key={panel.id} 
+                          onClick={() => setSelectedPanel(panel)}
+                          className="bg-white rounded-xl h-24 w-32 flex items-center justify-center p-2 cursor-pointer hover:scale-105 transition-transform flex-shrink-0 snap-center shadow-lg border border-zinc-800"
+                        >
+                          <img 
+                            src={panel.imageUrl} 
+                            alt={`${panel.name} logo`} 
+                            className="max-w-full max-h-full object-contain"
+                            referrerPolicy="no-referrer"
+                            loading="lazy"
+                          />
+                        </div>
+                      ))}
+                    </CarouselWrapper>
+                  </section>
+                ) : null;
+              }
+              return null;
+            })}
+
+            <GoogleReviews reviews={reviews} subheading={settings?.reviewsSub} />
+
+            <section id="locations" className="mb-4 md:mb-6 pt-6 border-t border-zinc-800/50 px-4 md:px-12">
+  <h2 className="text-xl md:text-2xl font-bold text-white mb-6">Cawangan Ara</h2>
+  <CarouselWrapper>
+    {locations?.length > 0 ? (
+      locations?.map(loc => (
+        <div key={loc.id} className="w-[300px] sm:w-[320px] flex-shrink-0 flex flex-col bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden min-h-[450px] snap-center group">
+          {loc.imageUrl && (
+            <div className="h-52 w-full overflow-hidden bg-zinc-800">
+              <img 
+                src={loc.imageUrl} 
+                alt={`${loc.branchName} - Klinik Ara 24 Jam Branch`} 
+                className="w-full h-full object-cover bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
+                referrerPolicy="no-referrer"
+                loading="lazy"
+              />
+            </div>
+          )}
+          <div className="flex-1 p-5 flex flex-col">
+            <h4 className="text-lg font-bold text-white mb-1">{loc.branchName}</h4>
+            <div className="inline-block bg-zinc-900 text-zinc-300 text-[10px] font-medium px-2 py-0.5 rounded border border-zinc-800 mb-3 w-fit">
+              {loc.operatingHours}
+            </div>
+            
+            {/* ✅ CHANGED: Semantic <address> tag for Local SEO */}
+            <address className="text-sm text-gray-400 line-clamp-3 mb-2 not-italic">
+              {loc.address}
+            </address>
+
+            {loc.landmark && (
+              <p className="text-zinc-500 text-[10px] italic mb-4">
+                Remark: {loc.landmark}
+              </p>
+            )}
+            
+            <div className="mt-auto">
+              {loc.whatsapp && (
+                <a 
+                  href={`https://wa.me/${loc.whatsapp.replace(/[^0-9]/g, '')}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-2 rounded-lg flex justify-center items-center mb-2 transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  WhatsApp
+                </a>
+              )}
+              <div className="grid grid-cols-2 gap-2">
+                {loc.googleMapsUrl && (
+                  <a 
+                    href={loc.googleMapsUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 rounded-lg font-medium text-center flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <MapPin className="w-4 h-4" />
+                    Maps
+                  </a>
+                )}
+                {loc.wazeUrl && (
+                  <a 
+                    href={loc.wazeUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 rounded-lg font-medium text-center flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Navigation className="w-4 h-4" />
+                    Waze
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ))
+    ) : (
+      <div className="w-full text-center py-12 text-zinc-500 bg-zinc-900/50 rounded-xl border border-zinc-800 border-dashed">
+        <p>Locations are currently being updated.</p>
+      </div>
+    )}
+  </CarouselWrapper>
+            </section>
+          </section>
+        )}
+
+        {/* FIX 3: HIDDEN SEO BLOCK - Feeds all Firebase modal text to Googlebot */}
+        <section className="sr-only">
+          <h2>Senarai Lengkap Perkhidmatan Klinik Ara 24 Jam</h2>
+          <p>Klinik Ara menyediakan pelbagai rawatan kesihatan di Kajang, Seri Kembangan, dan Semenyih oleh doktor perempuan.</p>
+          {services.map(service => (
+            <article key={service.id}>
+              <h3>{service.title} - {service.category}</h3>
+              <p>{service.description}</p>
+              {service.teamAraPrice && <p>Harga TeamAra: RM{service.teamAraPrice}</p>}
+            </article>
+          ))}
         </section>
-      )}
-
     
-    </main>
+           </main>
 
-      <footer className="bg-zinc-950 border-t border-zinc-900 py-8 mt-12">
+      {/* ✅ ULTRA-FINE PRINT SEO BLOCK (Invisible to casual users, gold for Googlebots) */}
+      <section className="px-4 md:px-12 pt-8 pb-4 text-center">
+        <div className="max-w-4xl mx-auto text-[10px] md:text-xs text-zinc-700 leading-relaxed space-y-1">
+          <p>
+            Mencari <strong className="text-zinc-600">klinik 24 jam nearby</strong>? <strong className="text-zinc-600">Klinik Ara</strong> beroperasi sepanjang masa di tiga cawangan strategik: <strong className="text-zinc-600">Kajang</strong>, <strong className="text-zinc-600">Seri Kembangan</strong>, dan <strong className="text-zinc-600">Semenyih</strong> oleh <strong className="text-zinc-600">doktor perempuan</strong> yang berpengalaman.
+          </p>
+          <p>
+            Antara rawatan khas kami termasuk <strong className="text-zinc-600">rawatan asthma</strong>, <strong className="text-zinc-600">sedut kahak</strong>, <strong className="text-zinc-600">sakit lutut</strong>, <strong className="text-zinc-600">scan ibu mengandung</strong>, <strong className="text-zinc-600">buka buku pink</strong>, <strong className="text-zinc-600">vaksin baby</strong>, dan <strong className="text-zinc-600">vaksin influenza</strong> untuk kesihatan menyeluruh keluarga anda.
+          </p>
+        </div>
+      </section>
+
+      {/* ✅ SLEEK MINIMAL FOOTER */}
+      <footer className="bg-zinc-950 border-t border-zinc-900/50 py-6">
         <div className="max-w-7xl mx-auto px-4 md:px-12 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-zinc-500 text-sm">
+          <p className="text-zinc-700 text-xs">
             &copy; {new Date().getFullYear()} Klinik Ara 24 Jam. All rights reserved.
           </p>
-          <div className="flex flex-wrap items-center justify-center md:justify-end gap-4 md:gap-8">
+          <div className="flex items-center gap-6">
             <button 
               onClick={() => setIsSpecialAccessModalOpen(true)}
-              className="text-zinc-600 hover:text-zinc-400 text-sm transition-colors flex items-center gap-1.5"
+              className="text-zinc-700 hover:text-zinc-400 text-xs transition-colors flex items-center gap-1.5"
             >
-              <Lock className="w-3.5 h-3.5" />
+              <Lock className="w-3 h-3" />
               Special Access
             </button>
-            <Link to="/login" className="text-zinc-600 hover:text-zinc-400 text-sm transition-colors">
+            <Link to="/login" className="text-zinc-700 hover:text-zinc-400 text-xs transition-colors">
               Staff Login
             </Link>
           </div>
         </div>
       </footer>
 
- {/* Interactive Modal (Premium Mobile & Desktop Split Redesign - Dark Mode) */}
+      {/* Interactive Modal (Premium Mobile & Desktop Split Redesign - Dark Mode) */}
       {selectedService && (
         <div 
           className="fixed inset-0 z-50 flex flex-col md:flex-row md:items-center md:justify-center bg-zinc-950/90 backdrop-blur-sm p-0 md:p-6 overflow-hidden"
@@ -1056,7 +1052,6 @@ const handleShare = async (service: Service) => {
             className="w-full h-[95vh] md:h-auto md:max-h-[85vh] md:max-w-5xl rounded-t-[32px] md:rounded-3xl overflow-hidden flex flex-col md:flex-row relative bg-zinc-950 shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
-            {/* Close Button (Sticky Top Right) */}
             <button 
               onClick={() => setSelectedService(null)}
               className="absolute top-4 right-4 z-[60] bg-zinc-800/80 hover:bg-zinc-700 md:bg-zinc-800 md:hover:bg-zinc-700 text-white p-2.5 rounded-full backdrop-blur-md transition-colors border border-zinc-700 md:border-zinc-700"
@@ -1064,10 +1059,8 @@ const handleShare = async (service: Service) => {
               <X className="w-5 h-5" />
             </button>
 
-            {/* Unified Scroll Wrapper (Mobile) / Flex Container (Desktop) */}
             <div className="w-full h-full overflow-y-auto md:overflow-hidden flex flex-col md:flex-row relative hide-scrollbar">
               
-              {/* Left Section: Portrait Image & Overlays */}
               <div className="relative w-full md:w-1/2 shrink-0 group bg-zinc-950 overflow-hidden md:flex md:items-center min-h-[50vw] md:min-h-0 pb-8 md:pb-0">
                 {(() => {
                   const carouselImages = selectedService 
@@ -1091,15 +1084,12 @@ const handleShare = async (service: Service) => {
                         loading="lazy"
                       />
 
-                      {/* Top Floating Controls */}
                       <div className="absolute top-4 inset-x-4 flex items-center justify-between z-50">
-                        {/* Heart/Favorite Icon */}
                         <button className="bg-zinc-950/40 backdrop-blur-md p-2 rounded-full text-white/80 hover:text-white transition-all border border-white/10">
                           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
                         </button>
                       </div>
 
-                      {/* Carousel Navigation */}
                       {carouselImages.length > 1 && (
                         <>
                           <button 
@@ -1130,13 +1120,8 @@ const handleShare = async (service: Service) => {
                 })()}
               </div>
 
-            
-
-              {/* Right Section: Details Panel & Desktop Footer */}
-              {/* FIX: Changed overflow-hidden to md:overflow-hidden so it scrolls on mobile */}
               <div className="w-full md:w-1/2 bg-zinc-950 flex flex-col rounded-t-[32px] md:rounded-none -mt-8 md:mt-0 relative md:absolute md:right-0 md:top-0 md:bottom-0 z-30 border-l border-zinc-900/50 md:overflow-hidden">
                 
-                {/* Scrollable Content Area */}
                 <div className="p-6 pb-32 md:p-10 md:pb-48 flex flex-col md:flex-1 md:overflow-y-auto hide-scrollbar">
                   
                   <div className="flex items-center gap-2 mb-4">
@@ -1154,7 +1139,6 @@ const handleShare = async (service: Service) => {
                     {selectedService.title}
                   </h3>
 
-                  {/* Pricing Card */}
                   <div className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800 my-6 flex flex-wrap items-center gap-6">
                     {selectedService.teamAraPrice ? (
                       <>
@@ -1181,7 +1165,6 @@ const handleShare = async (service: Service) => {
                     )}
                   </div>
 
-                  {/* Optional Disclaimer Block (Keep if using the toggle feature we built earlier) */}
                   {selectedService.showTeamAraDisclaimer && (
                     <p className="text-xs text-zinc-400 mb-8 leading-relaxed">
                       Harga TeamAra hanya untuk ahli TeamAra sahaja. Pendaftaran keahlian TeamAra boleh dilakukan di klinik secara percuma, harga TeamAra boleh dinikmati secara terus selepas pendaftaran keahlian dibuat.
@@ -1197,64 +1180,64 @@ const handleShare = async (service: Service) => {
               </div>
             </div>
 
-            {/* Unified Responsive Footer */}
-<div className="absolute bottom-0 left-0 w-full md:w-1/2 md:left-1/2 bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-zinc-950/0 md:bg-zinc-950/95 md:backdrop-blur-md md:border-t md:border-zinc-800 pt-20 md:pt-5 pb-6 md:pb-5 px-4 md:px-6 flex flex-col gap-3 z-50 pointer-events-none md:pointer-events-auto">
-  {showBranchSelect ? (
-    <div className="pointer-events-auto w-full bg-zinc-900/95 backdrop-blur-xl rounded-2xl p-4 border border-zinc-800 animate-in slide-in-from-bottom-4">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Pilih Cawangan WhatsApp</h4>
-        <button onClick={() => setShowBranchSelect(false)} className="text-zinc-500 hover:text-white">
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        {locations.map(loc => (
-          <a
-            key={loc.id}
-            href={`https://wa.me/${formatPhoneNumber(loc.whatsapp)}?text=${encodeURIComponent(`Hai, saya berminat dengan ${selectedService.title}`)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold py-3 px-2 rounded-xl text-center transition-all border border-zinc-700"
-          >
-            {loc.branchName}
-          </a>
-        ))}
-      </div>
-    </div>
-  ) : (
-    <div className="flex flex-row gap-3 w-full">
-      <button 
-        onClick={(e) => {
-          if (selectedService.isWalkInOnly) {
-            setShowBranchSelect(true);
-          } else {
-            handleBookNow(e, selectedService);
-          }
-        }}
-        className="pointer-events-auto flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 md:py-4 px-4 md:px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-sm md:text-lg transition-transform active:scale-95"
-      >
-        {selectedService.isWalkInOnly ? (
-          <>
-            <MessageCircle className="w-5 h-5" />
-            WhatsApp Kami
-          </>
-        ) : (
-          "Saya nak tempah slot"
-        )}
-      </button>
-      <button 
-        onClick={() => handleShare(selectedService)}
-        className="pointer-events-auto shrink-0 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 md:py-4 px-5 md:px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 text-sm md:text-lg transition-transform active:scale-95"
-      >
-        {isCopied ? <Check className="w-4 h-4 md:w-5 md:h-5" /> : <Share2 className="w-4 h-4 md:w-5 md:h-5" />}
-        <span className="hidden sm:inline ml-2">{isCopied ? "Telah Disalin!" : "Kongsi"}</span>
-      </button>
-    </div>
-  )}
-</div>
+            <div className="absolute bottom-0 left-0 w-full md:w-1/2 md:left-1/2 bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-zinc-950/0 md:bg-zinc-950/95 md:backdrop-blur-md md:border-t md:border-zinc-800 pt-20 md:pt-5 pb-6 md:pb-5 px-4 md:px-6 flex flex-col gap-3 z-50 pointer-events-none md:pointer-events-auto">
+              {showBranchSelect ? (
+                <div className="pointer-events-auto w-full bg-zinc-900/95 backdrop-blur-xl rounded-2xl p-4 border border-zinc-800 animate-in slide-in-from-bottom-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Pilih Cawangan WhatsApp</h4>
+                    <button onClick={() => setShowBranchSelect(false)} className="text-zinc-500 hover:text-white">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {locations.map(loc => (
+                      <a
+                        key={loc.id}
+                        href={`https://wa.me/${formatPhoneNumber(loc.whatsapp)}?text=${encodeURIComponent(`Hai, saya berminat dengan ${selectedService.title}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold py-3 px-2 rounded-xl text-center transition-all border border-zinc-700"
+                      >
+                        {loc.branchName}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-row gap-3 w-full">
+                  <button 
+                    onClick={(e) => {
+                      if (selectedService.isWalkInOnly) {
+                        setShowBranchSelect(true);
+                      } else {
+                        handleBookNow(e, selectedService);
+                      }
+                    }}
+                    className="pointer-events-auto flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 md:py-4 px-4 md:px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-sm md:text-lg transition-transform active:scale-95"
+                  >
+                    {selectedService.isWalkInOnly ? (
+                      <>
+                        <MessageCircle className="w-5 h-5" />
+                        WhatsApp Kami
+                      </>
+                    ) : (
+                      "Saya nak tempah slot"
+                    )}
+                  </button>
+                  <button 
+                    onClick={() => handleShare(selectedService)}
+                    className="pointer-events-auto shrink-0 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 md:py-4 px-5 md:px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 text-sm md:text-lg transition-transform active:scale-95"
+                  >
+                    {isCopied ? <Check className="w-4 h-4 md:w-5 md:h-5" /> : <Share2 className="w-4 h-4 md:w-5 md:h-5" />}
+                    <span className="hidden sm:inline ml-2">{isCopied ? "Telah Disalin!" : "Kongsi"}</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
+
       {/* Vendor Details Modal */}
       {selectedVendor && (
         <div 
@@ -1265,7 +1248,6 @@ const handleShare = async (service: Service) => {
             className="w-full h-[95vh] md:h-auto md:max-h-[85vh] md:max-w-5xl rounded-t-[32px] md:rounded-3xl overflow-hidden flex flex-col md:flex-row relative bg-white shadow-2xl" 
             onClick={e => e.stopPropagation()}
           >
-            {/* Close Button (Top Right, Sticky) */}
             <button 
               onClick={() => setSelectedVendor(null)}
               className="absolute top-4 right-4 z-[70] bg-black/40 hover:bg-black/60 md:bg-zinc-100 md:hover:bg-zinc-200 text-white md:text-zinc-600 p-2.5 rounded-full backdrop-blur-md transition-colors border border-white/20 md:border-zinc-200"
@@ -1273,10 +1255,8 @@ const handleShare = async (service: Service) => {
               <X className="w-5 h-5" />
             </button>
 
-            {/* Unified Scroll Wrapper */}
             <div className="w-full h-full overflow-y-auto md:overflow-hidden flex flex-col md:flex-row relative hide-scrollbar pb-32 md:pb-0">
               
-              {/* Left Panel: Image (Dynamic height on desktop, square on mobile) */}
               <div className="relative w-full md:w-1/2 flex-shrink-0 bg-zinc-950 flex items-center overflow-hidden min-h-[50vw] md:min-h-0">
                 <img 
                   src={selectedVendor.imageUrl} 
@@ -1286,7 +1266,6 @@ const handleShare = async (service: Service) => {
                 />
               </div>
 
-              {/* Right Panel: Content (Scrollable on desktop, matches image height) */}
               <div className="w-full md:w-1/2 bg-white flex flex-col min-h-0 relative z-30 rounded-t-[32px] md:rounded-none -mt-8 md:mt-0">
                 <div className="flex-1 md:overflow-y-auto p-6 md:p-10 pb-48 md:pb-32 flex flex-col hide-scrollbar">
                   
@@ -1305,7 +1284,6 @@ const handleShare = async (service: Service) => {
                     <p className="text-sm md:text-base leading-relaxed">{selectedVendor.address}</p>
                   </div>
 
-                  {/* Perks Card */}
                   <div className="bg-zinc-50 border border-zinc-100 rounded-2xl p-5 mb-6">
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-[10px] font-bold text-cyan-600 uppercase tracking-wider">Kelebihan TeamAra</span>
@@ -1319,7 +1297,6 @@ const handleShare = async (service: Service) => {
               </div>
             </div>
 
-            {/* Floating Action Footer (Sticky Bottom, side-by-side buttons) */}
             <div className="absolute bottom-0 left-0 w-full md:w-1/2 md:left-1/2 bg-gradient-to-t from-white via-white/95 to-white/0 md:bg-white/95 md:backdrop-blur-md md:border-t md:border-zinc-100 pt-12 md:pt-5 pb-6 md:pb-5 px-6 flex flex-row gap-3 z-50 pointer-events-none md:pointer-events-auto">
               {selectedVendor.mapUrl && (
                 <a 
@@ -1458,7 +1435,6 @@ const handleShare = async (service: Service) => {
                   </div>
                 </div>
 
-               {/* Scrollable Wrapper Added Here */}
                 <div className="overflow-y-auto max-h-[60vh] pr-2 pb-4 hide-scrollbar">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {(settings.internalApps || []).map((app, idx) => {
