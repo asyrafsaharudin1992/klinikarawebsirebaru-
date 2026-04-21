@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs, getDocsFromCache, getDocsFromServer, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview } from '../types';
-import { Play, Info, ChevronRight, Menu, X, ChevronLeft, Calendar, Tag, FileText, CheckCircle2, Search, Sparkles, MapPin, Navigation, MessageCircle, Phone, Share2, Check, Lock, ExternalLink, Database, Users, CreditCard, Settings, Github, Star, GitFork, Code } from 'lucide-react';
+import { Play, ChevronRight, Menu, X, ChevronLeft, Calendar, FileText, Search, Sparkles, MapPin, Navigation, MessageCircle, Share2, Lock, ExternalLink, Database, Users, CreditCard, Settings } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { GoogleGenAI, Type } from '@google/genai';
 import GoogleReviews from './GoogleReviews';
@@ -30,6 +30,7 @@ const CarouselWrapper = ({ children }: { children: React.ReactNode }) => {
       <button 
         onClick={() => scroll('left')}
         className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-30 bg-black/50 hover:bg-black/80 backdrop-blur text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all border border-zinc-700 shadow-xl"
+        aria-label="Scroll Left"
       >
         <ChevronLeft className="w-6 h-6" />
       </button>
@@ -37,6 +38,8 @@ const CarouselWrapper = ({ children }: { children: React.ReactNode }) => {
       <div 
         ref={scrollRef}
         className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pb-6 hide-scrollbar scroll-smooth relative z-20"
+        role="region"
+        aria-label="Service Carousel"
       >
         {children}
       </div>
@@ -44,6 +47,7 @@ const CarouselWrapper = ({ children }: { children: React.ReactNode }) => {
       <button 
         onClick={() => scroll('right')}
         className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-30 bg-black/50 hover:bg-black/80 backdrop-blur text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all border border-zinc-700 shadow-xl"
+        aria-label="Scroll Right"
       >
         <ChevronRight className="w-6 h-6" />
       </button>
@@ -55,43 +59,45 @@ const ServiceCarouselRow = ({ title, services, onSelect, subheading }: { title: 
   if (!services || services.length === 0) return null;
   return (
     <section className="mb-1 md:mb-2 pt-2 border-t border-zinc-800/50 px-4 md:px-12">
-      <h2 className="text-xl md:text-2xl font-bold text-white mb-1 flex items-center gap-2 group cursor-pointer">
-        {title}
-        <ChevronRight className="w-5 h-5 text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-      </h2>
-      {subheading && <p className="text-sm text-gray-400 mb-6">{subheading}</p>}
+      <header>
+        <h2 className="text-xl md:text-2xl font-bold text-white mb-1 flex items-center gap-2 group cursor-pointer">
+          {title}
+          <ChevronRight className="w-5 h-5 text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </h2>
+        {subheading && <p className="text-sm text-gray-400 mb-6">{subheading}</p>}
+      </header>
       <CarouselWrapper>
         {services.map(service => {
           const displayImage = service.thumbnailUrl || service.imageUrls?.[0] || service.imageUrl;
           return (
-            <div 
+            <article 
               key={service.id} 
               onClick={() => onSelect(service)}
-              className="flex-none w-[140px] md:w-[240px] aspect-[2/3] snap-start relative group rounded-md overflow-hidden cursor-pointer transition-transform duration-300 md:hover:scale-105 md:hover:z-20"
+              // Removed fixed aspect ratio from container to allow text to sit underneath
+              className="flex-none w-[140px] md:w-[240px] flex flex-col cursor-pointer transition-transform duration-300 md:hover:scale-105 md:hover:z-20"
             >
-              {displayImage ? (
-                <img 
-                  src={displayImage} 
-                  alt={`${service.title} Poster - Klinik Ara 24 Jam`} 
-                  className="w-full h-full object-cover bg-zinc-900"
-                  referrerPolicy="no-referrer"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-full h-full bg-zinc-800 flex items-center justify-center">No Image</div>
-              )}
-              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                <h4 className="font-bold text-sm md:text-base mb-1 line-clamp-2">{service.title}</h4>
-                <div className="flex items-center gap-2 text-xs font-medium">
-                  {service.teamAraPrice ? (
-                    <span className="text-green-500">RM{service.teamAraPrice}</span>
-                  ) : (
-                    <span className="text-green-500">Available</span>
-                  )}
-                  <span className="border border-zinc-600 px-1 text-zinc-300">24/7</span>
-                </div>
+              {/* Image Container: Fixed aspect ratio for consistency */}
+              <div className="aspect-[2/3] relative rounded-md overflow-hidden bg-zinc-900 mb-3">
+                {displayImage ? (
+                  <img 
+                    src={displayImage} 
+                    alt={`${service.title} - Klinik Ara 24 Jam Service`}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-zinc-800 flex items-center justify-center">No Image</div>
+                )}
               </div>
-            </div>
+
+              {/* Text Container: Permanently visible, no price */}
+              <div className="px-1 pb-2">
+                <h4 className="font-bold text-sm md:text-base text-white leading-snug line-clamp-2">
+                  {service.title}
+                </h4>
+              </div>
+            </article>
           );
         })}
       </CarouselWrapper>
@@ -105,17 +111,6 @@ const formatPhoneNumber = (phone: string) => {
   if (!cleaned.startsWith('60')) { cleaned = '60' + cleaned; }
   return cleaned;
 };
-
-interface GithubRepo {
-  id: number;
-  name: string;
-  description: string;
-  html_url: string;
-  stargazers_count: number;
-  forks_count: number;
-  language: string;
-  updated_at: string;
-}
 
 export default function PublicUI() {
   const [services, setServices] = useState<Service[]>([]);
@@ -150,8 +145,43 @@ export default function PublicUI() {
   const [customPages, setCustomPages] = useState<{title: string, slug: string}[]>([]);
 
   const { affiliateRef, clearAffiliateRef } = useContext(AffiliateContext);
-
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // --- SEO & SCHEMA DATA PREPARATION ---
+  
+  const primaryLocation = locations?.[0];
+  const seoDescription = `Klinik Ara 24 Jam provides comprehensive healthcare services in ${primaryLocation?.branchName || 'Kajang, Seri Kembangan, Semenyih'}. Available 24 hours daily with female doctors. Services: Fever treatment, Vaccination, Health Screening.`;
+  const seoTitle = "Klinik Ara 24 Jam | Medical Clinic in Kajang & Seri Kembangan";
+  
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "MedicalClinic",
+    "name": "Klinik Ara 24 Jam",
+    "image": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2053&auto=format&fit=crop",
+    "description": seoDescription,
+    "url": "https://klinikara24jam.hsohealthcare.com",
+    "telephone": primaryLocation?.whatsapp ? `+60${primaryLocation.whatsapp.replace(/[^0-9]/g, '')}` : "+60123456789",
+    "priceRange": "$$",
+    "address": locations.map(loc => ({
+      "@type": "PostalAddress",
+      "streetAddress": loc.address,
+      "addressLocality": loc.branchName,
+      "addressRegion": "Selangor", 
+      "addressCountry": "MY"
+    })),
+    "openingHoursSpecification": [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+        "opens": "00:00",
+        "closes": "23:59"
+      }
+    ],
+    "department": services.slice(0, 3).map(s => ({
+      "@type": "MedicalSpecialty",
+      "name": s.title
+    }))
+  };
 
   useEffect(() => {
     const pagesQ = query(collection(db, 'pages'), where('status', '==', 'published'));
@@ -552,9 +582,9 @@ export default function PublicUI() {
   const hasContent = (services || []).length > 0;
   
   const defaultHero = {
-    title: "Your Health, Our Priority",
-    description: "Welcome to Klinik Ara 24 Jam. We provide comprehensive healthcare services for you and your family, available around the clock.",
-    category: "Welcome",
+    title: "Klinik Ara 24 Jam - Your Health, Our Priority",
+    description: "We provide comprehensive healthcare services including emergency care, vaccination, and general consultations for you and your family.",
+    category: "Medical Services",
     image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2053&auto=format&fit=crop"
   };
 
@@ -562,8 +592,20 @@ export default function PublicUI() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white overflow-x-hidden font-sans">
-      {/* FIX 1: Empty SEO tag pulls optimized defaults from SEO.tsx */}
-      <SEO />
+      {/* SEO: Injected Schema.org Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      />
+
+      {/* SEO: Meta Tags Component */}
+      <SEO 
+        title={seoTitle} 
+        description={seoDescription} 
+        image={heroImage} 
+        type="website"
+        url={window.location.href}
+      />
      
       {/* Navbar */}
       <nav className="fixed top-0 w-full z-50 bg-gradient-to-b from-black/90 via-black/40 to-transparent px-4 md:px-12 pt-4 pb-8 flex items-center justify-between pointer-events-none">
@@ -577,10 +619,11 @@ export default function PublicUI() {
               }
             }}
             className="text-white text-2xl md:text-3xl font-bold tracking-tighter hover:opacity-80 transition-opacity cursor-pointer flex items-center gap-3"
+            aria-label="Klinik Ara 24 Jam Home"
           >
             <img 
               src="https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/Light%20Logo%20HSO%20.png?alt=media&token=af618257-921e-42c6-9197-daf5b513fcd4" 
-              alt="Logo Klinik Ara" 
+              alt="Klinik Ara Logo"
               className="h-16 md:h-16 w-auto object-contain"
             />
             KLINIK ARA 24 JAM
@@ -589,6 +632,7 @@ export default function PublicUI() {
           <button 
             className="md:hidden p-2 text-zinc-400 hover:text-white"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle Menu"
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -628,9 +672,8 @@ export default function PublicUI() {
             <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-zinc-950/90 to-transparent" />
           </div>
           
-                    <div className="absolute bottom-[15%] left-4 md:left-12 max-w-2xl z-10">
+          <div className="absolute bottom-[15%] left-4 md:left-12 max-w-2xl z-10">
             <div className="flex items-center gap-2 mb-3 sm:mb-4">
-              {/* Made category text slightly smaller on mobile */}
               <span className="text-red-600 font-bold tracking-widest text-xs sm:text-sm drop-shadow-md">
                 {(currentHero?.category || defaultHero.category).toUpperCase()}
               </span>
@@ -639,17 +682,14 @@ export default function PublicUI() {
               )}
             </div>
             
-            {/* H1: Starts at text-xl (20px) on mobile, scales to 5xl on large desktop */}
             <h1 className="text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold mb-1 sm:mb-2 tracking-tight drop-shadow-lg text-white/90">
               Klinik Ara 24 Jam
             </h1>
             
-            {/* H2: Starts at text-3xl (30px) on mobile, scales to 7xl on large desktop */}
             <h2 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-4 tracking-tight drop-shadow-lg leading-tight">
               {currentHero?.title || defaultHero.title}
             </h2>
 
-            {/* Paragraph: Starts at text-sm on mobile, scales to xl on desktop */}
             <p className="text-sm sm:text-base md:text-xl text-zinc-300 mb-6 sm:mb-8 max-w-xl drop-shadow-md line-clamp-3">
               {currentHero?.description || defaultHero.description}
             </p>
@@ -749,29 +789,25 @@ export default function PublicUI() {
                     <div 
                       key={service.id} 
                       onClick={() => handleOpenModal(service)}
-                      className="aspect-[2/3] relative group rounded-md overflow-hidden cursor-pointer transition-transform duration-300 md:hover:scale-105 md:hover:z-20"
+                      className="aspect-auto flex flex-col cursor-pointer transition-transform duration-300 md:hover:scale-105 md:hover:z-20"
                     >
-                      {displayImage ? (
-                        <img 
-                          src={displayImage} 
-                          alt={`${service.title} - Klinik Ara 24 Jam Service`} 
-                          className="w-full h-full object-contain bg-zinc-900"
-                          referrerPolicy="no-referrer"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-zinc-800 flex items-center justify-center">No Image</div>
-                      )}
-                      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                        <h4 className="font-bold text-sm md:text-base mb-1 line-clamp-2">{service.title}</h4>
-                        <div className="flex items-center gap-2 text-xs font-medium">
-                          {service.teamAraPrice ? (
-                            <span className="text-green-500">RM{service.teamAraPrice}</span>
-                          ) : (
-                            <span className="text-green-500">Available</span>
-                          )}
-                          <span className="border border-zinc-600 px-1 text-zinc-300">24/7</span>
-                        </div>
+                      <div className="aspect-[2/3] relative rounded-md overflow-hidden bg-zinc-900 mb-3">
+                        {displayImage ? (
+                          <img 
+                            src={displayImage} 
+                            alt={`${service.title} - Klinik Ara 24 Jam Service`} 
+                            className="w-full h-full object-contain bg-zinc-900"
+                            referrerPolicy="no-referrer"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center">No Image</div>
+                        )}
+                      </div>
+                      <div className="px-1 pb-2">
+                        <h4 className="font-bold text-sm md:text-base text-white leading-snug line-clamp-2">
+                          {service.title}
+                        </h4>
                       </div>
                     </div>
                   );
@@ -911,106 +947,113 @@ export default function PublicUI() {
             <GoogleReviews reviews={reviews} subheading={settings?.reviewsSub} />
 
             <section id="locations" className="mb-4 md:mb-6 pt-6 border-t border-zinc-800/50 px-4 md:px-12">
-  <h2 className="text-xl md:text-2xl font-bold text-white mb-6">Cawangan Ara</h2>
-  <CarouselWrapper>
-    {locations?.length > 0 ? (
-      locations?.map(loc => (
-        <div key={loc.id} className="w-[300px] sm:w-[320px] flex-shrink-0 flex flex-col bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden min-h-[450px] snap-center group">
-          {loc.imageUrl && (
-            <div className="h-52 w-full overflow-hidden bg-zinc-800">
-              <img 
-                src={loc.imageUrl} 
-                alt={`${loc.branchName} - Klinik Ara 24 Jam Branch`} 
-                className="w-full h-full object-cover bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
-                referrerPolicy="no-referrer"
-                loading="lazy"
-              />
-            </div>
-          )}
-          <div className="flex-1 p-5 flex flex-col">
-            <h4 className="text-lg font-bold text-white mb-1">{loc.branchName}</h4>
-            <div className="inline-block bg-zinc-900 text-zinc-300 text-[10px] font-medium px-2 py-0.5 rounded border border-zinc-800 mb-3 w-fit">
-              {loc.operatingHours}
-            </div>
-            
-            {/* ✅ CHANGED: Semantic <address> tag for Local SEO */}
-            <address className="text-sm text-gray-400 line-clamp-3 mb-2 not-italic">
-              {loc.address}
-            </address>
+              <header>
+                <h2 className="text-xl md:text-2xl font-bold text-white mb-6">Cawangan Ara</h2>
+              </header>
+              <CarouselWrapper>
+                {locations?.length > 0 ? (
+                  locations?.map(loc => (
+                    <article key={loc.id} className="w-[300px] sm:w-[320px] flex-shrink-0 flex flex-col bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden min-h-[450px] snap-center group">
+                      {loc.imageUrl && (
+                        <div className="h-52 w-full overflow-hidden bg-zinc-800">
+                          <img 
+                            src={loc.imageUrl} 
+                            alt={`${loc.branchName} - Klinik Ara 24 Jam Branch`} 
+                            className="w-full h-full object-cover bg-zinc-900 transition-transform duration-500 group-hover:scale-110" 
+                            referrerPolicy="no-referrer"
+                            loading="lazy"
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1 p-5 flex flex-col">
+                        <h4 className="text-lg font-bold text-white mb-1">{loc.branchName}</h4>
+                        <div className="inline-block bg-zinc-900 text-zinc-300 text-[10px] font-medium px-2 py-0.5 rounded border border-zinc-800 mb-3 w-fit">
+                          {loc.operatingHours}
+                        </div>
+                        
+                        <address className="text-sm text-gray-400 line-clamp-3 mb-2 not-italic">
+                          {loc.address}
+                        </address>
 
-            {loc.landmark && (
-              <p className="text-zinc-500 text-[10px] italic mb-4">
-                Remark: {loc.landmark}
-              </p>
-            )}
-            
-            <div className="mt-auto">
-              {loc.whatsapp && (
-                <a 
-                  href={`https://wa.me/${loc.whatsapp.replace(/[^0-9]/g, '')}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-2 rounded-lg flex justify-center items-center mb-2 transition-colors"
-                >
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  WhatsApp
-                </a>
-              )}
-              <div className="grid grid-cols-2 gap-2">
-                {loc.googleMapsUrl && (
-                  <a 
-                    href={loc.googleMapsUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 rounded-lg font-medium text-center flex items-center justify-center gap-2 transition-colors"
-                  >
-                    <MapPin className="w-4 h-4" />
-                    Maps
-                  </a>
+                        {loc.landmark && (
+                          <p className="text-zinc-500 text-[10px] italic mb-4">
+                            Remark: {loc.landmark}
+                          </p>
+                        )}
+                        
+                        <div className="mt-auto">
+                          {loc.whatsapp && (
+                            <a 
+                              href={`https://wa.me/${loc.whatsapp.replace(/[^0-9]/g, '')}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-2 rounded-lg flex justify-center items-center mb-2 transition-colors"
+                            >
+                              <MessageCircle className="w-4 h-4 mr-2" />
+                              WhatsApp
+                            </a>
+                          )}
+                          <div className="grid grid-cols-2 gap-2">
+                            {loc.googleMapsUrl && (
+                              <a 
+                                href={loc.googleMapsUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 rounded-lg font-medium text-center flex items-center justify-center gap-2 transition-colors"
+                              >
+                                <MapPin className="w-4 h-4" />
+                                Maps
+                              </a>
+                            )}
+                            {loc.wazeUrl && (
+                              <a 
+                                href={loc.wazeUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 rounded-lg font-medium text-center flex items-center justify-center gap-2 transition-colors"
+                              >
+                                <Navigation className="w-4 h-4" />
+                                Waze
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  ))
+                ) : (
+                  <div className="w-full text-center py-12 text-zinc-500 bg-zinc-900/50 rounded-xl border border-zinc-800 border-dashed">
+                    <p>Locations are currently being updated.</p>
+                  </div>
                 )}
-                {loc.wazeUrl && (
-                  <a 
-                    href={loc.wazeUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 rounded-lg font-medium text-center flex items-center justify-center gap-2 transition-colors"
-                  >
-                    <Navigation className="w-4 h-4" />
-                    Waze
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      ))
-    ) : (
-      <div className="w-full text-center py-12 text-zinc-500 bg-zinc-900/50 rounded-xl border border-zinc-800 border-dashed">
-        <p>Locations are currently being updated.</p>
-      </div>
-    )}
-  </CarouselWrapper>
+              </CarouselWrapper>
             </section>
           </section>
         )}
 
-        {/* FIX 3: HIDDEN SEO BLOCK - Feeds all Firebase modal text to Googlebot */}
-        <section className="sr-only">
-          <h2>Senarai Lengkap Perkhidmatan Klinik Ara 24 Jam</h2>
-          <p>Klinik Ara menyediakan pelbagai rawatan kesihatan di Kajang, Seri Kembangan, dan Semenyih oleh doktor perempuan.</p>
-          {services.map(service => (
-            <article key={service.id}>
-              <h3>{service.title} - {service.category}</h3>
-              <p>{service.description}</p>
-              {service.teamAraPrice && <p>Harga TeamAra: RM{service.teamAraPrice}</p>}
-            </article>
-          ))}
+        {/* SEO: Accessibility Sitemap Section */}
+        <section className="sr-only" aria-label="Complete Services Sitemap">
+          <h2>Sitemap: Perkhidmatan Klinik Ara 24 Jam</h2>
+          <p>Klinik Ara menyediakan pelbagai rawatan kesihatan di Kajang, Seri Kembangan, dan Semenyih oleh doktor perempuan. Operasi 24 jam setiap hari.</p>
+          <nav>
+            <ul>
+              {services.map(service => (
+                <li key={service.id}>
+                  <article>
+                    <h3>{service.title}</h3>
+                    <p>{service.description}</p>
+                    {service.teamAraPrice && <p>Harga TeamAra: RM{service.teamAraPrice}</p>}
+                  </article>
+                </li>
+              ))}
+            </ul>
+          </nav>
         </section>
     
            </main>
 
-      {/* ✅ ULTRA-FINE PRINT SEO BLOCK (Invisible to casual users, gold for Googlebots) */}
-      <section className="px-4 md:px-12 pt-8 pb-4 text-center">
+      {/* SEO: Ultra-fine print for location context */}
+      <section className="px-4 md:px-12 pt-8 pb-4 text-center" aria-label="Service Area Information">
         <div className="max-w-4xl mx-auto text-[10px] md:text-xs text-zinc-700 leading-relaxed space-y-1">
           <p>
             Mencari <strong className="text-zinc-600">klinik 24 jam nearby</strong>? <strong className="text-zinc-600">Klinik Ara</strong> beroperasi sepanjang masa di tiga cawangan strategik: <strong className="text-zinc-600">Kajang</strong>, <strong className="text-zinc-600">Seri Kembangan</strong>, dan <strong className="text-zinc-600">Semenyih</strong> oleh <strong className="text-zinc-600">doktor perempuan</strong> yang berpengalaman.
@@ -1021,7 +1064,6 @@ export default function PublicUI() {
         </div>
       </section>
 
-      {/* ✅ SLEEK MINIMAL FOOTER */}
       <footer className="bg-zinc-950 border-t border-zinc-900/50 py-6">
         <div className="max-w-7xl mx-auto px-4 md:px-12 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-zinc-700 text-xs">
@@ -1042,7 +1084,7 @@ export default function PublicUI() {
         </div>
       </footer>
 
-      {/* Interactive Modal (Premium Mobile & Desktop Split Redesign - Dark Mode) */}
+      {/* Interactive Modal */}
       {selectedService && (
         <div 
           className="fixed inset-0 z-50 flex flex-col md:flex-row md:items-center md:justify-center bg-zinc-950/90 backdrop-blur-sm p-0 md:p-6 overflow-hidden"
