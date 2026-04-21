@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs, getDocsFromCache, getDocsFromServer, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview } from '../types';
-import { Play, ChevronRight, Menu, X, ChevronLeft, Calendar, FileText, Search, Sparkles, MapPin, Navigation, MessageCircle, Share2, Lock, ExternalLink, Database, Users, CreditCard, Settings } from 'lucide-react';
+import { Play, ChevronRight, Menu, X, ChevronLeft, Calendar, FileText, Search, Sparkles, MapPin, Navigation, MessageCircle, Share2, Lock, ExternalLink, Database, Users, CreditCard, Settings, Check, CheckCircle2 } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { GoogleGenAI, Type } from '@google/genai';
 import GoogleReviews from './GoogleReviews';
@@ -622,7 +622,7 @@ export default function PublicUI() {
             aria-label="Klinik Ara 24 Jam Home"
           >
             <img 
-              src="https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/Light%20Logo%20HSO%20.png?alt=media&token=af618257-921e-42c6-9197-daf5b513fcd4" 
+              src="/Light_Logo_HSO.webp" 
               alt="Klinik Ara Logo"
               className="h-16 md:h-16 w-auto object-contain"
             />
@@ -638,21 +638,25 @@ export default function PublicUI() {
           </button>
 
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-300">
-            <a href="#" className="text-white font-semibold hover:text-white transition">Laman Utama</a>
-            <a href="#services" className="hover:text-white transition">Perkhidmatan</a>
-            <a href="#locations" className="hover:text-white transition">Cawangan</a>
-            {customPages.length > 0 && (
-              <div className="h-4 w-px bg-zinc-700 mx-2 hidden md:block" />
-            )}
-            {customPages.map(page => (
-              <Link 
-                key={page.slug} 
-                to={`/p/${page.slug}`} 
-                className="text-sm font-medium text-cyan-400 hover:text-cyan-300 transition-colors"
-              >
-                {page.title}
-              </Link>
-            ))}
+  <a href="#" className="text-white font-semibold hover:text-white transition">Laman Utama</a>
+  <a href="#services" className="hover:text-white transition">Perkhidmatan</a>
+  <a href="#locations" className="hover:text-white transition">Cawangan</a>
+  
+  {/* NEW: Added Panel Kesihatan link */}
+  <a href="#panels" className="hover:text-white transition">Panel Kesihatan</a>
+
+  {customPages.length > 0 && (
+    <div className="h-4 w-px bg-zinc-700 mx-2 hidden md:block" />
+  )}
+  {customPages.map(page => (
+    <Link 
+      key={page.slug} 
+      to={`/p/${page.slug}`} 
+      className="text-sm font-medium text-cyan-400 hover:text-cyan-300 transition-colors"
+    >
+      {page.title}
+    </Link>
+  ))}
           </div>
         </div>
       </nav>
@@ -918,27 +922,40 @@ export default function PublicUI() {
               }
               if (section === 'panels') {
                 return panels.length > 0 ? (
-                  <section key="panels" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
-                    <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Panel Kesihatan</h2>
-                    <p className="text-sm text-gray-400 mb-6">{settings?.panelsSub || 'Klik untuk melihat cawangan'}</p>
-                    <CarouselWrapper>
-                      {panels.map((panel) => (
-                        <div 
-                          key={panel.id} 
-                          onClick={() => setSelectedPanel(panel)}
-                          className="bg-white rounded-xl h-24 w-32 flex items-center justify-center p-2 cursor-pointer hover:scale-105 transition-transform flex-shrink-0 snap-center shadow-lg border border-zinc-800"
-                        >
-                          <img 
-                            src={panel.imageUrl} 
-                            alt={`${panel.name} logo`} 
-                            className="max-w-full max-h-full object-contain"
-                            referrerPolicy="no-referrer"
-                            loading="lazy"
-                          />
-                        </div>
-                      ))}
-                    </CarouselWrapper>
-                  </section>
+                 <section 
+                 id="panels"
+                 key="panels" className="mb-12 md:mb-16 pt-8 border-t border-zinc-800/50 px-4 md:px-12">
+  <h2 className="text-xl md:text-2xl font-bold text-white mb-1">Panel Kesihatan</h2>
+  <p className="text-sm text-gray-400 mb-6">{settings?.panelsSub || 'Klik untuk melihat cawangan'}</p>
+  <CarouselWrapper>
+    {panels.map((panel) => (
+      <div 
+        key={panel.id} 
+        onClick={() => setSelectedPanel(panel)}
+        className="
+          bg-white rounded-xl 
+          h-32 w-32 
+          flex flex-col items-center justify-between 
+          p-2 cursor-pointer hover:scale-105 transition-transform 
+          flex-shrink-0 snap-center shadow-lg border border-zinc-800
+        "
+      >
+        <img 
+          src={panel.imageUrl} 
+          alt={`${panel.name} logo`} 
+          className="max-w-full max-h-[65%] object-contain" 
+          referrerPolicy="no-referrer"
+          loading="lazy"
+        />
+        
+        {/* NEW: Panel Name underneath */}
+        <p className="text-xs font-semibold text-gray-800 text-center truncate w-full">
+          {panel.name}
+        </p>
+      </div>
+    ))}
+  </CarouselWrapper>
+</section>
                 ) : null;
               }
               return null;
