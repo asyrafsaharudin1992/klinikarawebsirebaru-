@@ -622,7 +622,7 @@ export default function PublicUI() {
             aria-label="Klinik Ara 24 Jam Home"
           >
             <img 
-              src="/Light_Logo_HSO.webp" 
+              src="https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/Light%20Logo%20HSO%20.png?alt=media&token=af618257-921e-42c6-9197-daf5b513fcd4" 
               alt="Klinik Ara Logo"
               className="h-16 md:h-16 w-auto object-contain"
             />
