@@ -1532,6 +1532,15 @@ const addCarouselCard = (blockId: string) => {
       };
 
       if (editingId) {
+        const oldService = services.find(s => s.id === editingId);
+        if (oldService) {
+          if (thumbnailFile && oldService.thumbnailUrl) {
+            try { await deleteImageFromStorage(oldService.thumbnailUrl); } catch (e) { console.error("Failed to delete old thumbnail:", e); }
+          }
+          if (finalHeroImageUrl !== oldService.heroImageUrl && oldService.heroImageUrl && oldService.heroImageUrl !== oldService.thumbnailUrl) {
+            try { await deleteImageFromStorage(oldService.heroImageUrl); } catch (e) { console.error("Failed to delete old hero image:", e); }
+          }
+        }
         await updateDoc(doc(db, 'services', editingId), serviceData);
         setSuccessMsg('Service updated successfully!');
       } else {

@@ -13,6 +13,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import GoogleReviews from './GoogleReviews';
 import SEO from './SEO';
 import { AffiliateContext } from '../App';
+import { appendCacheBuster } from '../utils';
 
 const CarouselWrapper = ({ children }: { children: React.ReactNode }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -68,7 +69,7 @@ const ServiceCarouselRow = ({ title, services, onSelect, subheading }: { title: 
       </header>
       <CarouselWrapper>
         {services.map(service => {
-          const displayImage = service.thumbnailUrl || service.imageUrls?.[0] || service.imageUrl;
+          const displayImage = appendCacheBuster(service.thumbnailUrl || service.imageUrls?.[0] || service.imageUrl);
           return (
             <article 
               key={service.id} 
@@ -585,10 +586,10 @@ export default function PublicUI() {
     title: "Klinik Ara 24 Jam - Your Health, Our Priority",
     description: "We provide comprehensive healthcare services including emergency care, vaccination, and general consultations for you and your family.",
     category: "Medical Services",
-    image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2053&auto=format&fit=crop"
+    image: appendCacheBuster("https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2053&auto=format&fit=crop")
   };
 
-  const heroImage = currentHero?.heroImageUrl || currentHero?.imageUrls?.[0] || currentHero?.imageUrl || defaultHero.image;
+  const heroImage = appendCacheBuster(currentHero?.heroImageUrl || currentHero?.imageUrls?.[0] || currentHero?.imageUrl) || defaultHero.image;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white overflow-x-hidden font-sans">
@@ -788,7 +789,7 @@ export default function PublicUI() {
             {searchResults.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {searchResults.map(service => {
-                  const displayImage = service.imageUrls?.[0] || service.imageUrl;
+                  const displayImage = appendCacheBuster(service.imageUrls?.[0] || service.imageUrl);
                   return (
                     <div 
                       key={service.id} 
@@ -1130,13 +1131,13 @@ export default function PublicUI() {
                   return (
                     <>
                       <img 
-                        src={carouselImages[currentImageIndex]} 
+                        src={appendCacheBuster(carouselImages[currentImageIndex])} 
                         className="hidden md:block absolute inset-0 w-full h-full object-cover blur-3xl opacity-50 scale-125 pointer-events-none z-0" 
                         referrerPolicy="no-referrer" 
                       />
 
                       <img 
-                        src={carouselImages[currentImageIndex]} 
+                        src={appendCacheBuster(carouselImages[currentImageIndex])} 
                         alt={`${selectedService.title} - Image ${currentImageIndex + 1}`}
                         className="w-full h-auto max-h-[70vh] md:max-h-[85vh] object-contain block z-10 relative"
                         referrerPolicy="no-referrer"
@@ -1318,7 +1319,7 @@ export default function PublicUI() {
               
               <div className="relative w-full md:w-1/2 flex-shrink-0 bg-zinc-950 flex items-center overflow-hidden min-h-[50vw] md:min-h-0">
                 <img 
-                  src={selectedVendor.imageUrl} 
+                  src={appendCacheBuster(selectedVendor.imageUrl)} 
                   alt={selectedVendor.name} 
                   className="w-full h-auto max-h-[70vh] md:max-h-[85vh] object-contain block z-10 relative"
                   referrerPolicy="no-referrer"
@@ -1400,7 +1401,7 @@ export default function PublicUI() {
             <div className="flex flex-col items-center text-center mb-6">
               <div className="bg-white p-4 rounded-xl mb-4 w-32 h-24 flex items-center justify-center">
                 <img 
-                  src={selectedPanel.imageUrl} 
+                  src={appendCacheBuster(selectedPanel.imageUrl)} 
                   alt={selectedPanel.name} 
                   className="max-w-full max-h-full object-contain"
                   referrerPolicy="no-referrer"

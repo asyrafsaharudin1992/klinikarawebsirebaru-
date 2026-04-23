@@ -6,6 +6,7 @@ import { DynamicPageData, PageBlock } from '../types';
 import { ChevronLeft, ArrowRight, Loader2, AlertCircle, X, Share2, MessageCircle, ExternalLink } from 'lucide-react';
 import SEO from './SEO';
 import { CarouselCard } from '../types';
+import { appendCacheBuster } from '../utils';
 
 // --- ARACME SPECIFIC DATA ---
 export const ARACME_CAROUSEL_DATA = [
@@ -160,7 +161,7 @@ const getEmbedUrl = (url: string) => {
             <div className="absolute inset-0 bg-zinc-950">
               {block.imageUrl ? (
                 <img 
-                  src={block.imageUrl} 
+                  src={appendCacheBuster(block.imageUrl)} 
                   alt={block.heading || "Hero Banner"} 
                   className="w-full h-full object-cover animate-fade-in"
                   referrerPolicy="no-referrer"
@@ -208,7 +209,7 @@ const getEmbedUrl = (url: string) => {
       case 'image':
         return block.imageUrl ? (
           <section key={block.id} className="max-w-4xl mx-auto px-4 py-8">
-            <img src={block.imageUrl} alt="Content" className="w-full h-auto rounded-2xl shadow-2xl border border-zinc-800" loading="lazy" />
+            <img src={appendCacheBuster(block.imageUrl)} alt="Content" className="w-full h-auto rounded-2xl shadow-2xl border border-zinc-800" loading="lazy" />
           </section>
         ) : null;
 
@@ -247,7 +248,7 @@ const getEmbedUrl = (url: string) => {
                   <div className="relative aspect-[4/5] w-full bg-zinc-950 overflow-hidden">
                     {card.imageUrl ? (
                       <img 
-                        src={card.imageUrl} 
+                        src={appendCacheBuster(card.imageUrl)} 
                         alt={card.title} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                         loading="lazy"
@@ -376,7 +377,7 @@ const getEmbedUrl = (url: string) => {
                 >
                   <div className="relative aspect-[4/5] w-full bg-zinc-950 overflow-hidden">
                     <img 
-                      src={item.thumbnail} 
+                      src={appendCacheBuster(item.thumbnail)} 
                       alt={item.title} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100" 
                       loading="lazy"
@@ -464,7 +465,7 @@ const getEmbedUrl = (url: string) => {
                           onClick={() => setShowIframe(true)}
                         >
                           <img 
-                            src={selectedCard.imageUrl} 
+                            src={appendCacheBuster(selectedCard.imageUrl)} 
                             alt={selectedCard.title} 
                             className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity"
                             loading="lazy"
@@ -480,7 +481,7 @@ const getEmbedUrl = (url: string) => {
                   </div>
                 ) : selectedCard.imageUrl ? (
                   <img 
-                    src={selectedCard.imageUrl} 
+                    src={appendCacheBuster(selectedCard.imageUrl)} 
                     alt={selectedCard.title} 
                     className="w-full h-auto max-h-[70vh] md:max-h-[85vh] object-contain block z-10 relative"
                     referrerPolicy="no-referrer"
