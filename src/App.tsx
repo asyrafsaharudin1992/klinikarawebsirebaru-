@@ -3,9 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { HelmetProvider } from 'react-helmet-async';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect, useState, createContext, lazy, Suspense } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
+
+declare global {
+  interface Window {
+    dataLayer: any[];
+    gtag: (...args: any[]) => void;
+  }
+}
+
 import { auth, db } from './firebase';
 import { getDoc, doc } from 'firebase/firestore';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -22,6 +30,24 @@ const AdminUI = lazy(() => import('./components/AdminUI'));
 const Login = lazy(() => import('./components/Login'));
 const DynamicPage = lazy(() => import('./components/DynamicPage'));
 const AraPowerLanding = lazy(() => import('./components/AraPowerLanding'));
+
+function AnalyticsTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Standard GA4 page_view event for SPAs via dataLayer
+    if (window.dataLayer) {
+      window.dataLayer.push({
+        event: 'page_view',
+        page_path: location.pathname + location.search,
+        page_location: window.location.href,
+        page_title: document.title
+      });
+    }
+  }, [location]);
+
+  return null;
+}
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
@@ -116,6 +142,7 @@ export default function App() {
       <ErrorBoundary>
         <HelmetProvider>
           <BrowserRouter>
+            <AnalyticsTracker />
             <Suspense fallback={<LoadingSpinner />}>
               <Routes>
                 <Route path="/" element={<PublicUI />} />

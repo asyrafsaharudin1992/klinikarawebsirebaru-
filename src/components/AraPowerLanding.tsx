@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './AraPowerLanding.css';
-import SEO from './SEO';
+import { Helmet } from 'react-helmet-async';
 
 const AraPowerLanding: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -45,14 +45,29 @@ const AraPowerLanding: React.FC = () => {
     }
   };
 
+  const pageTitle = "AraPower — Earn. Share. Heal.";
+  const pageDescription = "Join AraPower, Klinik Ara 24 Jam's exclusive affiliate programme. Share health services, earn commission, and help your community access quality healthcare.";
+  const shareImage = "https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/AraPower%20Poster%20.jpg?alt=media&token=122ea2b4-d858-42c0-9a5d-4e217d3d42ea";
+
   return (
     <div className="arapower-body">
-      <SEO 
-        title="AraPower — Earn. Share. Heal." 
-        description="Join AraPower, Klinik Ara 24 Jam's exclusive affiliate programme. Share health services, earn commission, and help your community access quality healthcare."
-        image="https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/Light%20Logo%20HSO%20.png?alt=media&token=af618257-921e-42c6-9197-daf5b513fcd4"
-        type="website"
-      />
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={window.location.href} />
+        <meta property="og:image" content={shareImage} />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
+        <meta name="twitter:image" content={shareImage} />
+      </Helmet>
       {/* NAV */}
       <nav className={`fixed top-0 left-0 right-0 z-[100] px-5 md:px-10 h-16 flex items-center justify-between bg-white/80 backdrop-blur-[20px] border-b border-[#1580c2]/10 transition-all duration-300 ${isScrolled ? 'shadow-[0_4px_32px_rgba(0,0,0,0.06)]' : ''}`}>
         <a href="#" className="font-extrabold text-xl text-[#1580c2] tracking-tighter decoration-none">AraPower</a>
