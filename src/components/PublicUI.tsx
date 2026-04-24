@@ -646,6 +646,10 @@ export default function PublicUI() {
   {/* NEW: Added Panel Kesihatan link */}
   <a href="#panels" className="hover:text-white transition">Panel Kesihatan</a>
 
+  <Link to="/arapower" className="bg-cyan-500/10 text-cyan-400 px-3 py-1 rounded-full border border-cyan-500/20 hover:bg-cyan-500/20 transition-all font-bold">
+    AraPower
+  </Link>
+
   {customPages.length > 0 && (
     <div className="h-4 w-px bg-zinc-700 mx-2 hidden md:block" />
   )}
@@ -729,6 +733,9 @@ export default function PublicUI() {
             <button onClick={() => { setIsMobileMenuOpen(false); window.scrollTo({top: document.getElementById('locations')?.offsetTop || 0, behavior: 'smooth'}) }} className="w-full text-left px-4 py-3 text-lg font-medium text-white hover:bg-zinc-900 rounded-xl">
               Cawangan
             </button>
+            <Link to="/arapower" onClick={() => setIsMobileMenuOpen(false)} className="w-full text-left px-4 py-3 text-lg font-bold text-cyan-400 hover:bg-zinc-900 rounded-xl">
+              AraPower
+            </Link>
 
             {customPages.length > 0 && (
               <>

@@ -7,7 +7,7 @@ import { Service, Location, Panel, Collaborator, AdminUser, Vendor, AppSettings,
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { LogOut, Plus, GripVertical, Image as ImageIcon, Trash2, Loader2, AlertCircle, CheckCircle2, X, Edit2, Sparkles, MapPin, Phone, ArrowUp, ArrowDown, ChevronLeft } from 'lucide-react';
+import { LogOut, Plus, GripVertical, Image as ImageIcon, Trash2, Loader2, AlertCircle, CheckCircle2, X, Edit2, Sparkles, MapPin, Phone, ArrowUp, ArrowDown, ChevronLeft, Check, ExternalLink } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { GoogleGenAI } from '@google/genai';
 import DashboardStats from './DashboardStats';
@@ -91,7 +91,7 @@ const SortableServiceCard: React.FC<{ service: Service, onDelete: (id: string) =
 }
 
 export default function AdminUI({ user }: { user: User }) {
-  const [activeTab, setActiveTab] = useState<'stats' | 'services' | 'locations' | 'panels' | 'collaborators' | 'leads' | 'staff' | 'vendors' | 'layout' | 'reviews' | 'pages' | 'setup'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'services' | 'locations' | 'panels' | 'collaborators' | 'leads' | 'staff' | 'vendors' | 'layout' | 'reviews' | 'pages' | 'setup' | 'arapower'>('stats');
   const [setupSubTab, setSetupSubTab] = useState<'general' | 'service-links'>('general');
 
   const [currentAdminInfo, setCurrentAdminInfo] = useState<AdminUser | null>(null);
@@ -1799,6 +1799,12 @@ const addCarouselCard = (blockId: string) => {
             className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'leads' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
           >
             Patient Leads
+          </button>
+          <button
+            onClick={() => setActiveTab('arapower')}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'arapower' ? 'border-cyan-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+          >
+            AraPower Landing
           </button>
           {currentAdminInfo?.role === 'superadmin' && (
             <button
@@ -3933,6 +3939,73 @@ const addCarouselCard = (blockId: string) => {
               <p className="text-zinc-500 text-sm">General configuration options will appear here.</p>
             </div>
           )}
+        </main>
+      )}
+
+      {activeTab === 'arapower' && (
+        <main className="max-w-4xl mx-auto px-4 mt-8">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl">
+            <div className="aspect-video relative bg-zinc-950 flex items-center justify-center overflow-hidden">
+               {/* Background Decorative */}
+               <div className="absolute inset-0 bg-[#0a0f1e]">
+                 <div className="absolute top-0 left-0 w-64 h-64 bg-[#1580c2]/20 blur-[80px] rounded-full -translate-x-1/2 -translate-y-1/2" />
+                 <div className="absolute bottom-0 right-0 w-64 h-64 bg-[#1580c2]/10 blur-[80px] rounded-full translate-x-1/2 translate-y-1/2" />
+               </div>
+               
+               <div className="relative z-10 text-center p-8">
+                 <div className="inline-block px-3 py-1 bg-cyan-500/10 text-cyan-400 text-xs font-bold rounded-full border border-cyan-500/20 mb-4">
+                    LANDING PAGE PREVIEW
+                 </div>
+                 <h2 className="text-4xl font-extrabold text-white mb-4 tracking-tighter">AraPower</h2>
+                 <p className="text-zinc-400 text-lg max-w-lg mx-auto mb-8 font-light leading-relaxed">
+                   The exclusive affiliate programme landing page is live and fully optimized for Klinik Ara 24 Jam.
+                 </p>
+                 <div className="flex items-center justify-center gap-4">
+                    <a 
+                      href="/arapower" 
+                      target="_blank" 
+                      className="px-8 py-3 bg-cyan-500 hover:bg-cyan-600 text-white font-bold rounded-full transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.3)]"
+                    >
+                      View Live Page <ExternalLink className="w-4 h-4" />
+                    </a>
+                 </div>
+               </div>
+            </div>
+
+            <div className="p-8 border-t border-zinc-800 bg-zinc-900/50">
+               <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                 <Sparkles className="w-5 h-5 text-cyan-400" /> Landing Page Features
+               </h3>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="p-4 bg-zinc-950 rounded-xl border border-zinc-800">
+                    <div className="text-cyan-400 font-bold mb-1">Modern Design</div>
+                    <div className="text-xs text-zinc-500">Tailwind CSS + Custom Scoped Animations</div>
+                 </div>
+                 <div className="p-4 bg-zinc-950 rounded-xl border border-zinc-800">
+                    <div className="text-cyan-400 font-bold mb-1">SEO Optimized</div>
+                    <div className="text-xs text-zinc-500">Meta tags, clear descriptions, and OG data</div>
+                 </div>
+                 <div className="p-4 bg-zinc-950 rounded-xl border border-zinc-800">
+                    <div className="text-cyan-400 font-bold mb-1">Conversion Focused</div>
+                    <div className="text-xs text-zinc-500">Strategic placement of CTA and tier rewards</div>
+                 </div>
+                 <div className="p-4 bg-zinc-950 rounded-xl border border-zinc-800">
+                    <div className="text-cyan-400 font-bold mb-1">Integrated Assets</div>
+                    <div className="text-xs text-zinc-500">Klinik Ara 24 Jam branding included</div>
+                 </div>
+               </div>
+
+               <div className="mt-8 pt-8 border-t border-zinc-800">
+                 <div className="flex items-center gap-4 text-zinc-500 text-sm">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span>Route: /arapower</span>
+                    <div className="w-px h-3 bg-zinc-800" />
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span>Status: Published</span>
+                 </div>
+               </div>
+            </div>
+          </div>
         </main>
       )}
     </div>

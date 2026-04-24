@@ -1,0 +1,77 @@
+/* Scoped styles for AraPowerLanding */
+:root {
+  --ap-blue: #1580c2;
+  --ap-blue-dark: #0d5a8a;
+  --ap-blue-light: #e8f4fd;
+  --ap-ink: #0a0f1e;
+  --ap-ink-soft: #1e2535;
+  --ap-mist: #f7f9fc;
+  --ap-white: #ffffff;
+  --ap-gold: #f59e0b;
+  --ap-silver: #94a3b8;
+  --ap-bronze: #b45309;
+  --ap-radius: 24px;
+}
+
+.arapower-body {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: var(--ap-white);
+  color: var(--ap-ink);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes ap-pulse { 
+  0%, 100% { transform: scale(1); opacity: 1; } 
+  50% { transform: scale(1.1); opacity: 0.7; } 
+}
+
+@keyframes ap-bounce { 
+  0%, 100% { transform: translateX(-50%) translateY(0); } 
+  50% { transform: translateX(-50%) translateY(6px); } 
+}
+
+.hero-orb-1 {
+  position: absolute; width: 700px; height: 700px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(21,128,194,0.35) 0%, transparent 70%);
+  top: -200px; left: -200px; pointer-events: none;
+  animation: ap-pulse 8s ease-in-out infinite;
+}
+
+.hero-orb-2 {
+  position: absolute; width: 500px; height: 500px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(21,128,194,0.2) 0%, transparent 70%);
+  bottom: -100px; right: -100px; pointer-events: none;
+  animation: ap-pulse 10s ease-in-out infinite reverse;
+}
+
+.hero-scroll {
+  animation: ap-bounce 2s ease-in-out infinite;
+}
+
+.reveal { 
+  opacity: 0; 
+  transform: translateY(32px); 
+  transition: opacity 0.7s ease, transform 0.7s ease; 
+  will-change: opacity, transform;
+}
+
+.reveal.visible { 
+  opacity: 1; 
+  transform: none; 
+}
+
+.cta-orb {
+  position: absolute; width: 600px; height: 600px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(21,128,194,0.25) 0%, transparent 70%);
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* Custom background layers for feature cards */
+.feature-card::before {
+  content: ''; position: absolute;
+  width: 200px; height: 200px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(21,128,194,0.15) 0%, transparent 70%);
+  top: -60px; right: -60px; pointer-events: none;
+}

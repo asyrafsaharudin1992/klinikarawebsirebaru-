@@ -21,6 +21,7 @@ const SharePage = lazy(() => import('./pages/SharePage'));
 const AdminUI = lazy(() => import('./components/AdminUI'));
 const Login = lazy(() => import('./components/Login'));
 const DynamicPage = lazy(() => import('./components/DynamicPage'));
+const AraPowerLanding = lazy(() => import('./components/AraPowerLanding'));
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
@@ -118,6 +119,7 @@ export default function App() {
             <Suspense fallback={<LoadingSpinner />}>
               <Routes>
                 <Route path="/" element={<PublicUI />} />
+                <Route path="/arapower" element={<AraPowerLanding />} />
                 <Route path="/p/:slug" element={<DynamicPage />} />
                 <Route path="/share" element={<SharePage />} />
                 <Route 
