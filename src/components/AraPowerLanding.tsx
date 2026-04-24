@@ -51,7 +51,7 @@ const AraPowerLanding: React.FC = () => {
         title="AraPower — Earn. Share. Heal." 
         description="Join AraPower, Klinik Ara 24 Jam's exclusive affiliate programme. Share health services, earn commission, and help your community access quality healthcare."
         image="https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/AraPower%20Poster%20.jpg?alt=media&token=122ea2b4-d858-42c0-9a5d-4e217d3d42ea"
-        type="website"
+        url="https://klinikara24jam.hsohealthcare.com/arapower"
       />
       {/* NAV */}
       <nav className={`fixed top-0 left-0 right-0 z-[100] px-5 md:px-10 h-16 flex items-center justify-between bg-white/80 backdrop-blur-[20px] border-b border-[#1580c2]/10 transition-all duration-300 ${isScrolled ? 'shadow-[0_4px_32px_rgba(0,0,0,0.06)]' : ''}`}>
