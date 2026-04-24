@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://klinikara24jam.hsohealthcare.com/sitemap.xml
