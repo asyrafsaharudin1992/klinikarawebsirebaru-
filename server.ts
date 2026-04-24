@@ -74,9 +74,13 @@ async function startServer() {
     let title = 'Klinik Ara 24 Jam';
     let description = 'Selamat datang ke laman sesawang Klinik Ara 24 Jam. Jom sertai TeamAra untuk menikmati pelbagai manfaat.';
     let imageUrl = 'https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/locations%2F1774409163998-uha4uj0-%7BA3113931-E36A-4750-9461-CF9E820F4CE2%7D.png?alt=media&token=9ab31dee-069e-4b33-b21c-1feb457c916c';
-    let fullUrl = 'https://klinikara24jam.hsohealthcare.com/';
+    let fullUrl = 'https://klinikara24jam.hsohealthcare.com' + req.url;
 
-    if (serviceId) {
+    if (req.path === '/arapower') {
+      title = "AraPower — Earn. Share. Heal.";
+      description = "Join AraPower, Klinik Ara 24 Jam's exclusive affiliate programme. Share health services, earn commission, and help your community access quality healthcare.";
+      imageUrl = "https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/AraPower%20Poster%20.jpg?alt=media&token=122ea2b4-d858-42c0-9a5d-4e217d3d42ea";
+    } else if (serviceId) {
       try {
         const serviceDoc = await db.collection('services').doc(serviceId).get();
         if (serviceDoc.exists) {
