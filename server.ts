@@ -152,12 +152,16 @@ async function startServer() {
       }
     }
 
-    // Inject into HTML placeholders (defined in index.html <head>)
+    // Inject into HTML placeholders (now hardcoded in index.html <head>)
     html = html
-      .replace(/__OG_TITLE__/g, escapeHtml(title))
-      .replace(/__OG_DESC__/g, escapeHtml(description))
-      .replace(/__OG_IMAGE__/g, escapeHtml(imageUrl))
-      .replace(/__OG_URL__/g, escapeHtml(fullUrl));
+      .replace(/AraPower — Earn\. Share\. Heal\./g, escapeHtml(title))
+      // Also catch the main <title> which is Klinik Ara 24 Jam
+      .replace(/<title>Klinik Ara 24 Jam<\/title>/g, `<title>${escapeHtml(title)}</title>`)
+      .replace(/Join AraPower, Klinik Ara 24 Jam's exclusive affiliate programme\. Share health services, earn commission, and help your community access quality healthcare\./g, escapeHtml(description))
+      // Also catch the default description
+      .replace(/Selamat datang ke laman sesawang Klinik Ara 24 Jam\. Jom sertai TeamAra untuk menikmati pelbagai manfaat\./g, escapeHtml(description))
+      .replace(/https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/new-website-7b8dd\.firebasestorage\.app\/o\/AraPower%20Poster%20\.jpg\?alt=media&token=122ea2b4-d858-42c0-9a5d-4e217d3d42ea/g, escapeHtml(imageUrl))
+      .replace(/https:\/\/klinikara24jam\.hsohealthcare\.com\/arapower/g, escapeHtml(fullUrl));
 
     res.send(html);
   });
