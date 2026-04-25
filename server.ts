@@ -96,10 +96,15 @@ async function startServer() {
   }
 
   // ── HTML handler (SSR meta injection for link previews) ─────────────────────
-  app.get('*', async (req, res) => {
-    // Let actual static files through (handled above); only process page routes
-    if (req.path.includes('.') && !req.path.endsWith('.html')) {
-      return res.status(404).end();
+  // Only handle known page routes to avoid intercepting internal Vite/asset requests
+  const pageRoutes = /^\/($|arapower|p\/|share|admin|login)/i;
+  app.get('*', async (req, res, next) => {
+    const normalizedPath = req.path.replace(/\/$/, '').toLowerCase() || '/';
+    
+    // If it's not a known page route and has an extension, let it pass through
+    // (Vite middlewares or express.static should have handled it)
+    if (!pageRoutes.test(normalizedPath) && req.path.includes('.')) {
+      return next();
     }
 
     const serviceId = req.query.service as string | undefined;
@@ -120,7 +125,7 @@ async function startServer() {
     }
 
     // Normalise path: strip trailing slash, lowercase
-    const normalizedPath = req.path.replace(/\/$/, '').toLowerCase() || '/';
+    // (normalizedPath already defined above)
 
     let title = DEFAULT_META.title;
     let description = DEFAULT_META.description;

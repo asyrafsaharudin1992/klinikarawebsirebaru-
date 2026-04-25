@@ -3,8 +3,8 @@
   --ap-blue: #1580c2;
   --ap-blue-dark: #0d5a8a;
   --ap-blue-light: #e8f4fd;
-  --ap-ink: #0a0f1e;
-  --ap-ink-soft: #1e2535;
+  --ap-ink: #000000;
+  --ap-ink-soft: #0a0a0a;
   --ap-mist: #f7f9fc;
   --ap-white: #ffffff;
   --ap-gold: #f59e0b;
@@ -21,46 +21,108 @@
   -webkit-font-smoothing: antialiased;
 }
 
-@keyframes ap-pulse { 
-  0%, 100% { transform: scale(1); opacity: 1; } 
-  50% { transform: scale(1.1); opacity: 0.7; } 
+/* ── PARTICLES CANVAS ─────────────────────────────────────── */
+.ap-particles-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
 }
 
-@keyframes ap-bounce { 
-  0%, 100% { transform: translateX(-50%) translateY(0); } 
-  50% { transform: translateX(-50%) translateY(6px); } 
+/* ── WORD REVEAL ──────────────────────────────────────────── */
+@keyframes ap-wordReveal {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+.ap-word-reveal {
+  display: inline-block;
+  opacity: 0;
+  animation: ap-wordReveal 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+/* ── FADE IN (for eyebrow, sub, cta row) ─────────────────── */
+@keyframes ap-fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.ap-fade-in {
+  opacity: 0;
+  animation: ap-fadeIn 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+/* ── SCROLL REVEAL ────────────────────────────────────────── */
+@keyframes ap-revealUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.reveal {
+  opacity: 0;
+}
+
+.reveal.visible {
+  animation: ap-revealUp 0.65s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+/* ── HERO ORBS ────────────────────────────────────────────── */
+@keyframes ap-breathe {
+  0%   { transform: scale(1)    rotate(0deg);   opacity: 0.8; }
+  33%  { transform: scale(1.08) rotate(3deg);   opacity: 1;   }
+  66%  { transform: scale(0.96) rotate(-2deg);  opacity: 0.7; }
+  100% { transform: scale(1)    rotate(0deg);   opacity: 0.8; }
 }
 
 .hero-orb-1 {
   position: absolute; width: 700px; height: 700px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(21,128,194,0.35) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(21,128,194,0.4) 0%, transparent 70%);
   top: -200px; left: -200px; pointer-events: none;
-  animation: ap-pulse 8s ease-in-out infinite;
+  animation: ap-breathe 9s ease-in-out infinite;
 }
 
 .hero-orb-2 {
   position: absolute; width: 500px; height: 500px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(21,128,194,0.2) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(21,128,194,0.25) 0%, transparent 70%);
   bottom: -100px; right: -100px; pointer-events: none;
-  animation: ap-pulse 10s ease-in-out infinite reverse;
+  animation: ap-breathe 12s ease-in-out infinite reverse;
+}
+
+.hero-orb-3 {
+  position: absolute; width: 400px; height: 400px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(21,128,194,0.12) 0%, transparent 70%);
+  bottom: -80px; left: 50%; transform: translateX(-50%);
+  pointer-events: none;
+  animation: ap-breathe 15s ease-in-out infinite 3s;
+}
+
+/* ── SCROLL INDICATOR ─────────────────────────────────────── */
+@keyframes ap-bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%       { transform: translateX(-50%) translateY(6px); }
 }
 
 .hero-scroll {
   animation: ap-bounce 2s ease-in-out infinite;
 }
 
-.reveal { 
-  opacity: 0; 
-  transform: translateY(32px); 
-  transition: opacity 0.7s ease, transform 0.7s ease; 
-  will-change: opacity, transform;
-}
-
-.reveal.visible { 
-  opacity: 1; 
-  transform: none; 
-}
-
+/* ── CTA ORB ──────────────────────────────────────────────── */
 .cta-orb {
   position: absolute; width: 600px; height: 600px; border-radius: 50%;
   background: radial-gradient(circle, rgba(21,128,194,0.25) 0%, transparent 70%);
@@ -68,10 +130,145 @@
   pointer-events: none;
 }
 
-/* Custom background layers for feature cards */
-.feature-card::before {
-  content: ''; position: absolute;
-  width: 200px; height: 200px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(21,128,194,0.15) 0%, transparent 70%);
-  top: -60px; right: -60px; pointer-events: none;
+/* ── BENTO GRID ───────────────────────────────────────────── */
+.ap-bento-grid {
+  display: grid;
+  grid-template-areas:
+    "dashboard tiers"
+    "notifications posters"
+    "payouts payouts";
+  grid-template-columns: 1.4fr 1fr;
+  gap: 12px;
+  margin-top: 64px;
+}
+
+.ap-bento-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  padding: 44px 40px;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.4s cubic-bezier(0.23, 1, 0.32, 1),
+              transform  0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.ap-bento-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: scale(1.01);
+}
+
+.ap-bento-card::before {
+  content: '';
+  position: absolute;
+  width: 240px; height: 240px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(21,128,194,0.18) 0%, transparent 70%);
+  top: -80px; right: -60px;
+  pointer-events: none;
+}
+
+.ap-bento-dashboard     { grid-area: dashboard; }
+.ap-bento-tiers         { grid-area: tiers; }
+.ap-bento-notifs        { grid-area: notifications; }
+.ap-bento-posters       { grid-area: posters; }
+.ap-bento-payouts       { grid-area: payouts; }
+.ap-bento-qrcode        { grid-area: qrcode; }
+
+@media (max-width: 768px) {
+  .ap-bento-grid {
+    display: flex;
+    flex-direction: column;
+    grid-template-areas: none;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .ap-bento-card {
+    grid-area: auto !important;
+    padding: 32px 24px;
+    min-height: auto;
+  }
+}
+
+/* ── MODAL ────────────────────────────────────────────────── */
+.ap-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(12px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: ap-fadeIn 0.3s ease-out;
+}
+
+.ap-modal-content {
+  background: #111;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 32px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  padding: 48px;
+  box-shadow: 0 32px 64px rgba(0,0,0,0.5);
+  animation: ap-revealUp 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.ap-modal-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.ap-modal-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: rotate(90deg);
+}
+
+@media (max-width: 640px) {
+  .ap-modal-content {
+    padding: 32px 24px;
+    border-radius: 24px;
+  }
+}
+
+/* ── MINI BAR CHART ───────────────────────────────────────── */
+.ap-mini-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 72px;
+  margin-top: 28px;
+  opacity: 0.8;
+}
+
+.ap-bar {
+  flex: 1;
+  background: #1580c2;
+  border-radius: 4px 4px 0 0;
+  height: 0;
+}
+
+.ap-mini-chart.ap-chart-animated .ap-bar {
+  animation: ap-growBar 0.9s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  animation-delay: var(--ap-delay);
+}
+
+@keyframes ap-growBar {
+  from { height: 0; }
+  to   { height: var(--ap-h); }
 }
