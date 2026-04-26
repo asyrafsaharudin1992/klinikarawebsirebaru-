@@ -26,6 +26,7 @@ const CarouselWrapper = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+
   return (
     <div className="relative group">
       <button 
