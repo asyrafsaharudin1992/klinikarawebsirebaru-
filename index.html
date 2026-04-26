@@ -162,5 +162,37 @@
         }
       });
     </script>
+    <script>
+  window.onload = async function() {
+    // Grab the referral code from the URL
+    const params = new URLSearchParams(window.location.search);
+    const referralCode = params.get('ref');
+
+    if (referralCode) {
+      try {
+        // Replace with your actual Supabase URL and Anon Key
+        const supabaseUrl = 'https://zruldewztsrvwghrcroc.supabase.co/rest/v1/';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpydWxkZXd6dHNydndnaHJjcm9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NjUwMzcsImV4cCI6MjA5MDQ0MTAzN30.6J4fS0CgZgTqhJ4waF9P24maZg7LdwYVxVhH035zqpQ';
+        
+        await fetch(`${supabaseUrl}/rest/v1/booking_analytics`, {
+          method: 'POST',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            referral_code: referralCode,
+            event_type: 'clicked_tempah',
+            service_name: 'Your Campaign Name'
+          })
+        });
+      } catch (error) {
+        console.error('Tracking failed');
+      }
+    }
+  };
+</script>
   </body>
 </html>
