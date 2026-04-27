@@ -187,7 +187,7 @@ const AraPowerLanding: React.FC = () => {
         </div>
 
         <div className="flex gap-12 mt-18 relative z-10 border-t border-white/10 pt-12 flex-wrap justify-center font-sans ap-fade-in" style={{ animationDelay: '1.7s' }}>
-          {[['RM0','to join'],['50%','Gold tier bonus'],['24/7','Clinic availability'],['Real-time','Referral tracking']].map(([num, label]) => (
+          {[['RM0','to join'],['24/7','Clinic availability'],['Real-time','Referral tracking']].map(([num, label]) => (
             <div key={label}>
               <div className="text-[36px] font-bold text-white">{num}</div>
               <div className="text-[13px] text-white/45 mt-1">{label}</div>
@@ -276,7 +276,7 @@ const AraPowerLanding: React.FC = () => {
                 <svg className="w-5 h-5 stroke-[#5bb3e8] fill-none stroke-[1.8] stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
               </div>
               <h3 className="text-[24px] font-bold mb-3 tracking-[-0.5px]">Tier Progression</h3>
-              <p className="text-[15px] font-light leading-relaxed text-white/45">Bronze, Silver, and Gold tiers reward your consistency. Earn up to 50% bonus commission at Gold tier.</p>
+              <p className="text-[15px] font-light leading-relaxed text-white/45">Bronze, Silver, and Gold tiers reward your consistency.</p>
               <div className="mt-8 text-[#5bb3e8] text-[13px] font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                 Learn more <span>→</span>
               </div>
@@ -369,7 +369,7 @@ const AraPowerLanding: React.FC = () => {
               <h3 className="text-[28px] font-extrabold tracking-tighter text-[#475569] mb-2">Build Momentum</h3>
               <p className="text-[13px] font-normal text-[#0a0f1e]/45 mb-7">6 – 10 referrals / month</p>
               <div className="text-[52px] font-extrabold tracking-[-1.5px] leading-none text-[#475569] mb-1.5">×1.2</div>
-              <div className="text-[13px] text-[#0a0f1e]/45">20% bonus on earnings</div>
+              <div className="text-[13px] text-[#0a0f1e]/45">MULTIPLIER</div>
             </div>
 
             <div className="reveal bg-gradient-to-br from-[#fffbeb] to-[#fef9e0] rounded-[24px] p-10 border border-[#f59e0b]/20 hover:-translate-y-2 transition-all shadow-[0_8px_40px_rgba(245,158,11,0.12)] relative overflow-hidden" ref={addToRefs}>
@@ -378,7 +378,7 @@ const AraPowerLanding: React.FC = () => {
               <h3 className="text-[28px] font-extrabold tracking-tighter text-[#b45309] mb-2">Unlock Full Power</h3>
               <p className="text-[13px] font-normal text-[#0a0f1e]/45 mb-7">11+ referrals / month</p>
               <div className="text-[52px] font-extrabold tracking-[-1.5px] leading-none text-[#f59e0b] mb-1.5">×1.5</div>
-              <div className="text-[13px] text-[#0a0f1e]/45">50% bonus on earnings</div>
+              <div className="text-[13px] text-[#0a0f1e]/45">MULTIPLIER</div>
             </div>
           </div>
         </div>
