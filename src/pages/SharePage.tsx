@@ -18,7 +18,7 @@ const SharePage = () => {
     <Helmet>
       <title>Klinik Ara 24 Jam</title>
       <meta property="og:title" content="Klinik Ara 24 Jam" />
-      <meta property="og:image" content="https://klinikara24jam.hsohealthcare.com/og-image.jpg" />
+      <meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/Thumbnail%20Main.jpg?alt=media" />
     </Helmet>
   );
 };

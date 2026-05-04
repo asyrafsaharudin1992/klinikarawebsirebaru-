@@ -337,7 +337,7 @@ const getEmbedUrl = (url: string) => {
       <SEO 
         title={pageData.title || pageData.blocks.find(b => b.type === 'hero')?.heading || "Klinik Ara 24 Jam"}
         description={pageDesc}
-        image={pageImage || "https://klinikara24jam.hsohealthcare.com/og-image.jpg"} 
+        image={pageImage || "https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/Thumbnail%20Main.jpg?alt=media"} 
         url={window.location.href}
       />
       {/* ========================================== */}

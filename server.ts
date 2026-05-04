@@ -45,11 +45,11 @@ const PAGE_META: Record<string, { title: string; description: string; image: str
 
 // Default metadata used for the homepage and any unregistered route
 const DEFAULT_META = {
-  title: 'Klinik Ara 24 Jam',
+  title: 'Klinik Ara 24 Jam | Klinik 24 Jam Berdekatan Anda',
   description:
-    'Selamat datang ke laman sesawang Klinik Ara 24 Jam. Jom sertai TeamAra untuk menikmati pelbagai manfaat.',
+    'Klinik Ara 24 Jam menyediakan perkhidmatan kesihatan sepanjang masa di Kajang, Seri Kembangan & Semenyih. Klinik 24 jam berdekatan anda tawarkan rawatan kecemasan, scan ibu mengandung & vaksinasi.',
   image:
-    'https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/locations%2F1774409163998-uha4uj0-%7BA3113931-E36A-4750-9461-CF9E820F4CE2%7D.png?alt=media&token=9ab31dee-069e-4b33-b21c-1feb457c916c',
+    'https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/Thumbnail%20Main.jpg?alt=media',
 };
 
 const BASE_URL = 'https://klinikara24jam.hsohealthcare.com';
@@ -157,16 +157,11 @@ async function startServer() {
       }
     }
 
-    // Inject into HTML placeholders (now hardcoded in index.html <head>)
+    // Inject into HTML placeholders
     html = html
-      .replace(/AraPower — Earn\. Share\. Heal\./g, escapeHtml(title))
-      // Also catch the main <title> which is Klinik Ara 24 Jam
-      .replace(/<title>Klinik Ara 24 Jam<\/title>/g, `<title>${escapeHtml(title)}</title>`)
-      .replace(/Join AraPower, Klinik Ara 24 Jam's exclusive affiliate programme\. Share health services, earn commission, and help your community access quality healthcare\./g, escapeHtml(description))
-      // Also catch the default description
-      .replace(/Selamat datang ke laman sesawang Klinik Ara 24 Jam\. Jom sertai TeamAra untuk menikmati pelbagai manfaat\./g, escapeHtml(description))
-      .replace(/https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/new-website-7b8dd\.firebasestorage\.app\/o\/AraPower%20Poster%20\.jpg\?alt=media&token=122ea2b4-d858-42c0-9a5d-4e217d3d42ea/g, escapeHtml(imageUrl))
-      .replace(/https:\/\/klinikara24jam\.hsohealthcare\.com\/arapower/g, escapeHtml(fullUrl));
+      .replace(/Klinik Ara 24 Jam \| Klinik 24 Jam Berdekatan Anda/g, escapeHtml(title))
+      .replace(/Klinik Ara 24 Jam menyediakan perkhidmatan kesihatan sepanjang masa di Kajang, Seri Kembangan & Semenyih\. Klinik 24 jam berdekatan anda tawarkan rawatan kecemasan, scan ibu mengandung & vaksinasi\./g, escapeHtml(description))
+      .replace(/https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/new-website-7b8dd\.firebasestorage\.app\/o\/Thumbnail%20Main\.jpg\?alt=media/g, escapeHtml(imageUrl));
 
     res.send(html);
   });

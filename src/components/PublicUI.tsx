@@ -152,8 +152,8 @@ export default function PublicUI() {
   // --- SEO & SCHEMA DATA PREPARATION ---
   
   const primaryLocation = locations?.[0];
-  const seoDescription = `Klinik Ara 24 Jam provides comprehensive healthcare services in ${primaryLocation?.branchName || 'Kajang, Seri Kembangan, Semenyih'}. Available 24 hours daily with female doctors. Services: Fever treatment, Vaccination, Health Screening.`;
-  const seoTitle = "Klinik Ara 24 Jam | Medical Clinic in Kajang & Seri Kembangan";
+  const seoDescription = `Klinik Ara 24 jam berdekatan anda di ${primaryLocation?.branchName || 'Kajang, Seri Kembangan, Semenyih'}. Tawarkan rawatan asma, sedut kahak, sakit lutut, scan ibu mengandung & vaksin baby. Dibuka 24 jam setiap hari.`;
+  const seoTitle = "Klinik Ara 24 Jam | Klinik 24 Jam Berdekatan Anda";
   
   const schemaData = {
     "@context": "https://schema.org",
@@ -1060,7 +1060,7 @@ export default function PublicUI() {
         {/* SEO: Accessibility Sitemap Section */}
         <section className="sr-only" aria-label="Complete Services Sitemap">
           <h2>Sitemap: Perkhidmatan Klinik Ara 24 Jam</h2>
-          <p>Klinik Ara menyediakan pelbagai rawatan kesihatan di Kajang, Seri Kembangan, dan Semenyih oleh doktor perempuan. Operasi 24 jam setiap hari.</p>
+          <p>Klinik Ara menyediakan pelbagai rawatan kesihatan di Kajang, Seri Kembangan, dan Semenyih. Klinik 24 jam berdekatan anda beroperasi sepanjang masa setiap hari.</p>
           <nav>
             <ul>
               {services.map(service => (
@@ -1082,7 +1082,7 @@ export default function PublicUI() {
       <section className="px-4 md:px-12 pt-8 pb-4 text-center" aria-label="Service Area Information">
         <div className="max-w-4xl mx-auto text-[10px] md:text-xs text-zinc-700 leading-relaxed space-y-1">
           <p>
-            Mencari <strong className="text-zinc-600">klinik 24 jam nearby</strong>? <strong className="text-zinc-600">Klinik Ara</strong> beroperasi sepanjang masa di tiga cawangan strategik: <strong className="text-zinc-600">Kajang</strong>, <strong className="text-zinc-600">Seri Kembangan</strong>, dan <strong className="text-zinc-600">Semenyih</strong> oleh <strong className="text-zinc-600">doktor perempuan</strong> yang berpengalaman.
+            Mencari <strong className="text-zinc-600">klinik 24 jam nearby</strong>? <strong className="text-zinc-600">Klinik Ara</strong> beroperasi sepanjang masa di tiga cawangan strategik: <strong className="text-zinc-600">Kajang</strong>, <strong className="text-zinc-600">Seri Kembangan</strong>, dan <strong className="text-zinc-600">Semenyih</strong>. Kami adalah <strong className="text-zinc-600">klinik 24 jam berdekatan anda</strong> yang komited memberikan rawatan terbaik.
           </p>
           <p>
             Antara rawatan khas kami termasuk <strong className="text-zinc-600">rawatan asthma</strong>, <strong className="text-zinc-600">sedut kahak</strong>, <strong className="text-zinc-600">sakit lutut</strong>, <strong className="text-zinc-600">scan ibu mengandung</strong>, <strong className="text-zinc-600">buka buku pink</strong>, <strong className="text-zinc-600">vaksin baby</strong>, dan <strong className="text-zinc-600">vaksin influenza</strong> untuk kesihatan menyeluruh keluarga anda.

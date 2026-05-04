@@ -10,13 +10,10 @@ interface SEOProps {
 }
 
 const SEO: React.FC<SEOProps> = ({
-  // 1. Added "Doktor Perempuan" to title - high conversion rate for Malaysian clinics
-  title = "Klinik Ara 24 Jam & Doktor Perempuan | Kajang, SK, Semenyih",
-  // 2. Naturally blended new keywords into the description
-  description = "Klinik Ara 24 jam di Kajang, SK & Semenyih. Tawarkan rawatan asthma, sedut kahak, sakit lutut, scan ibu mengandung & vaksin baby. Doktor perempuan tersedia.",
-  // 3. Added all new keywords to the keyword meta tag
-  keywords = "Klinik Ara, 24 hour clinic Kajang, 24 hour clinic Seri Kembangan, 24 hour clinic Semenyih, buka buku pink, vaksin influenza, klinik 24 jam, clinic near me, medical clinic Selangor, AraMommy, AraVax, AraSihat, healthcare Kajang, rawatan asthma, sedut kahak, sakit lutut, scan ibu mengandung, vaksin baby, klinik 24 jam nearby, doktor perempuan",
-  image = "https://klinikara24jam.hsohealthcare.com/og-image.jpg", 
+  title = "Klinik Ara 24 Jam | Klinik 24 Jam Berdekatan Anda",
+  description = "Klinik Ara 24 jam berdekatan anda di Kajang, Seri Kembangan & Semenyih. Tawarkan rawatan asma, sedut kahak, sakit lutut, scan ibu mengandung & vaksin baby.",
+  keywords = "Klinik Ara, 24 hour clinic Kajang, 24 hour clinic Seri Kembangan, 24 hour clinic Semenyih, buka buku pink, vaksin influenza, klinik 24 jam, clinic near me, medical clinic Selangor, AraMommy, AraVax, AraSihat, healthcare Kajang, rawatan asthma, sedut kahak, sakit lutut, scan ibu mengandung, vaksin baby, klinik 24 jam nearby",
+  image = "https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/Thumbnail%20Main.jpg?alt=media", 
   url = "https://klinikara24jam.hsohealthcare.com",
 }) => {
   
