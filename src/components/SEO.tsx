@@ -13,7 +13,7 @@ const SEO: React.FC<SEOProps> = ({
   title = "Klinik Ara 24 Jam | Klinik 24 Jam Berdekatan Anda",
   description = "Klinik Ara 24 jam berdekatan anda di Kajang, Seri Kembangan & Semenyih. Tawarkan rawatan asma, sedut kahak, sakit lutut, scan ibu mengandung & vaksin baby.",
   keywords = "Klinik Ara, 24 hour clinic Kajang, 24 hour clinic Seri Kembangan, 24 hour clinic Semenyih, buka buku pink, vaksin influenza, klinik 24 jam, clinic near me, medical clinic Selangor, AraMommy, AraVax, AraSihat, healthcare Kajang, rawatan asthma, sedut kahak, sakit lutut, scan ibu mengandung, vaksin baby, klinik 24 jam nearby",
-  image = "https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/Thumbnail%20Main.jpg?alt=media", 
+  image = "https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/%7BA3113931-E36A-4750-9461-CF9E820F4CE2%7D.jpg?alt=media&token=0ec7467b-89e4-48c1-bde0-97736c744589", 
   url = "https://klinikara24jam.hsohealthcare.com",
 }) => {
   
