@@ -29,6 +29,11 @@ const PAGE_META: Record<string, { title: string; description: string; image: str
     image:
       'https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/AraPower%20Poster%20.jpg?alt=media&token=122ea2b4-d858-42c0-9a5d-4e217d3d42ea',
   },
+  '/p/aracme': {
+    title: 'AraCME | Continuing Medical Education at Klinik Ara',
+    description: 'Explore professional medical modules, video presentations, and slide decks designed for continuous learning and professional development.',
+    image: 'https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/AraCEM%20Thumbnail.jpg?alt=media&token=6414fca1-f1d5-4475-916d-fc2404a2ea5f',
+  },
 
   // ── Add more pages below ──────────────────────────────────────────────────
   // '/about': {
@@ -140,8 +145,24 @@ async function startServer() {
       imageUrl = pageMeta.image;
       fullUrl = BASE_URL + normalizedPath;
     }
-
-    // 2. Dynamic service pages (query-string based: /?service=<id>)
+    // 2. Dynamic pages (/p/<slug>)
+    else if (normalizedPath.startsWith('/p/')) {
+      const slug = normalizedPath.replace('/p/', '');
+      try {
+        const pagesRef = db.collection('pages');
+        const snapshot = await pagesRef.where('slug', '==', slug).limit(1).get();
+        if (!snapshot.empty) {
+          const pageData = snapshot.docs[0].data();
+          title = pageData.title ? `${pageData.title} | Klinik Ara 24 Jam` : title;
+          description = pageData.description || description;
+          imageUrl = pageData.image || imageUrl;
+          fullUrl = BASE_URL + normalizedPath;
+        }
+      } catch (error) {
+        console.error('Error fetching dynamic page meta:', error);
+      }
+    }
+    // 3. Dynamic service pages (query-string based: /?service=<id>)
     else if (serviceId) {
       try {
         const serviceDoc = await db.collection('services').doc(serviceId).get();
@@ -161,7 +182,7 @@ async function startServer() {
     html = html
       .replace(/Klinik Ara 24 Jam \| Klinik 24 Jam Berdekatan Anda/g, escapeHtml(title))
       .replace(/Klinik Ara 24 Jam menyediakan perkhidmatan kesihatan sepanjang masa di Kajang, Seri Kembangan & Semenyih\. Klinik 24 jam berdekatan anda tawarkan rawatan kecemasan, scan ibu mengandung & vaksinasi\./g, escapeHtml(description))
-      .replace(/https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/new-website-7b8dd\.firebasestorage\.app\/o\/Thumbnail%20Main\.jpg\?alt=media/g, escapeHtml(imageUrl));
+      .replace(/https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/new-website-7b8dd\.firebasestorage\.app\/o\/%7BA3113931-E36A-4750-9461-CF9E820F4CE2%7D\.jpg\?alt=media&token=0ec7467b-89e4-48c1-bde0-97736c744589/g, escapeHtml(imageUrl));
 
     res.send(html);
   });
