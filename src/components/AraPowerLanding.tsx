@@ -1,434 +1,508 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import './AraPowerLanding.css';
 import SEO from './SEO';
 
+// ── App screenshot paths — replace with your actual Firebase URLs ─────────────
+const SCREENS = {
+  dashboard:   'https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/screenshot%20aRAPOWER%2FWhatsApp%20Image%202026-05-05%20at%2018.04.55%20(1).jpeg?alt=media&token=9e72e373-5e83-4d52-b609-d2a25fbb0139',
+  promotions:  'https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/screenshot%20aRAPOWER%2FWhatsApp%20Image%202026-05-05%20at%2018.04.53.jpeg?alt=media&token=7b45e9f3-ccee-4f3f-bf0f-97a80afbaca3',
+  performance: 'https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/screenshot%20aRAPOWER%2FWhatsApp%20Image%202026-05-05%20at%2018.04.54%20(1).jpeg?alt=media&token=61f70191-fd90-4752-b7f5-b134ec44b3bc',
+  referrals:   'https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/screenshot%20aRAPOWER%2FWhatsApp%20Image%202026-05-05%20at%2018.04.54.jpeg?alt=media&token=6a6288cf-0024-4dd5-97d0-8959ebdde880',
+  welcome:     'https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/screenshot%20aRAPOWER%2FWhatsApp%20Image%202026-05-05%20at%2018.04.55%20(3).jpeg?alt=media&token=1e2a6472-4c64-43fe-80ba-c1736348796c',
+};
+
+// ── iPhone Frame Component ────────────────────────────────────────────────────
+const IPhoneFrame: React.FC<{
+  src: string;
+  alt: string;
+  tilt?: 'left' | 'right' | 'none';
+  shadow?: boolean;
+}> = ({ src, alt, tilt = 'none', shadow = true }) => {
+  const rotation =
+    tilt === 'left'  ? 'rotate(-4deg)' :
+    tilt === 'right' ? 'rotate(4deg)'  : 'none';
+
+  return (
+    <div style={{
+      position: 'relative',
+      width: '260px',
+      flexShrink: 0,
+      transform: rotation,
+      transition: 'transform 0.4s ease',
+    }}>
+      {/* Phone body */}
+      <div style={{
+        position: 'relative',
+        borderRadius: '44px',
+        background: 'linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #222 100%)',
+        padding: '12px',
+        boxShadow: shadow
+          ? '0 60px 120px rgba(0,0,0,0.25), 0 20px 40px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.1)'
+          : 'none',
+      }}>
+        {/* Side buttons */}
+        <div style={{ position: 'absolute', left: '-3px', top: '100px', width: '3px', height: '34px', background: '#333', borderRadius: '2px 0 0 2px' }} />
+        <div style={{ position: 'absolute', left: '-3px', top: '144px', width: '3px', height: '60px', background: '#333', borderRadius: '2px 0 0 2px' }} />
+        <div style={{ position: 'absolute', left: '-3px', top: '214px', width: '3px', height: '60px', background: '#333', borderRadius: '2px 0 0 2px' }} />
+        <div style={{ position: 'absolute', right: '-3px', top: '160px', width: '3px', height: '80px', background: '#333', borderRadius: '0 2px 2px 0' }} />
+
+        {/* Screen */}
+        <div style={{
+          borderRadius: '34px',
+          overflow: 'hidden',
+          background: '#000',
+          aspectRatio: '390/844',
+          position: 'relative',
+        }}>
+          <img
+            src={src}
+            alt={alt}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Main Component ────────────────────────────────────────────────────────────
 const AraPowerLanding: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const revealRefs = useRef<(HTMLDivElement | HTMLElement | null)[]>([]);
+  const revealRefs = useRef<(HTMLElement | null)[]>([]);
+
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 40);
-    };
-
+    const handleScroll = () => setIsScrolled(window.scrollY > 40);
     window.addEventListener('scroll', handleScroll);
-    
-    // Intersection Observer for scroll animations
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-        }
-      });
-    }, { threshold: 0.12 });
 
-    const currentRefs = revealRefs.current;
-    currentRefs.forEach(el => {
-      if (el) observer.observe(el);
-    });
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
+      { threshold: 0.1 }
+    );
+    revealRefs.current.forEach(el => { if (el) observer.observe(el); });
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      currentRefs.forEach(el => {
-        if (el) observer.unobserve(el);
-      });
+      revealRefs.current.forEach(el => { if (el) observer.unobserve(el); });
     };
   }, []);
 
-  const addToRefs = (el: HTMLDivElement | HTMLElement | null) => {
-    if (el && !revealRefs.current.includes(el)) {
-      revealRefs.current.push(el);
-    }
+  const r = (el: HTMLElement | null) => {
+    if (el && !revealRefs.current.includes(el)) revealRefs.current.push(el);
   };
 
   return (
-    <div className="arapower-body">
-      <SEO 
-        title="AraPower — Earn. Share. Heal." 
-        description="Join AraPower, Klinik Ara 24 Jam's exclusive affiliate programme. Share health services, earn commission, and help your community access quality healthcare."
-        image="https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/AraPower%20Poster%20.jpg?alt=media&token=122ea2b4-d858-42c0-9a5d-4e217d3d42ea"
+    <div style={{ fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif", background: '#fff', color: '#1d1d1f', overflowX: 'hidden' }}>
+      <SEO
+        title="AraPower — Earn. Share. Heal."
+        description="Program affiliate eksklusif Klinik Ara 24 Jam. Kongsi perkhidmatan kesihatan, rujuk pesakit, dan terima komisen terus ke akaun bank anda."
+        image="https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/og-image.jpg?alt=media&token=e809aad6-d203-440b-a016-c2a417626e9c"
         url="https://klinikara24jam.hsohealthcare.com/arapower"
       />
-      {/* NAV */}
-      <nav className={`fixed top-0 left-0 right-0 z-[100] px-5 md:px-10 h-16 flex items-center justify-between bg-white/80 backdrop-blur-[20px] border-b border-[#1580c2]/10 transition-all duration-300 ${isScrolled ? 'shadow-[0_4px_32px_rgba(0,0,0,0.06)]' : ''}`}>
-        <a href="#" className="font-extrabold text-xl text-[#1580c2] tracking-tighter decoration-none">AraPower</a>
-        <a href="/" className="text-sm font-normal text-[#0a0f1e] opacity-70 hover:opacity-100 transition-opacity">Main Clinic Site</a>
-        <div className="hidden md:flex items-center gap-8">
-          <a href="#how" className="text-sm font-normal text-[#0a0f1e] opacity-70 hover:opacity-100 transition-opacity">How it works</a>
-          <a href="#features" className="text-sm font-normal text-[#0a0f1e] opacity-70 hover:opacity-100 transition-opacity">Features</a>
-          <a href="#tiers" className="text-sm font-normal text-[#0a0f1e] opacity-70 hover:opacity-100 transition-opacity">Tiers</a>
-          <a href="#impact" className="text-sm font-normal text-[#0a0f1e] opacity-70 hover:opacity-100 transition-opacity">Impact</a>
+
+      {/* ── NAV ─────────────────────────────────────────────────────────── */}
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+        height: '52px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 24px',
+        background: isScrolled ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0)',
+        backdropFilter: isScrolled ? 'blur(20px) saturate(180%)' : 'none',
+        borderBottom: isScrolled ? '1px solid rgba(0,0,0,0.08)' : '1px solid transparent',
+        transition: 'all 0.4s ease',
+      }}>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Link to="/">
+            <img
+              src="https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/lOGO%20ARA%20dark%20blue%20(1).png?alt=media&token=e9c445db-4f1d-4858-9673-e3a9a94b0590"
+              alt="Klinik Ara"
+              style={{ height: '28px', objectFit: 'contain' }}
+            />
+          </Link>
         </div>
-        <a href="https://arapower.hsohealthcare.com" className="bg-[#1580c2] text-white text-sm font-medium px-6 py-2.5 rounded-full hover:bg-[#0d5a8a] hover:-translate-y-px transition-all">Join Now</a>
+
+        {/* Nav links — hidden on mobile */}
+        <div style={{ display: 'flex', gap: '28px', alignItems: 'center' }} className="ap-nav-links">
+          {['Features', 'Tiers', 'Community'].map(label => (
+            <a key={label} href={`#${label.toLowerCase()}`} style={{
+              fontSize: '14px', color: '#1d1d1f', textDecoration: 'none', opacity: 0.75,
+              transition: 'opacity 0.2s',
+            }}>{label}</a>
+          ))}
+        </div>
+
+        <a href="https://arapower.hsohealthcare.com" style={{
+          fontSize: '14px', fontWeight: 500,
+          background: '#1580c2', color: '#fff',
+          padding: '8px 20px', borderRadius: '980px',
+          textDecoration: 'none', transition: 'all 0.2s',
+        }}>
+          Join Now
+        </a>
       </nav>
 
-      {/* HERO */}
-      <section className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center text-center px-10 pt-24 pb-20 relative overflow-hidden">
-        <div className="hero-orb-1"></div>
-        <div className="hero-orb-2"></div>
-
-        <div className="inline-block text-[12px] font-medium tracking-[0.2em] uppercase text-[#1580c2] bg-[#1580c2]/15 px-4 py-1.5 rounded-full mb-7 border border-[#1580c2]/30 relative z-10">
-          Klinik Ara 24 Jam · Exclusive Affiliate Programme
+      {/* ── HERO ────────────────────────────────────────────────────────── */}
+      <section style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(180deg, #f5f5f7 0%, #fff 100%)',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        textAlign: 'center', padding: '100px 24px 60px',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        {/* Eyebrow */}
+        <div ref={r} className="reveal" style={{
+          display: 'inline-block',
+          fontSize: '14px', fontWeight: 500, letterSpacing: '0.02em',
+          color: '#1580c2', marginBottom: '16px',
+        }}>
+          Klinik Ara 24 Jam · Program Affiliate Eksklusif
         </div>
 
-        <h1 className="font-extrabold text-[52px] md:text-[96px] leading-none tracking-[-1.5px] text-white relative z-10 mb-6 font-sans">
-          Earn.<br /><span className="text-[#1580c2]">Share.</span><br />Heal.
+        {/* Headline */}
+        <h1 ref={r} className="reveal" style={{
+          fontSize: 'clamp(48px, 8vw, 88px)',
+          fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.05,
+          color: '#1d1d1f', margin: '0 0 20px', maxWidth: '800px',
+        }}>
+          Kongsi.<br />
+          <span style={{ color: '#1580c2' }}>Bantu.</span><br />
+          Jana Pendapatan.
         </h1>
 
-        <p className="text-[16px] md:text-[20px] font-light leading-relaxed text-white/60 max-w-[560px] relative z-10 mb-12">
-          Turn your network into a force for community health. Share quality healthcare services and earn meaningful income — one referral at a time.
+        {/* Sub */}
+        <p ref={r} className="reveal" style={{
+          fontSize: 'clamp(18px, 2.5vw, 22px)', fontWeight: 300,
+          color: '#6e6e73', lineHeight: 1.6, maxWidth: '540px', margin: '0 0 40px',
+        }}>
+          Setiap kali anda mencadangkan Klinik Ara kepada rakan, anda menerima komisen automatik. Percuma untuk disertai.
         </p>
 
-        <div className="flex gap-4 items-center relative z-10 flex-wrap justify-center font-sans">
-          <a href="https://arapower.hsohealthcare.com" className="bg-[#1580c2] text-white text-[16px] font-medium px-9 py-4 rounded-full shadow-[0_8px_32px_rgba(21,128,194,0.4)] hover:bg-[#0d5a8a] hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(21,128,194,0.5)] transition-all">
-            Start Earning Today
+        {/* CTAs */}
+        <div ref={r} className="reveal" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '72px' }}>
+          <a href="https://arapower.hsohealthcare.com" style={{
+            fontSize: '17px', fontWeight: 500,
+            background: '#1580c2', color: '#fff',
+            padding: '16px 36px', borderRadius: '980px',
+            textDecoration: 'none',
+            boxShadow: '0 8px 32px rgba(21,128,194,0.3)',
+          }}>
+            Daftar Percuma
           </a>
-          <a href="#how" className="text-white/70 text-[16px] font-normal px-9 py-4 rounded-full border border-white/15 hover:text-white hover:border-white/40 transition-all">
-            See how it works
+          <a href="#features" style={{
+            fontSize: '17px', fontWeight: 500,
+            color: '#1580c2', border: '1px solid rgba(21,128,194,0.3)',
+            padding: '16px 36px', borderRadius: '980px',
+            textDecoration: 'none',
+          }}>
+            Ketahui lebih lanjut
           </a>
         </div>
 
-        <div className="flex gap-12 mt-18 relative z-10 border-t border-white/10 pt-12 flex-wrap justify-center font-sans">
-          <div>
-            <div className="text-[36px] font-bold text-white">RM0</div>
-            <div className="text-[13px] text-white/45 mt-1">to join</div>
-          </div>
-          <div>
-            <div className="text-[36px] font-bold text-white">50%</div>
-            <div className="text-[13px] text-white/45 mt-1">Gold tier bonus</div>
-          </div>
-          <div>
-            <div className="text-[36px] font-bold text-white">24/7</div>
-            <div className="text-[13px] text-white/45 mt-1">Clinic availability</div>
-          </div>
-          <div>
-            <div className="text-[36px] font-bold text-white">Real-time</div>
-            <div className="text-[13px] text-white/45 mt-1">Referral tracking</div>
-          </div>
-        </div>
-
-        <div className="hero-scroll absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/30 text-[11px] tracking-[0.15em] uppercase z-10">
-          <div className="w-px h-10 bg-gradient-to-b from-white/30 to-transparent"></div>
-          Scroll
+        {/* Hero phones */}
+        <div ref={r} className="reveal" style={{
+          display: 'flex', gap: '24px', alignItems: 'flex-end',
+          justifyContent: 'center', flexWrap: 'wrap',
+        }}>
+          <IPhoneFrame src={SCREENS.welcome}     alt="Welcome screen"   tilt="left" />
+          <IPhoneFrame src={SCREENS.dashboard}   alt="Dashboard screen" tilt="none" />
+          <IPhoneFrame src={SCREENS.promotions}  alt="Promotions"       tilt="right" />
         </div>
       </section>
 
+      {/* ── SOCIAL PROOF STRIP ──────────────────────────────────────────── */}
+      <section style={{ background: '#f5f5f7', padding: '40px 24px', textAlign: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '64px', flexWrap: 'wrap' }}>
+          {[
+            { num: 'RM0',       label: 'Kos untuk daftar' },
+            { num: '24/7',      label: 'Klinik tersedia' },
+            { num: 'Automatik', label: 'Kredit komisen' },
+            { num: 'Terus',     label: 'Bank transfer' },
+          ].map(({ num, label }) => (
+            <div key={label} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '28px', fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.02em' }}>{num}</div>
+              <div style={{ fontSize: '13px', color: '#6e6e73', marginTop: '4px' }}>{label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
-      {/* ── CONVERSATIONAL STORY SECTION ──────────────────── */}
-      <section className="bg-black py-30 px-10 overflow-hidden" id="story">
-        <div className="max-w-[1100px] mx-auto">
+      {/* ── FEATURE ALTERNATING SECTIONS ───────────────────────────────── */}
 
-          {/* Eyebrow */}
-          <div className="reveal text-[#5bb3e8] text-[12px] font-medium tracking-[0.2em] uppercase mb-16" ref={addToRefs}>
-            Pernah alami situasi ini?
+      {/* Section 1 — Dashboard */}
+      <section id="features" style={{ background: '#fff', padding: 'clamp(80px, 10vw, 130px) 24px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '80px', flexWrap: 'wrap' }}>
+          {/* Phone */}
+          <div ref={r} className="reveal" style={{ flex: '0 0 auto', display: 'flex', justifyContent: 'center' }}>
+            <IPhoneFrame src={SCREENS.dashboard} alt="Dashboard" tilt="right" />
           </div>
-
-          {/* Chat bubbles — conversational story */}
-          <div className="space-y-6 max-w-[700px] mx-auto mb-20">
-
-            {/* Bubble 1 — friend asking */}
-            <div className="reveal flex items-end gap-3" ref={addToRefs}>
-              <div className="w-9 h-9 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0 mb-1">
-                <span style={{ fontSize: '16px' }}>👩</span>
-              </div>
-              <div>
-                <p className="text-[11px] text-zinc-500 mb-1.5 ml-1">Kawan anda</p>
-                <div style={{
-                  background: 'rgba(255,255,255,0.08)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '20px 20px 20px 4px',
-                  padding: '16px 20px',
-                  maxWidth: '480px',
-                }}>
-                  <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, fontWeight: 300 }}>
-                    "Eh, kau tahu tak mana tempat bagus nak buat <strong style={{ color: 'white', fontWeight: 500 }}>medical check-up</strong>? Yang boleh dipercayai, harga berpatutan..."
-                  </p>
-                </div>
-              </div>
+          {/* Text */}
+          <div ref={r} className="reveal" style={{ flex: 1, minWidth: '280px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: '#1580c2', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '14px' }}>
+              Dashboard Peribadi
             </div>
-
-            {/* Bubble 2 — you answering */}
-            <div className="reveal flex items-end gap-3 justify-end" ref={addToRefs}>
-              <div>
-                <p className="text-[11px] text-zinc-500 mb-1.5 mr-1 text-right">Anda</p>
-                <div style={{
-                  background: 'rgba(21,128,194,0.25)',
-                  border: '1px solid rgba(21,128,194,0.35)',
-                  borderRadius: '20px 20px 4px 20px',
-                  padding: '16px 20px',
-                  maxWidth: '480px',
-                }}>
-                  <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, fontWeight: 300 }}>
-                    "Ada! Klinik Ara 24 Jam — dekat je. Dorang ada medical check-up, blood test, semua ada. <strong style={{ color: 'white', fontWeight: 500 }}>Best lagi, bukak 24 jam.</strong>"
-                  </p>
-                </div>
-              </div>
-              <div className="w-9 h-9 rounded-full bg-[#1580c2]/30 flex items-center justify-center flex-shrink-0 mb-1">
-                <span style={{ fontSize: '16px' }}>🙋</span>
-              </div>
-            </div>
-
-            {/* Bubble 3 — friend happy */}
-            <div className="reveal flex items-end gap-3" ref={addToRefs}>
-              <div className="w-9 h-9 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0 mb-1">
-                <span style={{ fontSize: '16px' }}>👩</span>
-              </div>
-              <div>
-                <div style={{
-                  background: 'rgba(255,255,255,0.08)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '20px 20px 20px 4px',
-                  padding: '16px 20px',
-                  maxWidth: '420px',
-                }}>
-                  <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, fontWeight: 300 }}>
-                    "Wah, terima kasih! Nanti aku pergi check! 🙏"
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Divider with arrow down */}
-            <div className="reveal flex flex-col items-center py-6 gap-2" ref={addToRefs}>
-              <div style={{ width: '1px', height: '40px', background: 'linear-gradient(to bottom, transparent, rgba(21,128,194,0.5))' }} />
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(21,128,194,0.2)', border: '1px solid rgba(21,128,194,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1580c2" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
-                </svg>
-              </div>
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 400 }}>Teruskan buat begitu...</p>
-            </div>
-
-            {/* The reveal moment */}
-            <div className="reveal" ref={addToRefs}>
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(21,128,194,0.15), rgba(21,128,194,0.05))',
-                border: '1px solid rgba(21,128,194,0.3)',
-                borderRadius: '24px',
-                padding: '32px 36px',
-                textAlign: 'center',
-              }}>
-                <p style={{ fontSize: '22px', color: 'white', lineHeight: 1.6, fontWeight: 300, marginBottom: '12px' }}>
-                  ...dan <strong style={{ fontWeight: 700, color: '#5bb3e8' }}>dapatkan ganjaran</strong> dengan AraPower.
-                </p>
-                <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, fontWeight: 300 }}>
-                  Perbualan harian anda sudah pun membantu orang. <br/>Sekarang, biar ia membantu anda juga.
-                </p>
-              </div>
-            </div>
-
-          </div>
-
-          {/* The mission statement */}
-          <div className="reveal max-w-[800px] mx-auto text-center" ref={addToRefs}>
-            <div style={{ width: '48px', height: '1px', background: 'rgba(21,128,194,0.4)', margin: '0 auto 32px' }} />
-            <p style={{
-              fontSize: 'clamp(22px, 3.5vw, 36px)',
-              fontWeight: 300,
-              color: 'rgba(255,255,255,0.8)',
-              lineHeight: 1.65,
-              fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-            }}>
-              Kami mahu anda terus{' '}
-              <strong style={{ fontWeight: 600, color: 'white' }}>menyebarkan akses servis kesihatan</strong>{' '}
-              kepada rakan-rakan dan saudara-mara anda —{' '}
-              <em style={{ fontStyle: 'normal', color: '#5bb3e8' }}>dan kami akan kongsi rezeki bersama anda.</em>
+            <h2 style={{ fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.08, color: '#1d1d1f', margin: '0 0 20px' }}>
+              Pantau semua dalam satu skrin.
+            </h2>
+            <p style={{ fontSize: '17px', fontWeight: 300, color: '#6e6e73', lineHeight: 1.7, margin: '0 0 28px' }}>
+              Dashboard anda menunjukkan tier semasa, jumlah pendapatan, bilangan rujukan berjaya, dan lebih banyak lagi — dikemaskini secara masa nyata.
             </p>
-            <div style={{ width: '48px', height: '1px', background: 'rgba(21,128,194,0.4)', margin: '32px auto 0' }} />
-          </div>
-
-        </div>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section className="bg-[#f7f9fc] py-30 px-10" id="how">
-        <div className="max-w-[1100px] mx-auto">
-          <div className="section-eyebrow reveal text-[#1580c2] text-[12px] font-medium tracking-[0.2em] uppercase mb-4" ref={addToRefs}>How it works</div>
-          <h2 className="section-title reveal text-[36px] md:text-[60px] font-extrabold leading-[1.05] tracking-[-1.5px] mb-5 font-sans" ref={addToRefs}>Three steps.<br />Infinite impact.</h2>
-          <p className="section-sub reveal text-[18px] font-light leading-relaxed text-[#0a0f1e]/55 max-w-[540px]" ref={addToRefs}>No experience needed. No upfront cost. Just share — and the system handles everything else.</p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16 font-sans">
-            <div className="step reveal bg-white rounded-[24px] p-10 border border-black/5 transition-all hover:-translate-y-1.5 hover:shadow-[0_24px_60px_rgba(0,0,0,0.08)] relative overflow-hidden" ref={addToRefs}>
-              <span className="step-num text-[80px] font-extrabold text-[#e8f4fd] leading-none absolute top-5 right-6 select-none">01</span>
-              <div className="w-13 h-13 rounded-[16px] bg-[#e8f4fd] flex items-center justify-center mb-7 relative z-10">
-                <svg className="w-6 h-6 stroke-[#1580c2] fill-none stroke-2 stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              </div>
-              <h3 className="text-[22px] font-bold mb-3 tracking-[-0.5px]">Register for Free</h3>
-              <p className="text-[15px] font-light leading-relaxed text-[#0a0f1e]/55">Create your AraPower account in minutes. Get your unique referral link and personalised QR code instantly upon approval.</p>
-            </div>
-
-            <div className="step reveal transition-all delay-100 bg-white rounded-[24px] p-10 border border-black/5 hover:-translate-y-1.5 hover:shadow-[0_24px_60px_rgba(0,0,0,0.08)] relative overflow-hidden" ref={addToRefs}>
-              <span className="step-num text-[80px] font-extrabold text-[#e8f4fd] leading-none absolute top-5 right-6 select-none">02</span>
-              <div className="w-13 h-13 rounded-[16px] bg-[#e8f4fd] flex items-center justify-center mb-7 relative z-10">
-                <svg className="w-6 h-6 stroke-[#1580c2] fill-none stroke-2 stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-              </div>
-              <h3 className="text-[22px] font-bold mb-3 tracking-[-0.5px]">Share Your Link</h3>
-              <p className="text-[15px] font-light leading-relaxed text-[#0a0f1e]/55">Post your affiliate link on WhatsApp, Instagram, TikTok, or anywhere your community gathers. Every click is tracked automatically.</p>
-            </div>
-
-            <div className="step reveal transition-all delay-200 bg-white rounded-[24px] p-10 border border-black/5 hover:-translate-y-1.5 hover:shadow-[0_24px_60px_rgba(0,0,0,0.08)] relative overflow-hidden" ref={addToRefs}>
-              <span className="step-num text-[80px] font-extrabold text-[#e8f4fd] leading-none absolute top-5 right-6 select-none">03</span>
-              <div className="w-13 h-13 rounded-[16px] bg-[#e8f4fd] flex items-center justify-center mb-7 relative z-10">
-                <svg className="w-6 h-6 stroke-[#1580c2] fill-none stroke-2 stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-              </div>
-              <h3 className="text-[22px] font-bold mb-3 tracking-[-0.5px]">Earn Commission</h3>
-              <p className="text-[15px] font-light leading-relaxed text-[#0a0f1e]/55">When your referral attends Klinik Ara, commission is credited to your account automatically. Withdraw directly to your bank.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {[
+                '🏆 Tier Bronze, Silver & Gold dengan bonus komisen',
+                '💰 Jumlah pendapatan seumur hidup',
+                '📊 Kempen aktif dengan kadar penukaran',
+              ].map(item => (
+                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '15px', color: '#1d1d1f', fontWeight: 400 }}>
+                  {item}
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* FEATURES */}
-      <section className="bg-[#0a0f1e] py-30 px-10 text-white" id="features">
-        <div className="max-w-[1100px] mx-auto">
-          <div className="section-eyebrow reveal text-[#5bb3e8] text-[12px] font-medium tracking-[0.2em] uppercase mb-4" ref={addToRefs}>Platform features</div>
-          <h2 className="section-title reveal text-[36px] md:text-[60px] font-extrabold leading-[1.05] tracking-[-1.5px] mb-5 font-sans" ref={addToRefs}>Everything you need.<br />Nothing you don't.</h2>
-          <p className="section-sub reveal text-[18px] font-light leading-relaxed text-white/45 max-w-[540px]" ref={addToRefs}>A purpose-built affiliate dashboard designed for simplicity and transparency.</p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-px mt-16 font-sans">
-            <div className="feature-card reveal bg-white/5 p-12 relative overflow-hidden hover:bg-white/[0.07] transition-all" ref={addToRefs}>
-              <div className="w-12 h-12 rounded-[14px] border border-[#1580c2]/30 bg-[#1580c2]/10 flex items-center justify-center mb-6">
-                <svg className="w-5.5 h-5.5 stroke-[#5bb3e8] fill-none stroke-[1.8] stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
-              </div>
-              <h3 className="text-[24px] font-bold mb-3 tracking-[-0.5px]">Live Referral Dashboard</h3>
-              <p className="text-[15px] font-light leading-relaxed text-white/45 max-w-[380px]">Watch every referral move through the pipeline in real time — from booking to completion. Know exactly where your commission stands at any moment.</p>
+      {/* Section 2 — Promotions */}
+      <section style={{ background: '#f5f5f7', padding: 'clamp(80px, 10vw, 130px) 24px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '80px', flexWrap: 'wrap-reverse' }}>
+          {/* Text */}
+          <div ref={r} className="reveal" style={{ flex: 1, minWidth: '280px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: '#1580c2', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '14px' }}>
+              Kempen & Promosi
             </div>
-
-            <div className="feature-card reveal transition-all delay-100 bg-white/5 p-12 relative overflow-hidden hover:bg-white/[0.07]" ref={addToRefs}>
-              <div className="w-12 h-12 rounded-[14px] border border-[#1580c2]/30 bg-[#1580c2]/10 flex items-center justify-center mb-6">
-                <svg className="w-5.5 h-5.5 stroke-[#5bb3e8] fill-none stroke-[1.8] stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-              </div>
-              <h3 className="text-[24px] font-bold mb-3 tracking-[-0.5px]">Tier Progression</h3>
-              <p className="text-[15px] font-light leading-relaxed text-white/45 max-w-[380px]">Bronze, Silver, and Gold tiers reward your consistency. Earn up to 50% bonus commission at Gold tier — the more you share, the more you earn.</p>
+            <h2 style={{ fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.08, color: '#1d1d1f', margin: '0 0 20px' }}>
+              Poster profesional, siap untuk dikongsi.
+            </h2>
+            <p style={{ fontSize: '17px', fontWeight: 300, color: '#6e6e73', lineHeight: 1.7, margin: '0 0 28px' }}>
+              Setiap servis klinik dilengkapi poster pemasaran yang cantik. Muat turun dan kongsikan terus ke WhatsApp, Instagram atau mana-mana platform anda.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {[
+                '🖼️ Galeri poster untuk setiap servis',
+                '📱 Kongsi terus ke WhatsApp',
+                '🔗 Pautan rujukan tersematkan automatik',
+              ].map(item => (
+                <div key={item} style={{ fontSize: '15px', color: '#1d1d1f', fontWeight: 400 }}>{item}</div>
+              ))}
             </div>
+          </div>
+          {/* Phone */}
+          <div ref={r} className="reveal" style={{ flex: '0 0 auto', display: 'flex', justifyContent: 'center' }}>
+            <IPhoneFrame src={SCREENS.promotions} alt="Promotions" tilt="left" />
+          </div>
+        </div>
+      </section>
 
-            <div className="feature-card reveal bg-white/5 p-12 relative overflow-hidden hover:bg-white/[0.07] transition-all" ref={addToRefs}>
-              <div className="w-12 h-12 rounded-[14px] border border-[#1580c2]/30 bg-[#1580c2]/10 flex items-center justify-center mb-6">
-                <svg className="w-5.5 h-5.5 stroke-[#5bb3e8] fill-none stroke-[1.8] stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-              </div>
-              <h3 className="text-[24px] font-bold mb-3 tracking-[-0.5px]">Instant Notifications</h3>
-              <p className="text-[15px] font-light leading-relaxed text-white/45 max-w-[380px]">Get notified the moment someone books through your link. Email and in-app alerts keep you in the loop without lifting a finger.</p>
+      {/* Section 3 — Performance */}
+      <section style={{ background: '#fff', padding: 'clamp(80px, 10vw, 130px) 24px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '80px', flexWrap: 'wrap' }}>
+          {/* Phone */}
+          <div ref={r} className="reveal" style={{ flex: '0 0 auto', display: 'flex', justifyContent: 'center' }}>
+            <IPhoneFrame src={SCREENS.performance} alt="Performance Analytics" tilt="right" />
+          </div>
+          {/* Text */}
+          <div ref={r} className="reveal" style={{ flex: 1, minWidth: '280px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: '#1580c2', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '14px' }}>
+              Analitik Prestasi
             </div>
-
-            <div className="feature-card reveal transition-all delay-100 bg-white/5 p-12 relative overflow-hidden hover:bg-white/[0.07]" ref={addToRefs}>
-              <div className="w-12 h-12 rounded-[14px] border border-[#1580c2]/30 bg-[#1580c2]/10 flex items-center justify-center mb-6">
-                <svg className="w-5.5 h-5.5 stroke-[#5bb3e8] fill-none stroke-[1.8] stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              </div>
-              <h3 className="text-[24px] font-bold mb-3 tracking-[-0.5px]">Transparent Payouts</h3>
-              <p className="text-[15px] font-light leading-relaxed text-white/45 max-w-[380px]">See exactly how much you've earned, what's pending approval, and what's been paid out. Every ringgit is accounted for.</p>
-            </div>
-
-            <div className="feature-card reveal bg-white/5 p-12 relative overflow-hidden hover:bg-white/[0.07] transition-all md:col-span-2" ref={addToRefs}>
-              <div className="w-12 h-12 rounded-[14px] border border-[#1580c2]/30 bg-[#1580c2]/10 flex items-center justify-center mb-6">
-                <svg className="w-5.5 h-5.5 stroke-[#5bb3e8] fill-none stroke-[1.8] stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              </div>
-              <h3 className="text-[24px] font-bold mb-3 tracking-[-0.5px]">Marketing Posters, Ready to Share</h3>
-              <p className="text-[15px] font-light leading-relaxed text-white/45 max-w-[640px]">Access a gallery of professionally designed promotional posters for every clinic service. Download and share directly to WhatsApp or save to your phone — no design skills needed.</p>
+            <h2 style={{ fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.08, color: '#1d1d1f', margin: '0 0 20px' }}>
+              Tahu betul-betul mana yang berkesan.
+            </h2>
+            <p style={{ fontSize: '17px', fontWeight: 300, color: '#6e6e73', lineHeight: 1.7, margin: '0 0 28px' }}>
+              Jejak berapa klik, berapa rujukan berjaya, dan kadar penukaran setiap kempen anda. Data masa nyata membantu anda fokus pada yang paling menguntungkan.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {[
+                '📈 Kadar penukaran per kempen',
+                '🎯 Pencapaian & lencana ganjaran',
+                '🔴 Data langsung, sentiasa terkini',
+              ].map(item => (
+                <div key={item} style={{ fontSize: '15px', color: '#1d1d1f', fontWeight: 400 }}>{item}</div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* TIERS */}
-      <section className="bg-white py-30 px-10" id="tiers">
-        <div className="max-w-[1100px] mx-auto">
-          <div className="section-eyebrow reveal text-[#1580c2] text-[12px] font-medium tracking-[0.2em] uppercase mb-4" ref={addToRefs}>Reward tiers</div>
-          <h2 className="section-title reveal text-[36px] md:text-[60px] font-extrabold leading-[1.05] tracking-[-1.5px] mb-5 font-sans" ref={addToRefs}>The more you give,<br />the more you gain.</h2>
-          <p className="section-sub reveal text-[18px] font-light leading-relaxed text-[#0a0f1e]/55 max-w-[540px]" ref={addToRefs}>Tiers are calculated monthly. Keep referring to unlock higher bonus multipliers.</p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 font-sans">
-            <div className="tier-card reveal bg-gradient-to-br from-[#fdf8f0] to-[#fef3e2] rounded-[24px] p-10 border border-[#b45309]/12 transition-all hover:-translate-y-2" ref={addToRefs}>
-              <div className="inline-block text-[11px] font-medium tracking-[0.15em] uppercase px-3.5 py-1.5 rounded-full mb-6 bg-[#b45309]/10 text-[#b45309]">Bronze</div>
-              <h3 className="text-[28px] font-extrabold tracking-tighter text-[#b45309] mb-2">Start Strong</h3>
-              <p className="text-[13px] font-normal text-[#0a0f1e]/45 mb-7">0 – 5 referrals / month</p>
-              <div className="text-[52px] font-extrabold tracking-[-1.5px] leading-none text-[#b45309] mb-1.5">×1.0</div>
-              <div className="text-[13px] text-[#0a0f1e]/45">Base commission rate</div>
+      {/* Section 4 — Referrals */}
+      <section style={{ background: '#f5f5f7', padding: 'clamp(80px, 10vw, 130px) 24px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '80px', flexWrap: 'wrap-reverse' }}>
+          {/* Text */}
+          <div ref={r} className="reveal" style={{ flex: 1, minWidth: '280px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: '#1580c2', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '14px' }}>
+              Jejak Rujukan
             </div>
-
-            <div className="tier-card reveal transition-all delay-100 bg-gradient-to-br from-[#f8f9fb] to-[#eef0f5] rounded-[24px] p-10 border border-[#64748b]/15 hover:-translate-y-2" ref={addToRefs}>
-              <div className="inline-block text-[11px] font-medium tracking-[0.15em] uppercase px-3.5 py-1.5 rounded-full mb-6 bg-[#64748b]/12 text-[#475569]">Silver</div>
-              <h3 className="text-[28px] font-extrabold tracking-tighter text-[#475569] mb-2">Build Momentum</h3>
-              <p className="text-[13px] font-normal text-[#0a0f1e]/45 mb-7">6 – 10 referrals / month</p>
-              <div className="text-[52px] font-extrabold tracking-[-1.5px] leading-none text-[#475569] mb-1.5">×1.2</div>
-              <div className="text-[13px] text-[#0a0f1e]/45">20% bonus on earnings</div>
+            <h2 style={{ fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.08, color: '#1d1d1f', margin: '0 0 20px' }}>
+              Setiap pesakit, setiap ringgit — tercatat.
+            </h2>
+            <p style={{ fontSize: '17px', fontWeight: 300, color: '#6e6e73', lineHeight: 1.7, margin: '0 0 28px' }}>
+              Ikuti status setiap rujukan dari pendaftaran hingga selesai rawatan. Komisen dikreditkan secara automatik apabila pesakit tamat sesi.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {[
+                '✅ Status dikemaskini secara masa nyata',
+                '🔒 Data pesakit dilindungi sepenuhnya',
+                '💳 Komisen terus ke akaun bank anda',
+              ].map(item => (
+                <div key={item} style={{ fontSize: '15px', color: '#1d1d1f', fontWeight: 400 }}>{item}</div>
+              ))}
             </div>
-
-            <div className="tier-card reveal transition-all delay-200 bg-gradient-to-br from-[#fffbeb] to-[#fef9e0] rounded-[24px] p-10 border border-[#f59e0b]/20 hover:-translate-y-2 shadow-[0_8px_40px_rgba(245,158,11,0.12)] relative overflow-hidden" ref={addToRefs}>
-              <div className="absolute top-6 right-6 text-[28px] opacity-50">👑</div>
-              <div className="inline-block text-[11px] font-medium tracking-[0.15em] uppercase px-3.5 py-1.5 rounded-full mb-6 bg-[#f59e0b]/15 text-[#b45309]">Gold</div>
-              <h3 className="text-[28px] font-extrabold tracking-tighter text-[#b45309] mb-2">Unlock Full Power</h3>
-              <p className="text-[13px] font-normal text-[#0a0f1e]/45 mb-7">11+ referrals / month</p>
-              <div className="text-[52px] font-extrabold tracking-[-1.5px] leading-none text-[#f59e0b] mb-1.5">×1.5</div>
-              <div className="text-[13px] text-[#0a0f1e]/45">50% bonus on earnings</div>
-            </div>
+          </div>
+          {/* Phone */}
+          <div ref={r} className="reveal" style={{ flex: '0 0 auto', display: 'flex', justifyContent: 'center' }}>
+            <IPhoneFrame src={SCREENS.referrals} alt="Referral tracking" tilt="left" />
           </div>
         </div>
       </section>
 
-      {/* IMPACT */}
-      <section className="bg-[#1580c2] py-30 px-10 text-white" id="impact">
-        <div className="max-w-[1100px] mx-auto">
-          <div className="section-eyebrow reveal text-white/60 text-[12px] font-medium tracking-[0.2em] uppercase mb-4" ref={addToRefs}>Community impact</div>
-          <h2 className="section-title reveal text-[36px] md:text-[60px] font-extrabold leading-[1.05] tracking-[-1.5px] mb-5 font-sans" ref={addToRefs}>Healthcare is a right,<br />not a privilege.</h2>
-          <p className="section-sub reveal text-[18px] font-light leading-relaxed text-white/65 max-w-[540px]" ref={addToRefs}>Every referral you make connects a real person to the care they need. This is what social impact looks like in practice.</p>
+      {/* ── TIERS SECTION ───────────────────────────────────────────────── */}
+      <section id="tiers" style={{ background: '#fff', padding: 'clamp(80px, 10vw, 130px) 24px', textAlign: 'center' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          <div ref={r} className="reveal" style={{ fontSize: '13px', fontWeight: 600, color: '#1580c2', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '14px' }}>
+            Sistem Tier
+          </div>
+          <h2 ref={r} className="reveal" style={{ fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.08, color: '#1d1d1f', margin: '0 0 16px' }}>
+            Semakin aktif, semakin tinggi ganjaran.
+          </h2>
+          <p ref={r} className="reveal" style={{ fontSize: '17px', fontWeight: 300, color: '#6e6e73', lineHeight: 1.6, maxWidth: '520px', margin: '0 auto 64px' }}>
+            Tier dikira semula setiap bulan. Kekal aktif untuk kekalkan bonus komisen anda.
+          </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-16 font-sans">
-            <div className="impact-card reveal bg-white/10 rounded-[24px] p-10 border border-white/12 backdrop-blur-[8px] hover:bg-white/15 transition-all" ref={addToRefs}>
-              <h3 className="text-[22px] font-bold mb-3 tracking-[-0.5px]">Breaking Barriers to Access</h3>
-              <p className="text-[15px] font-light leading-relaxed text-white/65">Many Malaysians delay seeking medical care due to uncertainty — not knowing where to go, what it costs, or whether they'll be treated well. Your referral removes that hesitation with a trusted recommendation.</p>
-            </div>
-
-            <div className="impact-card reveal transition-all delay-100 bg-white/10 rounded-[24px] p-10 border border-white/12 backdrop-blur-[8px] hover:bg-white/15" ref={addToRefs}>
-              <h3 className="text-[22px] font-bold mb-3 tracking-[-0.5px]">Early Detection Saves Lives</h3>
-              <p className="text-[15px] font-light leading-relaxed text-white/65">Health screenings and diagnostics caught early make the difference between a manageable condition and a life-threatening one. Every booking you facilitate could be someone's turning point.</p>
-            </div>
-
-            <div className="impact-card reveal bg-white/10 rounded-[24px] p-10 border border-white/12 backdrop-blur-[8px] hover:bg-white/15 transition-all" ref={addToRefs}>
-              <div className="text-[48px] font-extrabold tracking-[-1.5px] mb-2">24/7</div>
-              <div className="text-[14px] text-white/55">Clinic availability — no one is left without care</div>
-            </div>
-
-            <div className="impact-card reveal transition-all delay-100 bg-white/10 rounded-[24px] p-10 border border-white/12 backdrop-blur-[8px] hover:bg-white/15" ref={addToRefs}>
-              <h3 className="text-[22px] font-bold mb-3 tracking-[-0.5px]">Strengthening Communities</h3>
-              <p className="text-[15px] font-light leading-relaxed text-white/65">A healthier community is a stronger one. When people around you have access to quality healthcare, productivity rises, families stay together, and wellbeing compounds across generations.</p>
-            </div>
+          <div ref={r} className="reveal" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+            {[
+              { tier: 'Bronze',  mult: '×1.0',  color: '#b45309', bg: 'linear-gradient(135deg, #fdf8f0, #fef3e2)', border: '#fde68a' },
+              { tier: 'Silver',  mult: '×1.2',  color: '#475569', bg: 'linear-gradient(135deg, #f8f9fb, #eef0f5)', border: '#e2e8f0' },
+              { tier: 'Gold',     mult: '×1.5',  color: '#b45309', bg: 'linear-gradient(135deg, #fffbeb, #fef9e0)', border: '#fde68a', crown: true },
+            ].map(({ tier, mult, color, bg, border, crown }) => (
+              <div key={tier} style={{
+                background: bg, borderRadius: '24px',
+                border: `1px solid ${border}`,
+                padding: '40px 32px', textAlign: 'left',
+                transition: 'transform 0.3s',
+                position: 'relative',
+              }}>
+                {crown && <div style={{ position: 'absolute', top: '20px', right: '20px', fontSize: '24px', opacity: 0.5 }}>👑</div>}
+                <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color, opacity: 0.7, marginBottom: '12px' }}>{tier}</div>
+                <div style={{ fontSize: '48px', fontWeight: 800, color, letterSpacing: '-2px', lineHeight: 1, marginBottom: '6px' }}>{mult}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* QUOTE */}
-      <section className="bg-[#f7f9fc] text-center py-24 px-10">
-        <div className="max-w-[1100px] mx-auto">
-          <div className="quote-mark reveal text-[120px] leading-none text-[#e8f4fd] -mb-5" ref={addToRefs}>"</div>
-          <p className="quote-text reveal text-[24px] md:text-[40px] font-semibold tracking-tighter leading-[1.25] text-[#0a0f1e] max-w-[800px] mx-auto mb-8 font-sans" ref={addToRefs}>You don't need to be a doctor to improve public health. You just need to care enough to share.</p>
-          <p className="quote-author reveal text-[14px] text-[#0a0f1e]/45 tracking-[0.05em]" ref={addToRefs}>— The AraPower Mission</p>
+      {/* ── COMMUNITY / STORY ───────────────────────────────────────────── */}
+      <section id="community" style={{ background: '#f5f5f7', padding: 'clamp(80px, 10vw, 130px) 24px' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+          <div ref={r} className="reveal" style={{ fontSize: '13px', fontWeight: 600, color: '#1580c2', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '14px' }}>
+            Pernah alami ini?
+          </div>
+          <h2 ref={r} className="reveal" style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15, color: '#1d1d1f', margin: '0 0 48px' }}>
+            Anda sudah pun mencadangkan klinik kepada rakan. Biar ia memberi manfaat kepada anda juga.
+          </h2>
+
+          {/* Chat */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left', marginBottom: '48px' }}>
+            {[
+              { who: 'Kawan', emoji: '👩', align: 'left',  text: '"Eh, ada tak klinik yang bagus untuk buat medical check-up? Yang boleh dipercayai..."' },
+              { who: 'Anda',  emoji: '🙋', align: 'right', text: '"Ada! Klinik Ara 24 Jam. Best, buka 24 jam, ada semua servis!"', blue: true },
+              { who: 'Kawan', emoji: '👩', align: 'left',  text: '"Wah, terima kasih! Nanti aku pergi! 🙏"' },
+            ].map(({ who, emoji, align, text, blue }) => (
+              <div key={who + text} style={{ display: 'flex', flexDirection: align === 'right' ? 'row-reverse' : 'row', alignItems: 'flex-end', gap: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: blue ? '#1580c2' : '#e5e5ea', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>{emoji}</div>
+                <div style={{
+                  background: blue ? '#1580c2' : '#e5e5ea',
+                  color: blue ? '#fff' : '#1d1d1f',
+                  borderRadius: align === 'right' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                  padding: '12px 16px',
+                  fontSize: '15px', fontWeight: 300, lineHeight: 1.5,
+                  maxWidth: '72%',
+                }}>
+                  {text}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div ref={r} className="reveal" style={{
+            background: '#fff', borderRadius: '20px', padding: '32px',
+            border: '1px solid rgba(0,0,0,0.06)',
+          }}>
+            <p style={{ fontSize: 'clamp(18px, 2.5vw, 24px)', fontWeight: 400, color: '#1d1d1f', lineHeight: 1.6, margin: 0 }}>
+              Buat benda yang sama —{' '}
+              <strong style={{ color: '#1580c2' }}>dan dapatkan ganjaran</strong>{' '}
+              dengan AraPower. Kami kongsi rezeki bersama anda. 🤝
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="bg-[#0a0f1e] text-center py-36 px-10 relative overflow-hidden">
-        <div className="cta-orb"></div>
-        <div className="max-w-[1100px] mx-auto">
-          <h2 className="reveal text-[40px] md:text-[72px] font-extrabold tracking-[-1.5px] leading-[1.05] text-white mb-5 relative z-10 font-sans" ref={addToRefs}>Ready to earn<br /><span className="text-[#1580c2]">and give back?</span></h2>
-          <p className="reveal text-[18px] font-light text-white/50 mb-12 relative z-10" ref={addToRefs}>Join AraPower today. It's free, it's flexible, and it matters.</p>
-          <a href="https://arapower.hsohealthcare.com" className="btn-primary reveal text-[18px] px-12 py-5 relative z-10 inline-block bg-[#1580c2] text-white font-medium rounded-full shadow-[0_8px_32px_rgba(21,128,194,0.4)] hover:bg-[#0d5a8a] hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(21,128,194,0.5)] transition-all font-sans" ref={addToRefs}>Create Your Account →</a>
+      {/* ── CTA ─────────────────────────────────────────────────────────── */}
+      <section style={{
+        background: '#1580c2',
+        padding: 'clamp(80px, 10vw, 130px) 24px',
+        textAlign: 'center', position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{
+          position: 'absolute', width: '600px', height: '600px', borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+          top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <h2 ref={r} className="reveal" style={{
+            fontSize: 'clamp(36px, 6vw, 72px)', fontWeight: 700,
+            letterSpacing: '-0.025em', lineHeight: 1.05,
+            color: '#fff', margin: '0 0 16px',
+          }}>
+            Sertai AraPower hari ini.
+          </h2>
+          <p ref={r} className="reveal" style={{ fontSize: '17px', fontWeight: 300, color: 'rgba(255,255,255,0.75)', margin: '0 0 40px' }}>
+            Percuma. Fleksibel. Bermakna.
+          </p>
+          <a ref={r} className="reveal" href="https://arapower.hsohealthcare.com" style={{
+            display: 'inline-block',
+            fontSize: '17px', fontWeight: 500,
+            background: '#fff', color: '#1580c2',
+            padding: '18px 48px', borderRadius: '980px',
+            textDecoration: 'none',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+          }}>
+            Daftar Sekarang →
+          </a>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-[#0a0f1e] border-t border-white/6 px-10 py-12 flex items-center justify-between flex-wrap gap-4 font-sans">
-        <div className="font-extrabold text-[18px] text-[#1580c2]">AraPower</div>
-        <div className="text-[13px] text-white/30">© 2025 Klinik Ara 24 Jam · hsohealthcare.com</div>
-        <div className="flex gap-6">
-          <a href="/" className="text-[13px] text-white/30 hover:text-white/60 transition-colors">Clinic Home</a>
-          <a href="https://arapower.hsohealthcare.com" className="text-[13px] text-white/30 hover:text-white/60 transition-colors">Platform</a>
-          <a href="mailto:support@hsohealthcare.com" className="text-[13px] text-white/30 hover:text-white/60 transition-colors">Contact</a>
+      {/* ── FOOTER ──────────────────────────────────────────────────────── */}
+      <footer style={{
+        background: '#f5f5f7', borderTop: '1px solid rgba(0,0,0,0.08)',
+        padding: '32px 24px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: '16px',
+      }}>
+        <img
+          src="https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/lOGO%20ARA%20dark%20blue%20(1).png?alt=media&token=e9c445db-4f1d-4858-9673-e3a9a94b0590"
+          alt="Klinik Ara" style={{ height: '24px', objectFit: 'contain' }}
+        />
+        <p style={{ fontSize: '13px', color: '#6e6e73', margin: 0 }}>© 2025 Klinik Ara 24 Jam · hsohealthcare.com</p>
+        <div style={{ display: 'flex', gap: '20px' }}>
+          {['Platform', 'Contact'].map(l => (
+            <a key={l} href={l === 'Platform' ? 'https://arapower.hsohealthcare.com' : 'mailto:support@hsohealthcare.com'}
+              style={{ fontSize: '13px', color: '#6e6e73', textDecoration: 'none' }}>{l}</a>
+          ))}
         </div>
       </footer>
+
+      {/* Mobile nav styles */}
+      <style>{`
+        @media (max-width: 768px) {
+          .ap-nav-links { display: none !important; }
+        }
+        .reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.7s ease, transform 0.7s ease; }
+        .reveal.visible { opacity: 1; transform: none; }
+      `}</style>
     </div>
   );
 };

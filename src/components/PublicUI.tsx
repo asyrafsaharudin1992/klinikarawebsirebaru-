@@ -612,8 +612,8 @@ export default function PublicUI() {
       {/* Navbar */}
       <nav className="fixed top-0 w-full z-50 bg-gradient-to-b from-black/90 via-black/40 to-transparent px-4 md:px-12 pt-4 pb-8 flex items-center justify-between pointer-events-none">
         <div className="flex items-center gap-8 pointer-events-auto">
-          <a 
-            href="/" 
+          <Link 
+            to="/" 
             onClick={(e) => {
               if (window.location.pathname === '/') {
                 e.preventDefault();
@@ -629,7 +629,7 @@ export default function PublicUI() {
               className="h-16 md:h-16 w-auto object-contain"
             />
             KLINIK ARA 24 JAM
-          </a>
+          </Link>
 
           <button 
             className="md:hidden p-2 text-zinc-400 hover:text-white"
@@ -714,12 +714,12 @@ export default function PublicUI() {
                   Baca Lanjut
                 </button>
               ) : (
-                <a 
-                  href="/admin"
+                <Link 
+                  to="/admin"
                   className="bg-white text-black text-sm sm:text-base md:text-lg px-5 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 rounded md:rounded-md font-bold flex items-center gap-2 hover:bg-white/90 transition"
                 >
                   Get Started (Admin)
-                </a>
+                </Link>
               )}
             </div>
           </div>
@@ -856,9 +856,9 @@ export default function PublicUI() {
                           <Sparkles className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
                           <h3 className="text-xl font-bold mb-2">No Services Added Yet</h3>
                           <p className="text-zinc-500 mb-6">Log in to the Admin panel to start adding your clinic's services and promotions.</p>
-                          <a href="/admin" className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-bold transition inline-block">
+                          <Link to="/admin" className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-bold transition inline-block">
                             Go to Admin Panel
-                          </a>
+                          </Link>
                         </div>
                       </div>
                     )}

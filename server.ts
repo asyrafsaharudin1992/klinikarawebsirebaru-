@@ -3,18 +3,31 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import admin from 'firebase-admin';
+import { getFirestore } from 'firebase-admin/firestore';
 import { createServer as createViteServer } from 'vite';
 
-// Initialize Firebase Admin
-if (admin.apps.length === 0) {
-  admin.initializeApp({
-    projectId: "new-website-7b8dd",
-  });
-}
-
-const db = admin.firestore();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Initialize Firebase Admin
+const configPath = path.join(__dirname, 'firebase-applet-config.json');
+const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+let adminApp: admin.app.App;
+const existingApp = admin.apps.find(app => app?.options.projectId === firebaseConfig.projectId);
+
+if (existingApp) {
+  adminApp = existingApp;
+} else {
+  adminApp = admin.initializeApp({
+    projectId: firebaseConfig.projectId,
+  }, firebaseConfig.projectId); // Named app to avoid collisions
+}
+
+const databaseId = firebaseConfig.firestoreDatabaseId;
+const db = (databaseId && databaseId !== '(default)')
+  ? getFirestore(adminApp, databaseId)
+  : getFirestore(adminApp);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PAGE METADATA REGISTRY
