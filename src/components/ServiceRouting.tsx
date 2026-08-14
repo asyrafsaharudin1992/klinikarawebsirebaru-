@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Service } from '../types';
 import { CheckCircle2, AlertCircle, Loader2, ToggleLeft, ToggleRight, ExternalLink, MessageSquare } from 'lucide-react';
-import { auth, db } from '../firebase';
+import { db } from '../firebase';
 import { slugify, uniqueSlug } from '../utils';
 
 interface ServiceRoutingProps {
@@ -14,8 +14,10 @@ const ServiceRouting: React.FC<ServiceRoutingProps> = ({ services, fetchServices
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [backfilling, setBackfilling] = useState(false);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   const servicesMissingSlugs = services.filter(s => !s.slug);
+  const arapowerRoutedServices = services.filter(s => s.is_arapower_linked ?? true);
 
   const handleBackfillSlugs = async () => {
     setBackfilling(true);
@@ -35,42 +37,38 @@ const ServiceRouting: React.FC<ServiceRoutingProps> = ({ services, fetchServices
     }
   };
 
-  const safeFetch = async (url: string, options: RequestInit) => {
-    try {
-      const idToken = await auth.currentUser?.getIdToken();
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          ...options.headers,
-          'Content-Type': 'application/json',
-          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return await response.json();
-    } catch (e: any) {
-      console.error('Fetch error:', e);
-      throw e;
-    }
-  };
-
+  // Writes directly through the app's own authenticated Firestore session
+  // rather than the /api/services/:id endpoint, which only works when
+  // server.ts is actually running as a real Node server (it isn't on the
+  // current Vercel static deployment, and needs credentials this app's
+  // local dev environment doesn't have either).
   const handleToggleRouting = async (service: Service) => {
     setUpdatingId(service.id);
     setError(null);
     const currentStatus = service.is_arapower_linked ?? true;
 
     try {
-      await safeFetch(`/api/services/${service.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ is_arapower_linked: !currentStatus }),
-      });
+      await updateDoc(doc(db, 'services', service.id), { is_arapower_linked: !currentStatus });
       fetchServices();
     } catch (err: any) {
       setError(`Failed to update ${service.title}: ${err.message}`);
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const handleSetAllToWhatsApp = async () => {
+    setBulkUpdating(true);
+    setError(null);
+    try {
+      for (const service of arapowerRoutedServices) {
+        await updateDoc(doc(db, 'services', service.id), { is_arapower_linked: false });
+      }
+      fetchServices();
+    } catch (err: any) {
+      setError(`Bulk update failed: ${err.message}`);
+    } finally {
+      setBulkUpdating(false);
     }
   };
 
@@ -103,6 +101,21 @@ const ServiceRouting: React.FC<ServiceRoutingProps> = ({ services, fetchServices
           </button>
         </div>
       )}
+
+      <div className="flex items-center justify-end">
+        <button
+          onClick={handleSetAllToWhatsApp}
+          disabled={bulkUpdating || arapowerRoutedServices.length === 0}
+          className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+        >
+          {bulkUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
+          {bulkUpdating
+            ? 'Updating...'
+            : arapowerRoutedServices.length === 0
+              ? 'All services already on WhatsApp'
+              : `Set All to WhatsApp (${arapowerRoutedServices.length})`}
+        </button>
+      </div>
 
       <div className="bg-white rounded-2xl overflow-hidden shadow-xl border border-zinc-200">
         <div className="overflow-x-auto">
