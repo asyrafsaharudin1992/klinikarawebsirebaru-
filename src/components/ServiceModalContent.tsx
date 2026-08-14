@@ -51,6 +51,11 @@ const ServiceModalContent: React.FC<ServiceModalContentProps> = ({ service, loca
 
   const carouselImages = [...(service.modalImageUrls || []), ...(service.imageUrls || []), service.imageUrl].filter(Boolean) as string[];
 
+  // Walk-in-only services always go to WhatsApp; otherwise it's whatever the
+  // admin's Service Routing dashboard has set for this service (defaults to
+  // AraPower if never explicitly configured).
+  const routeToWhatsApp = service.isWalkInOnly || !(service.is_arapower_linked ?? true);
+
   return (
     <div
       className="w-full h-[95vh] md:h-auto md:max-h-[85vh] md:max-w-5xl rounded-t-[32px] md:rounded-3xl overflow-hidden flex flex-col md:flex-row relative bg-zinc-950 shadow-2xl"
@@ -201,7 +206,7 @@ const ServiceModalContent: React.FC<ServiceModalContentProps> = ({ service, loca
           <div className="flex flex-row gap-3 w-full">
             <button
               onClick={(e) => {
-                if (service.isWalkInOnly) {
+                if (routeToWhatsApp) {
                   setShowBranchSelect(true);
                 } else {
                   handleBookNow(e);
@@ -209,7 +214,7 @@ const ServiceModalContent: React.FC<ServiceModalContentProps> = ({ service, loca
               }}
               className="pointer-events-auto flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 md:py-4 px-4 md:px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-sm md:text-lg transition-transform active:scale-95"
             >
-              {service.isWalkInOnly ? (
+              {routeToWhatsApp ? (
                 <>
                   <MessageCircle className="w-5 h-5" />
                   WhatsApp Kami
