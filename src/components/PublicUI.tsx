@@ -7,12 +7,13 @@ import { Link } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, getDocs, getDocsFromCache, getDocsFromServer, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview } from '../types';
-import { Play, ChevronRight, Menu, X, ChevronLeft, Calendar, FileText, Search, Sparkles, MapPin, Navigation, MessageCircle, Share2, Lock, ExternalLink, Database, Users, CreditCard, Settings, Check, CheckCircle2 } from 'lucide-react';
+import { Play, ChevronRight, Menu, X, ChevronLeft, Calendar, FileText, Search, Sparkles, MapPin, Navigation, MessageCircle, Lock, ExternalLink, Database, Users, CreditCard, Settings, CheckCircle2 } from 'lucide-react';
 import Fuse from 'fuse.js';
 import GoogleReviews from './GoogleReviews';
 import SEO from './SEO';
+import ServiceModalContent from './ServiceModalContent';
 import { AffiliateContext } from '../App';
-import { appendCacheBuster } from '../utils';
+import { appendCacheBuster, formatPhoneNumber } from '../utils';
 
 const CarouselWrapper = ({ children }: { children: React.ReactNode }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -106,13 +107,6 @@ const ServiceCarouselRow = ({ title, services, onSelect, subheading }: { title: 
   );
 };
 
-const formatPhoneNumber = (phone: string) => {
-  let cleaned = phone.replace(/\D/g, '');
-  if (cleaned.startsWith('0')) { cleaned = '60' + cleaned.substring(1); }
-  if (!cleaned.startsWith('60')) { cleaned = '60' + cleaned; }
-  return cleaned;
-};
-
 export default function PublicUI() {
   const [services, setServices] = useState<Service[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -130,17 +124,14 @@ export default function PublicUI() {
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [heroIndex, setHeroIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [bookingModalService, setBookingModalService] = useState<Service | null>(null);
   const [leadData, setLeadData] = useState({ name: '', phone: '', locationId: '', locationPhone: '' });
-  const [isCopied, setIsCopied] = useState(false);
   const [isSpecialAccessModalOpen, setIsSpecialAccessModalOpen] = useState(false);
   const [specialAccessPassword, setSpecialAccessPassword] = useState('');
   const [isSpecialAccessAuthenticated, setIsSpecialAccessAuthenticated] = useState(false);
   const [specialAccessError, setSpecialAccessError] = useState('');
-  const [showBranchSelect, setShowBranchSelect] = useState(false);
   const [customPages, setCustomPages] = useState<{title: string, slug: string}[]>([]);
 
   const { affiliateRef, clearAffiliateRef } = useContext(AffiliateContext);
@@ -189,34 +180,6 @@ export default function PublicUI() {
     return Database;
   };
 
-  const handleShare = async (service: Service) => {
-    const shareUrl = `https://share.klinikara24jam.hsohealthcare.com/?service=${service.id}`;
-    const warmSentence = `Jom lihat servis ini di Klinik Ara: ${service.title}`;
-    const fullMessage = `${shareUrl}\n\n${warmSentence}`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Klinik Ara 24 Jam - ${service.title}`,
-          text: warmSentence,
-          url: shareUrl,
-        });
-        return;
-      } catch (error) {
-        if (error instanceof Error && error.name !== 'AbortError') {
-          console.log('Error sharing', error);
-        }
-      }
-    }
-
-    try {
-      await navigator.clipboard.writeText(fullMessage);
-      alert("Link disalin! Sila tampal di WhatsApp.");
-    } catch (err) {
-      console.error('Failed to copy', err);
-    }
-  };
-
   useEffect(() => {
     const fetchWithCache = async (q: any) => {
       try {
@@ -243,6 +206,8 @@ export default function PublicUI() {
           const sortedServices = [...servicesData].sort((a, b) => (a.rankOrder || 0) - (b.rankOrder || 0));
           setServices(sortedServices);
 
+          // Legacy deep link support: old shared/AraCME links used ?service=<id>.
+          // Open the modal and correct the URL bar to the canonical /service/<slug> path.
           const urlParams = new URLSearchParams(window.location.search);
           const serviceIdFromUrl = urlParams.get('service');
 
@@ -250,7 +215,7 @@ export default function PublicUI() {
             const serviceToOpen = sortedServices.find(s => s.id === serviceIdFromUrl);
             if (serviceToOpen) {
               setSelectedService(serviceToOpen);
-              window.history.replaceState({}, '', window.location.pathname);
+              window.history.replaceState({}, '', `/service/${serviceToOpen.slug || serviceToOpen.id}`);
             }
           }
         } catch (error) {
@@ -402,32 +367,32 @@ export default function PublicUI() {
 
   const handleOpenModal = (service: Service) => {
     setSelectedService(service);
-  };
-
-  const handleCloseModal = () => {
-    setSelectedService(null);
-    setShowBranchSelect(false);
-  };
-
-  const handleBookNow = (e: React.MouseEvent, service: Service | null) => {
-    e.preventDefault(); 
-    if (!service) return;
-
-    const lsRef = typeof window !== 'undefined' ? localStorage.getItem('ara_affiliate_code') : null;
-    const urlRef = new URLSearchParams(window.location.search).get('ref');
-    const finalRef = affiliateRef || lsRef || urlRef;
-
-    let outboundUrl = `https://arapower.hsohealthcare.com/?serviceId=${service.id}`;
-    outboundUrl += `&serviceName=${encodeURIComponent(service.title || '')}`;
-    outboundUrl += `&serviceCode=${service.id}`;
-    
-    if (finalRef) {
-      outboundUrl += `&ref=${finalRef}`;
-      clearAffiliateRef();
+    const path = `/service/${service.slug || service.id}`;
+    if (window.location.pathname !== path) {
+      window.history.pushState({ serviceModal: true }, '', path);
     }
-    
-    window.location.href = outboundUrl; 
   };
+
+  // Closing goes through history.back() (when we pushed a /service/ URL to open)
+  // so the browser back button and the X/backdrop click share one code path -
+  // the popstate listener below is what actually clears selectedService.
+  const handleCloseModal = () => {
+    if (window.location.pathname.startsWith('/service/')) {
+      window.history.back();
+    } else {
+      setSelectedService(null);
+    }
+  };
+
+  useEffect(() => {
+    const onPopState = () => {
+      if (!window.location.pathname.startsWith('/service/')) {
+        setSelectedService(null);
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   const handleWhatsAppBooking = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -466,10 +431,6 @@ export default function PublicUI() {
     setSelectedService(null);
     setLeadData({ name: '', phone: '', locationId: '', locationPhone: '' });
   };
-
-  useEffect(() => {
-    setCurrentImageIndex(0);
-  }, [selectedService]);
 
   useEffect(() => {
     if (selectedService || bookingModalService) {
@@ -1010,198 +971,11 @@ export default function PublicUI() {
 
       {/* Interactive Modal */}
       {selectedService && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex flex-col md:flex-row md:items-center md:justify-center bg-zinc-950/90 backdrop-blur-sm p-0 md:p-6 overflow-hidden"
           onClick={handleCloseModal}
         >
-          <div 
-            className="w-full h-[95vh] md:h-auto md:max-h-[85vh] md:max-w-5xl rounded-t-[32px] md:rounded-3xl overflow-hidden flex flex-col md:flex-row relative bg-zinc-950 shadow-2xl"
-            onClick={e => e.stopPropagation()}
-          >
-            <button 
-              onClick={() => setSelectedService(null)}
-              className="absolute top-4 right-4 z-[60] bg-zinc-800/80 hover:bg-zinc-700 md:bg-zinc-800 md:hover:bg-zinc-700 text-white p-2.5 rounded-full backdrop-blur-md transition-colors border border-zinc-700 md:border-zinc-700"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="w-full h-full overflow-y-auto md:overflow-hidden flex flex-col md:flex-row relative hide-scrollbar">
-              
-              <div className="relative w-full md:w-1/2 shrink-0 group bg-zinc-950 overflow-hidden md:flex md:items-center min-h-[50vw] md:min-h-0 pb-8 md:pb-0">
-                {(() => {
-                  const carouselImages = selectedService 
-                    ? [...(selectedService.modalImageUrls || []), ...(selectedService.imageUrls || []), selectedService.imageUrl].filter(Boolean) as string[]
-                    : [];
-                  if (carouselImages.length === 0) return <div className="w-full h-full flex items-center justify-center text-zinc-600 bg-zinc-900 py-20">No Image</div>;
-                  
-                  return (
-                    <>
-                      <img
-                        src={appendCacheBuster(carouselImages[currentImageIndex])}
-                        alt=""
-                        className="hidden md:block absolute inset-0 w-full h-full object-cover blur-3xl opacity-50 scale-125 pointer-events-none z-0"
-                        referrerPolicy="no-referrer"
-                      />
-
-                      <img 
-                        src={appendCacheBuster(carouselImages[currentImageIndex])} 
-                        alt={`${selectedService.title} - Image ${currentImageIndex + 1}`}
-                        className="w-full h-auto max-h-[70vh] md:max-h-[85vh] object-contain block z-10 relative"
-                        referrerPolicy="no-referrer"
-                        loading="lazy"
-                      />
-
-                      <div className="absolute top-4 inset-x-4 flex items-center justify-between z-50">
-                        <button className="bg-zinc-950/40 backdrop-blur-md p-2 rounded-full text-white/80 hover:text-white transition-all border border-white/10">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
-                        </button>
-                      </div>
-
-                      {carouselImages.length > 1 && (
-                        <>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev === 0 ? carouselImages.length - 1 : prev - 1)); }}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 backdrop-blur-sm text-white p-1.5 rounded-full z-50"
-                          >
-                            <ChevronLeft className="w-5 h-5" />
-                          </button>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % carouselImages.length); }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 backdrop-blur-sm text-white p-1.5 rounded-full z-50"
-                          >
-                            <ChevronRight className="w-5 h-5" />
-                          </button>
-
-                          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-1.5 z-50">
-                            {carouselImages.map((_, idx) => (
-                              <div 
-                                key={idx} 
-                                className={`h-1.5 rounded-full transition-all ${idx === currentImageIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
-                              />
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
-
-              <div className="w-full md:w-1/2 bg-zinc-950 flex flex-col rounded-t-[32px] md:rounded-none -mt-8 md:mt-0 relative md:absolute md:right-0 md:top-0 md:bottom-0 z-30 border-l border-zinc-900/50 md:overflow-hidden">
-                
-                <div className="p-6 pb-32 md:p-10 md:pb-48 flex flex-col md:flex-1 md:overflow-y-auto hide-scrollbar">
-                  
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="px-3 py-1 bg-white text-zinc-950 text-[10px] font-bold tracking-widest rounded-full uppercase">
-                      {selectedService.category}
-                    </span>
-                    {(selectedService.startDate || selectedService.endDate) && (
-                      <span className="px-3 py-1 bg-zinc-800 text-zinc-300 text-[10px] font-bold tracking-widest rounded-full uppercase flex items-center gap-1 border border-zinc-700">
-                        <Calendar className="w-3 h-3" /> Valid Now
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 className="text-2xl md:text-3xl font-bold text-white leading-tight mb-6">
-                    {selectedService.title}
-                  </h3>
-
-                  <div className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800 my-6 flex flex-wrap items-center gap-6">
-                    {selectedService.teamAraPrice ? (
-                      <>
-                        <div className="flex flex-col">
-                          <span className="text-[10px] text-green-500 font-bold uppercase tracking-wider mb-1 flex items-center gap-1">
-                            TeamAra Price
-                          </span>
-                          <span className="text-4xl font-black text-green-400 tracking-tighter">RM{selectedService.teamAraPrice}</span>
-                        </div>
-                        {selectedService.price && (
-                          <div className="flex flex-col border-l border-zinc-700 pl-6">
-                            <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mb-1">Regular Price</span>
-                            <span className="text-xl font-bold text-zinc-500 line-through decoration-zinc-600">RM{selectedService.price}</span>
-                          </div>
-                        )}
-                      </>
-                    ) : selectedService.price ? (
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mb-1">Price</span>
-                        <span className="text-4xl font-black text-white tracking-tighter">RM{selectedService.price}</span>
-                      </div>
-                    ) : (
-                      <span className="text-sm font-medium text-zinc-400">Price available upon request</span>
-                    )}
-                  </div>
-
-                  {selectedService.showTeamAraDisclaimer && (
-                    <p className="text-xs text-zinc-400 mb-8 leading-relaxed">
-                      Harga TeamAra hanya untuk ahli TeamAra sahaja. Pendaftaran keahlian TeamAra boleh dilakukan di klinik secara percuma, harga TeamAra boleh dinikmati secara terus selepas pendaftaran keahlian dibuat.
-                    </p>
-                  )}
-
-                  <div className="w-full h-px bg-zinc-800 mb-8"></div>
-
-                  <div className="prose prose-sm md:prose-base prose-invert text-zinc-300 leading-relaxed whitespace-pre-wrap">
-                    {selectedService.description || "No detailed description provided for this service."}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="absolute bottom-0 left-0 w-full md:w-1/2 md:left-1/2 bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-zinc-950/0 md:bg-zinc-950/95 md:backdrop-blur-md md:border-t md:border-zinc-800 pt-20 md:pt-5 pb-6 md:pb-5 px-4 md:px-6 flex flex-col gap-3 z-50 pointer-events-none md:pointer-events-auto">
-              {showBranchSelect ? (
-                <div className="pointer-events-auto w-full bg-zinc-900/95 backdrop-blur-xl rounded-2xl p-4 border border-zinc-800 animate-in slide-in-from-bottom-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Pilih Cawangan WhatsApp</h4>
-                    <button onClick={() => setShowBranchSelect(false)} className="text-zinc-500 hover:text-white">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {locations.map(loc => (
-                      <a
-                        key={loc.id}
-                        href={`https://wa.me/${formatPhoneNumber(loc.whatsapp)}?text=${encodeURIComponent(`Hai, saya berminat dengan ${selectedService.title}`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold py-3 px-2 rounded-xl text-center transition-all border border-zinc-700"
-                      >
-                        {loc.branchName}
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-row gap-3 w-full">
-                  <button 
-                    onClick={(e) => {
-                      if (selectedService.isWalkInOnly) {
-                        setShowBranchSelect(true);
-                      } else {
-                        handleBookNow(e, selectedService);
-                      }
-                    }}
-                    className="pointer-events-auto flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 md:py-4 px-4 md:px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 text-sm md:text-lg transition-transform active:scale-95"
-                  >
-                    {selectedService.isWalkInOnly ? (
-                      <>
-                        <MessageCircle className="w-5 h-5" />
-                        WhatsApp Kami
-                      </>
-                    ) : (
-                      "Saya nak tempah slot"
-                    )}
-                  </button>
-                  <button 
-                    onClick={() => handleShare(selectedService)}
-                    className="pointer-events-auto shrink-0 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 md:py-4 px-5 md:px-6 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 text-sm md:text-lg transition-transform active:scale-95"
-                  >
-                    {isCopied ? <Check className="w-4 h-4 md:w-5 md:h-5" /> : <Share2 className="w-4 h-4 md:w-5 md:h-5" />}
-                    <span className="hidden sm:inline ml-2">{isCopied ? "Telah Disalin!" : "Kongsi"}</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+          <ServiceModalContent service={selectedService} locations={locations} onClose={handleCloseModal} />
         </div>
       )}
 

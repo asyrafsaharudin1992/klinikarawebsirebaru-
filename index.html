@@ -112,19 +112,14 @@
     }
     </script>
   <title>Klinik Ara 24 Jam | Klinik 24 Jam Berdekatan Anda</title>
-  <meta name="description" content="Klinik Ara 24 Jam menyediakan perkhidmatan kesihatan sepanjang masa di Kajang, Seri Kembangan & Semenyih. Klinik 24 jam berdekatan anda tawarkan rawatan kecemasan, scan ibu mengandung & vaksinasi." />
-
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://klinikara24jam.hsohealthcare.com" />
-    <meta property="og:title" content="Klinik Ara 24 Jam | Klinik 24 Jam Berdekatan Anda" />
-    <meta property="og:description" content="Klinik Ara 24 Jam menyediakan perkhidmatan kesihatan sepanjang masa di Kajang, Seri Kembangan & Semenyih. Klinik 24 jam berdekatan anda tawarkan rawatan kecemasan, scan ibu mengandung & vaksinasi." />
-    <meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/%7BA3113931-E36A-4750-9461-CF9E820F4CE2%7D.jpg?alt=media&token=0ec7467b-89e4-48c1-bde0-97736c744589" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Klinik Ara 24 Jam | Klinik 24 Jam Berdekatan Anda" />
-    <meta name="twitter:description" content="Klinik Ara 24 Jam menyediakan perkhidmatan kesihatan sepanjang masa di Kajang, Seri Kembangan & Semenyih. Klinik 24 jam berdekatan anda tawarkan rawatan kecemasan, scan ibu mengandung & vaksinasi." />
-    <meta name="twitter:image" content="https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/%7BA3113931-E36A-4750-9461-CF9E820F4CE2%7D.jpg?alt=media&token=0ec7467b-89e4-48c1-bde0-97736c744589" />
+  <!--
+    description/og:*/twitter:* tags are intentionally NOT hardcoded here.
+    Every route renders the <SEO> component (src/components/SEO.tsx), which
+    injects these via react-helmet-async with page-specific content. Static
+    duplicates here would never be removed by Helmet (it only manages tags
+    it rendered itself), so crawlers that take the first matching tag would
+    pick up the wrong generic content instead of each page's real content.
+  -->
 </head>
   <body>
     <div id="root"></div>

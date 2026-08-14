@@ -9,6 +9,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { CSS } from '@dnd-kit/utilities';
 import { LogOut, Plus, GripVertical, Image as ImageIcon, Trash2, Loader2, AlertCircle, CheckCircle2, X, Edit2, Sparkles, MapPin, Phone, ArrowUp, ArrowDown, ChevronLeft, Check, ExternalLink } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
+import { slugify, uniqueSlug } from '../utils';
 import DashboardStats from './DashboardStats';
 import ServiceRouting from './ServiceRouting';
 
@@ -1491,6 +1492,10 @@ const addCarouselCard = (blockId: string) => {
         imageUrl: finalThumbnailUrl,            // Backward compatibility for WhatsApp Share Link
       };
 
+      const takenSlugs = new Set<string>(
+        services.filter(s => s.id !== editingId && s.slug).map(s => s.slug as string)
+      );
+
       if (editingId) {
         const oldService = services.find(s => s.id === editingId);
         if (oldService) {
@@ -1501,12 +1506,18 @@ const addCarouselCard = (blockId: string) => {
             try { await deleteImageFromStorage(oldService.heroImageUrl); } catch (e) { console.error("Failed to delete old hero image:", e); }
           }
         }
-        await updateDoc(doc(db, 'services', editingId), serviceData);
+        // Slugs stay stable across edits (title changes shouldn't break already-shared
+        // /service/<slug> links) - only backfill one if this record predates slugs.
+        const updates = !oldService?.slug
+          ? { ...serviceData, slug: uniqueSlug(slugify(title), takenSlugs) }
+          : serviceData;
+        await updateDoc(doc(db, 'services', editingId), updates);
         setSuccessMsg('Service updated successfully!');
       } else {
         const newRankOrder = services.length > 0 ? Math.max(...services.map(s => s.rankOrder || 0)) + 1 : 0;
         await addDoc(collection(db, 'services'), {
           ...serviceData,
+          slug: uniqueSlug(slugify(title), takenSlugs),
           rankOrder: newRankOrder,
           createdAt: serverTimestamp()
         });

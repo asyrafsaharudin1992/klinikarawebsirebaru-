@@ -1,5 +1,6 @@
 export interface Service {
   id: string;
+  slug?: string;
   title: string;
   category: string;
   imageUrl?: string; // Legacy support

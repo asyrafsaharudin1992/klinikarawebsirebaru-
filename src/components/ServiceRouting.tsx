@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { doc, updateDoc } from 'firebase/firestore';
 import { Service } from '../types';
 import { CheckCircle2, AlertCircle, Loader2, ToggleLeft, ToggleRight, ExternalLink, MessageSquare } from 'lucide-react';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
+import { slugify, uniqueSlug } from '../utils';
 
 interface ServiceRoutingProps {
   services: Service[];
@@ -11,6 +13,27 @@ interface ServiceRoutingProps {
 const ServiceRouting: React.FC<ServiceRoutingProps> = ({ services, fetchServices }) => {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [backfilling, setBackfilling] = useState(false);
+
+  const servicesMissingSlugs = services.filter(s => !s.slug);
+
+  const handleBackfillSlugs = async () => {
+    setBackfilling(true);
+    setError(null);
+    try {
+      const taken = new Set<string>(services.filter(s => s.slug).map(s => s.slug as string));
+      for (const service of servicesMissingSlugs) {
+        const slug = uniqueSlug(slugify(service.title || service.id), taken);
+        taken.add(slug);
+        await updateDoc(doc(db, 'services', service.id), { slug });
+      }
+      fetchServices();
+    } catch (err: any) {
+      setError(`Backfill failed: ${err.message}`);
+    } finally {
+      setBackfilling(false);
+    }
+  };
 
   const safeFetch = async (url: string, options: RequestInit) => {
     try {
@@ -62,6 +85,22 @@ const ServiceRouting: React.FC<ServiceRoutingProps> = ({ services, fetchServices
         <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-4 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <span className="text-sm font-medium">{error}</span>
+        </div>
+      )}
+
+      {servicesMissingSlugs.length > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/50 text-amber-700 p-4 rounded-xl flex items-center justify-between gap-3">
+          <span className="text-sm font-medium">
+            {servicesMissingSlugs.length} service{servicesMissingSlugs.length === 1 ? '' : 's'} missing a URL slug (needed for /service/&lt;slug&gt; pages).
+          </span>
+          <button
+            onClick={handleBackfillSlugs}
+            disabled={backfilling}
+            className="shrink-0 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+          >
+            {backfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {backfilling ? 'Generating...' : 'Generate Missing Slugs'}
+          </button>
         </div>
       )}
 

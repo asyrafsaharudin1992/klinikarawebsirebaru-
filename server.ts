@@ -151,7 +151,7 @@ async function startServer() {
 
   // ── HTML handler (SSR meta injection for link previews) ─────────────────────
   // Only handle known page routes to avoid intercepting internal Vite/asset requests
-  const pageRoutes = /^\/($|arapower|p\/|share|admin|login)/i;
+  const pageRoutes = /^\/($|arapower|p\/|service\/|share|admin|login)/i;
   app.get('*', async (req, res, next) => {
     const normalizedPath = req.path.replace(/\/$/, '').toLowerCase() || '/';
     
@@ -211,7 +211,23 @@ async function startServer() {
         console.error('Error fetching dynamic page meta:', error);
       }
     }
-    // 3. Dynamic service pages (query-string based: /?service=<id>)
+    // 3. Service detail pages (/service/<slug>)
+    else if (normalizedPath.startsWith('/service/')) {
+      const slug = normalizedPath.replace('/service/', '');
+      try {
+        const snapshot = await db.collection('services').where('slug', '==', slug).limit(1).get();
+        if (!snapshot.empty) {
+          const service = snapshot.docs[0].data();
+          title = service?.title ? `${service.title} | Klinik Ara 24 Jam` : title;
+          description = service?.description || description;
+          imageUrl = service?.heroImageUrl ?? service?.imageUrl ?? service?.imageUrls?.[0] ?? imageUrl;
+          fullUrl = BASE_URL + normalizedPath;
+        }
+      } catch (error) {
+        console.error('Error fetching service by slug:', error);
+      }
+    }
+    // 4. Legacy dynamic service pages (query-string based: /?service=<id>)
     else if (serviceId) {
       try {
         const serviceDoc = await db.collection('services').doc(serviceId).get();
