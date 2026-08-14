@@ -151,36 +151,6 @@ export default function PublicUI() {
   const primaryLocation = locations?.[0];
   const seoDescription = `Klinik Ara 24 jam berdekatan anda di ${primaryLocation?.branchName || 'Kajang, Seri Kembangan, Semenyih'}. Tawarkan rawatan asma, sedut kahak, sakit lutut, scan ibu mengandung & vaksin baby. Dibuka 24 jam setiap hari.`;
   const seoTitle = "Klinik Ara 24 Jam | Klinik 24 Jam Berdekatan Anda";
-  
-  const schemaData = {
-    "@context": "https://schema.org",
-    "@type": "MedicalClinic",
-    "name": "Klinik Ara 24 Jam",
-    "image": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2053&auto=format&fit=crop",
-    "description": seoDescription,
-    "url": "https://klinikara24jam.hsohealthcare.com",
-    "telephone": primaryLocation?.whatsapp ? `+60${primaryLocation.whatsapp.replace(/[^0-9]/g, '')}` : "+60123456789",
-    "priceRange": "$$",
-    "address": locations.map(loc => ({
-      "@type": "PostalAddress",
-      "streetAddress": loc.address,
-      "addressLocality": loc.branchName,
-      "addressRegion": "Selangor", 
-      "addressCountry": "MY"
-    })),
-    "openingHoursSpecification": [
-      {
-        "@type": "OpeningHoursSpecification",
-        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-        "opens": "00:00",
-        "closes": "23:59"
-      }
-    ],
-    "department": services.slice(0, 3).map(s => ({
-      "@type": "MedicalSpecialty",
-      "name": s.title
-    }))
-  };
 
   useEffect(() => {
     const pagesQ = query(collection(db, 'pages'), where('status', '==', 'published'));
@@ -543,19 +513,14 @@ export default function PublicUI() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white overflow-x-hidden font-sans">
-      {/* SEO: Injected Schema.org Data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
-      />
-
-      {/* SEO: Meta Tags Component */}
-      <SEO 
-        title={seoTitle} 
-        description={seoDescription} 
-        image={heroImage} 
+      {/* SEO: Meta Tags Component (structured data lives once, sitewide, in index.html) */}
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        image={heroImage}
         type="website"
         url={window.location.href}
+        canonicalUrl="https://klinikara24jam.hsohealthcare.com"
       />
      
       {/* Navbar */}
@@ -1071,10 +1036,11 @@ export default function PublicUI() {
                   
                   return (
                     <>
-                      <img 
-                        src={appendCacheBuster(carouselImages[currentImageIndex])} 
-                        className="hidden md:block absolute inset-0 w-full h-full object-cover blur-3xl opacity-50 scale-125 pointer-events-none z-0" 
-                        referrerPolicy="no-referrer" 
+                      <img
+                        src={appendCacheBuster(carouselImages[currentImageIndex])}
+                        alt=""
+                        className="hidden md:block absolute inset-0 w-full h-full object-cover blur-3xl opacity-50 scale-125 pointer-events-none z-0"
+                        referrerPolicy="no-referrer"
                       />
 
                       <img 

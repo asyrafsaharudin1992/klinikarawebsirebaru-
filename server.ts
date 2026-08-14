@@ -42,7 +42,7 @@ const PAGE_META: Record<string, { title: string; description: string; image: str
     image:
       'https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/AraPower%20Poster%20.jpg?alt=media&token=122ea2b4-d858-42c0-9a5d-4e217d3d42ea',
   },
-  '/p/aracme': {
+  '/p/cme-ara': {
     title: 'AraCME | Continuing Medical Education at Klinik Ara',
     description: 'Explore professional medical modules, video presentations, and slide decks designed for continuous learning and professional development.',
     image: 'https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/AraCEM%20Thumbnail.jpg?alt=media&token=6414fca1-f1d5-4475-916d-fc2404a2ea5f',
