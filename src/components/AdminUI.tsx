@@ -9,7 +9,6 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { CSS } from '@dnd-kit/utilities';
 import { LogOut, Plus, GripVertical, Image as ImageIcon, Trash2, Loader2, AlertCircle, CheckCircle2, X, Edit2, Sparkles, MapPin, Phone, ArrowUp, ArrowDown, ChevronLeft, Check, ExternalLink } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
-import { GoogleGenAI } from '@google/genai';
 import DashboardStats from './DashboardStats';
 import ServiceRouting from './ServiceRouting';
 
@@ -249,9 +248,6 @@ export default function AdminUI({ user }: { user: User }) {
   // AI Generation State
   const [heroImageUrl, setHeroImageUrl] = useState('');
   const [isUploadingHero, setIsUploadingHero] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedImageBase64, setGeneratedImageBase64] = useState<string | null>(null);
 
   const deleteImageFromStorage = async (imageUrl: string) => {
     if (!imageUrl || imageUrl.startsWith('data:image')) return;
@@ -543,8 +539,6 @@ export default function AdminUI({ user }: { user: User }) {
     setThumbnailPreview(service.thumbnailUrl || null);
     setModalImageUrls(service.modalImageUrls || []);
     setModalImagePreviews(service.modalImageUrls || []);
-    setAiPrompt('');
-    setGeneratedImageBase64(null);
 
     const urls = service.imageUrls || (service.imageUrl ? [service.imageUrl] : []);
     setExistingImageUrls(urls);
@@ -576,8 +570,6 @@ export default function AdminUI({ user }: { user: User }) {
     setModalImageUrls([]);
     setModalImageFiles([]);
     setModalImagePreviews([]);
-    setAiPrompt('');
-    setGeneratedImageBase64(null);
   };
 
   const handleEditLocation = (loc: Location) => {
@@ -1373,38 +1365,6 @@ const addCarouselCard = (blockId: string) => {
     return new Blob([ab], { type: mimeString });
   };
 
-  const handleGenerateImage = async () => {
-    if (!aiPrompt) return;
-    setIsGenerating(true);
-    setErrorMsg(null);
-    try {
-      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
-      const response = await ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt: aiPrompt,
-        config: {
-          numberOfImages: 1,
-          outputMimeType: 'image/jpeg',
-          aspectRatio: '16:9',
-        },
-      });
-      
-      if (response.generatedImages && response.generatedImages.length > 0) {
-        const base64EncodeString = response.generatedImages[0].image.imageBytes;
-        setGeneratedImageBase64(`data:image/jpeg;base64,${base64EncodeString}`);
-      } else {
-        throw new Error("No image generated");
-      }
-    } catch (error: any) {
-      console.error('AI Generation error:', error);
-      const errorText = `AI Generation failed: ${error.message || 'Unknown error'}. Please check your API keys and permissions.`;
-      setErrorMsg(errorText);
-      window.alert(errorText);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   const handleHeroImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
@@ -2048,27 +2008,6 @@ const addCarouselCard = (blockId: string) => {
                 </summary>
                 <div className="p-5 border-t border-zinc-800/50 space-y-6 bg-black/20">
                   <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-grow">
-                        <label className="block text-[10px] uppercase font-bold text-zinc-500 mb-1">AI Prompt for Banner</label>
-                        <input 
-                          type="text"
-                          value={aiPrompt}
-                          onChange={(e) => setAiPrompt(e.target.value)}
-                          placeholder="e.g., A futuristic medical clinic with neon lights..."
-                          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 transition-all"
-                        />
-                      </div>
-                      <button 
-                        type="button"
-                        onClick={handleGenerateImage}
-                        disabled={isGenerating || !aiPrompt}
-                        className="mt-5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white p-2 rounded-lg transition-colors shadow-lg shadow-purple-900/20"
-                      >
-                        {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                      </button>
-                    </div>
-
                     <div className="relative aspect-[16/9] bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden group">
                       {heroImageUrl ? (
                         <img src={heroImageUrl} alt="Hero" className="w-full h-full object-cover" />
@@ -2169,7 +2108,7 @@ const addCarouselCard = (blockId: string) => {
 
               <button 
                 type="submit" 
-                disabled={isUploading || isGenerating || isUploadingHero || !title}
+                disabled={isUploading || isUploadingHero || !title}
                 className={`w-full ${editingId ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 mt-6`}
               >
                 {isUploading ? (

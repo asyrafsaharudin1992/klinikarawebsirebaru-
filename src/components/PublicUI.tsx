@@ -9,7 +9,6 @@ import { db, auth } from '../firebase';
 import { Service, Location, Panel, Collaborator, Vendor, AppSettings, handleFirestoreError, OperationType, GoogleReview } from '../types';
 import { Play, ChevronRight, Menu, X, ChevronLeft, Calendar, FileText, Search, Sparkles, MapPin, Navigation, MessageCircle, Share2, Lock, ExternalLink, Database, Users, CreditCard, Settings, Check, CheckCircle2 } from 'lucide-react';
 import Fuse from 'fuse.js';
-import { GoogleGenAI, Type } from '@google/genai';
 import GoogleReviews from './GoogleReviews';
 import SEO from './SEO';
 import { AffiliateContext } from '../App';
@@ -134,8 +133,6 @@ export default function PublicUI() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [heroIndex, setHeroIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isAiSearching, setIsAiSearching] = useState(false);
-  const [aiResults, setAiResults] = useState<string[]>([]);
   const [bookingModalService, setBookingModalService] = useState<Service | null>(null);
   const [leadData, setLeadData] = useState({ name: '', phone: '', locationId: '', locationPhone: '' });
   const [isCopied, setIsCopied] = useState(false);
@@ -418,60 +415,12 @@ export default function PublicUI() {
 
   const featuredServices = (services || []).filter(s => s.isFeatured);
 
-  const fuse = new Fuse(services || [], {
+  const fuse = new Fuse<Service>(services || [], {
     keys: ['title', 'category', 'description'],
     threshold: 0.3,
   });
 
-  const searchResults = aiResults.length > 0 
-    ? (services || []).filter(s => aiResults.includes(s.id))
-    : searchQuery ? fuse.search(searchQuery).map(result => result.item) : [];
-
-  const handleAskAI = async () => {
-    if (!searchQuery) return;
-    setIsAiSearching(true);
-    setAiResults([]);
-    
-    try {
-      const apiKey = import.meta.env.VITE_CUSTOM_API_KEY || process.env.GEMINI_API_KEY;
-        
-      if (!apiKey || apiKey === 'undefined') {
-        throw new Error("API Key is missing. Please add VITE_CUSTOM_API_KEY to your Secrets panel.");
-      }
-      
-      const ai = new GoogleGenAI({ apiKey });
-      const simplifiedServices = (services || []).map(s => ({ id: s.id, title: s.title, description: s.description }));
-      
-      const prompt = `You are a medical triage assistant. Patient says: '${searchQuery}'. Review this list of services: ${JSON.stringify(simplifiedServices)}. Return a JSON array containing ONLY the string IDs of the top 1 to 4 most relevant services.`;
-      
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.STRING
-            }
-          }
-        }
-      });
-      
-      const text = response.text || "[]";
-      const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-      const ids = JSON.parse(cleanedText);
-      
-      if (Array.isArray(ids)) {
-        setAiResults(ids);
-      }
-    } catch (error) {
-      console.error("AI Search Error:", error);
-      alert(`Failed to perform AI search: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      setIsAiSearching(false);
-    }
-  };
+  const searchResults: Service[] = searchQuery ? fuse.search(searchQuery).map(result => result.item) : [];
 
   useEffect(() => {
     if (featuredServices.length <= 1) return;
@@ -763,36 +712,20 @@ export default function PublicUI() {
             <div className="relative flex-grow w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
               <input 
-                type="text" 
-                placeholder="Tanya kami" 
+                type="text"
+                placeholder="Tanya kami"
                 value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setAiResults([]);
-                }}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-transparent text-white text-sm sm:text-base rounded-xl pl-12 pr-4 py-4 focus:outline-none placeholder:text-zinc-500"
               />
             </div>
-            <button 
-              onClick={handleAskAI}
-              disabled={!searchQuery || isAiSearching}
-              className="w-full sm:w-auto bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-            >
-              <Sparkles className="w-5 h-5" />
-              TeamAra jawab
-            </button>
           </div>
         </div>
 
-        {isAiSearching ? (
-          <section className="pt-16 pb-20 min-h-[40vh] flex flex-col items-center justify-center text-zinc-400">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mb-4"></div>
-            <p className="text-xl animate-pulse">AI is analyzing your symptoms...</p>
-          </section>
-        ) : searchQuery || aiResults.length > 0 ? (
+        {searchQuery ? (
           <section className="pt-16 px-4 md:px-12 pb-20 min-h-[40vh]">
             <h2 className="text-2xl md:text-3xl font-bold mb-6">
-              {aiResults.length > 0 ? "AI Recommendations" : `Search Results for "${searchQuery}"`}
+              Search Results for "{searchQuery}"
             </h2>
             {searchResults.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
