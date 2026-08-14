@@ -1,0 +1,15 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      // Allow anyone to view the images (crucial for the public website)
+      allow read: if true;
+
+      // Only verified admins (present in the Firestore /admins collection,
+      // keyed by email) can upload, overwrite, or delete files. Being
+      // signed in with any Google account is NOT enough on its own.
+      allow write: if request.auth != null &&
+        firestore.exists(/databases/(default)/documents/admins/$(request.auth.token.email));
+    }
+  }
+}

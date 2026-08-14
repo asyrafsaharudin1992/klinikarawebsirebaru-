@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
     // ===============================================================
     // Helper Functions
     // ===============================================================
@@ -10,70 +10,82 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Verifies that the logged-in user is a real admin, keyed by their
+    // email as the /admins document ID (see admins match block below).
+    // Being signed in with any Google account is NOT enough on its own.
+    function isAdmin() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
+    }
+
     // ===============================================================
     // PUBLIC READ COLLECTIONS (Website Content)
     // Anyone on the internet can read these to view the live website.
-    // Only logged-in staff can create, update, or delete them.
+    // Only verified admins can create, update, or delete them.
     // ===============================================================
 
     match /services/{document=**} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
     match /locations/{document=**} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
     match /panels/{document=**} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
     match /collaborators/{document=**} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
     match /vendors/{document=**} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
     match /reviews/{document=**} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
     match /settings/{document=**} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
     match /pages/{document=**} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
     // ===============================================================
     // LEADS COLLECTION (Customer Inquiries / Bookings)
     // Anyone on the internet can create a lead (submit a form).
-    // Only logged-in staff can view, edit, or delete the leads.
+    // Only verified admins can view, edit, or delete the leads.
     // ===============================================================
     match /leads/{document=**} {
       allow create: if true;
-      allow read, update, delete: if isAuthenticated();
+      allow read, update, delete: if isAdmin();
     }
 
     // ===============================================================
     // ADMINS COLLECTION (Staff Management)
-    // Logged-in users need to read this to verify their role.
-    // Only logged-in staff can add or remove other staff.
+    // Document ID is the admin's email address (not an auto-generated
+    // ID) so isAdmin() above can look it up directly.
+    // Logged-in users need to read this to verify their own role.
+    // Only existing admins can add or remove other admins - this is
+    // what prevents any random signed-in Google account from granting
+    // itself access.
     // ===============================================================
     match /admins/{document=**} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
     }
   }
 }

@@ -1618,13 +1618,16 @@ const addCarouselCard = (blockId: string) => {
     setErrorMsg(null);
 
     try {
+      const normalizedEmail = staffForm.email.trim().toLowerCase();
       const staffData = {
-        email: staffForm.email,
+        email: normalizedEmail,
         role: staffForm.role,
         branchId: staffForm.role === 'branchadmin' ? (staffForm.branchId || null) : null
       };
 
-      await addDoc(collection(db, 'admins'), staffData);
+      // Keyed by email (not an auto-generated ID) so the Firestore/Storage
+      // security rules can look up "is this signed-in user an admin?" directly.
+      await setDoc(doc(db, 'admins', normalizedEmail), staffData);
       setSuccessMsg('Staff member added successfully!');
       setStaffForm({ email: '', role: 'branchadmin', branchId: '' });
       setTimeout(() => setSuccessMsg(null), 3000);
