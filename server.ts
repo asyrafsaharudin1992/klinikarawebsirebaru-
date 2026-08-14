@@ -80,6 +80,36 @@ function escapeHtml(str: string): string {
   );
 }
 
+// Verifies the caller's Firebase ID token and checks they're a real admin
+// (present in the Firestore admins collection, keyed by email) - the same
+// check the Firestore/Storage security rules use for client-side writes.
+// Returns the admin's email on success, or null after sending an error response.
+async function requireAdmin(req: express.Request, res: express.Response): Promise<string | null> {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) {
+    res.status(401).json({ error: 'Missing Authorization header.' });
+    return null;
+  }
+  try {
+    const decoded = await admin.auth(adminApp).verifyIdToken(token);
+    const email = decoded.email;
+    if (!email) {
+      res.status(403).json({ error: 'Forbidden.' });
+      return null;
+    }
+    const adminDoc = await db.collection('admins').doc(email).get();
+    if (!adminDoc.exists) {
+      res.status(403).json({ error: 'Forbidden.' });
+      return null;
+    }
+    return email;
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid or expired token.' });
+    return null;
+  }
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -88,10 +118,16 @@ async function startServer() {
 
   // ── API Routes ──────────────────────────────────────────────────────────────
   app.patch('/api/services/:id', async (req, res) => {
+    if (!(await requireAdmin(req, res))) return;
+
     const { id } = req.params;
-    const updates = req.body;
+    const { is_arapower_linked } = req.body;
+    if (typeof is_arapower_linked !== 'boolean') {
+      res.status(400).json({ error: 'is_arapower_linked must be a boolean.' });
+      return;
+    }
     try {
-      await db.collection('services').doc(id).update(updates);
+      await db.collection('services').doc(id).update({ is_arapower_linked });
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error updating service:', error);

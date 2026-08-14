@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Service } from '../types';
 import { CheckCircle2, AlertCircle, Loader2, ToggleLeft, ToggleRight, ExternalLink, MessageSquare } from 'lucide-react';
+import { auth } from '../firebase';
 
 interface ServiceRoutingProps {
   services: Service[];
@@ -13,11 +14,13 @@ const ServiceRouting: React.FC<ServiceRoutingProps> = ({ services, fetchServices
 
   const safeFetch = async (url: string, options: RequestInit) => {
     try {
+      const idToken = await auth.currentUser?.getIdToken();
       const response = await fetch(url, {
         ...options,
         headers: {
           ...options.headers,
           'Content-Type': 'application/json',
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
         },
       });
       if (!response.ok) {
