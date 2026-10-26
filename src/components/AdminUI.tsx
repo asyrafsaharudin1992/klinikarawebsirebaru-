@@ -1102,6 +1102,20 @@ const addCarouselCard = (blockId: string) => {
     }));
   };
 
+  const moveCarouselCard = (blockId: string, cardIndex: number, direction: 'up' | 'down') => {
+    setPageForm(prev => ({
+      ...prev,
+      blocks: prev.blocks.map(b => {
+        if (b.id !== blockId || !b.carouselCards) return b;
+        const target = direction === 'up' ? cardIndex - 1 : cardIndex + 1;
+        if (target < 0 || target >= b.carouselCards.length) return b;
+        const cards = [...b.carouselCards];
+        [cards[cardIndex], cards[target]] = [cards[target], cards[cardIndex]];
+        return { ...b, carouselCards: cards };
+      })
+    }));
+  };
+
   const handleCarouselImageUpload = async (blockId: string, cardId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
@@ -3778,7 +3792,11 @@ const addCarouselCard = (blockId: string) => {
                             <div className="text-sm font-bold text-zinc-300 border-b border-zinc-800 pb-2">Carousel Cards</div>
                             {(block.carouselCards || []).map((card, cIndex) => (
                               <div key={card.id} className="bg-zinc-900 border border-zinc-700 rounded-lg p-3 relative group/card space-y-3">
-                                <button type="button" onClick={() => removeCarouselCard(block.id, card.id)} className="absolute top-2 right-2 text-red-500 opacity-50 hover:opacity-100 p-1"><Trash2 className="w-4 h-4" /></button>
+                                <div className="absolute top-2 right-2 flex items-center gap-1">
+                                  <button type="button" onClick={() => moveCarouselCard(block.id, cIndex, 'up')} disabled={cIndex === 0} className="p-1 text-zinc-400 hover:text-white disabled:opacity-30"><ArrowUp className="w-4 h-4" /></button>
+                                  <button type="button" onClick={() => moveCarouselCard(block.id, cIndex, 'down')} disabled={cIndex === (block.carouselCards || []).length - 1} className="p-1 text-zinc-400 hover:text-white disabled:opacity-30"><ArrowDown className="w-4 h-4" /></button>
+                                  <button type="button" onClick={() => removeCarouselCard(block.id, card.id)} className="text-red-500 opacity-50 hover:opacity-100 p-1 ml-1"><Trash2 className="w-4 h-4" /></button>
+                                </div>
                                 <span className="text-xs font-bold text-zinc-500">Card {cIndex + 1}</span>
                                 
                                 <input type="text" value={card.title} onChange={e => updateCarouselCard(block.id, card.id, 'title', e.target.value)} placeholder="Card Title" className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-white text-sm" />
