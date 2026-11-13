@@ -136,14 +136,6 @@ export default function App() {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
-      </div>
-    );
-  }
-
   return (
     <AffiliateContext.Provider value={{ affiliateRef, clearAffiliateRef }}>
       <ErrorBoundary>
@@ -159,11 +151,11 @@ export default function App() {
                 <Route path="/share" element={<SharePage />} />
                 <Route 
                   path="/admin" 
-                  element={user ? <AdminUI user={user} /> : <Navigate to="/login" replace />} 
+                  element={loading ? <LoadingSpinner /> : user ? <AdminUI user={user} /> : <Navigate to="/login" replace />} 
                 />
                 <Route 
                   path="/login" 
-                  element={!user ? <Login /> : <Navigate to="/admin" replace />} 
+                  element={loading ? <LoadingSpinner /> : !user ? <Login /> : <Navigate to="/admin" replace />} 
                 />
               </Routes>
             </Suspense>
