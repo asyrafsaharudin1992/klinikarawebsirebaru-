@@ -342,19 +342,7 @@ function Page() {
       </main>
 
       <SiteFooter>
-        <div className="text-zinc-300 text-sm flex flex-col gap-1">
-          <p>Klinik Ara 24 Jam &middot; HSO Healthcare Sdn. Bhd.</p>
-          <p>
-            WhatsApp:{' '}
-            <a href="https://wa.me/60182199218" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-white">
-              018-219 9218
-            </a>{' '}
-            &middot;{' '}
-            <Link to="/" className="underline underline-offset-2 hover:text-white">
-              klinikara24jam.hsohealthcare.com
-            </Link>
-          </p>
-        </div>
+        <p className="text-zinc-300 text-sm">Klinik Ara 24 Jam &middot; HSO Healthcare Sdn. Bhd.</p>
         <Ed as="p" k="footer.disclaimer" className="text-zinc-400 text-xs max-w-3xl" />
       </SiteFooter>
       {!editing && <StickyCta label="BOOK FREE CONSULTATION" />}
