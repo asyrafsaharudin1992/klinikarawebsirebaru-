@@ -137,12 +137,12 @@ async function startServer() {
       res.json({ success: true });
     });
 
-    // Photo uploads for the editor: slot is "hero" or "credibility", saved as public/consult-<slot>.<ext>.
+    // Photo uploads for the editor: slot is "hero", "credibility" or "site", saved as public/consult-<slot>.<ext>.
     app.post('/api/dev/consult-photo', express.raw({ type: 'application/octet-stream', limit: '12mb' }), (req, res) => {
       if (!isLoopback(req)) return res.status(403).end();
       const slot = String(req.query.slot || '');
       const ext = String(req.query.ext || '').toLowerCase();
-      if (!['hero', 'credibility'].includes(slot)) return res.status(400).send('Unknown photo slot.');
+      if (!['hero', 'credibility', 'site'].includes(slot)) return res.status(400).send('Unknown photo slot.');
       if (!['jpg', 'jpeg', 'png', 'webp', 'avif'].includes(ext) || !Buffer.isBuffer(req.body) || req.body.length === 0) {
         return res.status(400).send('Send an image (jpg, png, webp or avif).');
       }
