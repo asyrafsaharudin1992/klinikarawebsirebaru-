@@ -4,6 +4,52 @@ import { fetchCollectionCount, track, useInView } from './consultLib';
 import { Ed, useContent } from './editing';
 
 /**
+ * Counts a figure up from 0 (easing out, like a tally settling) once `run` is true. Keeps any
+ * suffix, so "8k++" counts 0 to 8 and shows k++ throughout. Static for reduced motion, and
+ * non-numeric values are shown as they are.
+ */
+const Figure: React.FC<{ value: string; run: boolean; delay?: number }> = ({ value, run, delay = 0 }) => {
+  const m = /^(\d{1,6})(.*)$/.exec(value.trim());
+  const target = m ? Number(m[1]) : null;
+  const suffix = m ? m[2] : '';
+  const [n, setN] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (target === null || !run) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setN(target);
+      return;
+    }
+    let raf = 0;
+    let start = 0;
+    const timer = setTimeout(() => {
+      const tick = (now: number) => {
+        start = start || now;
+        const t = Math.min(1, (now - start) / 1500);
+        setN(Math.round(target * (1 - Math.pow(1 - t, 3))));
+        if (t < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    }, delay);
+    return () => {
+      clearTimeout(timer);
+      cancelAnimationFrame(raf);
+    };
+  }, [target, run, delay]);
+
+  if (target === null) return <>{value}</>;
+  // Before the count starts, show 0 so the figure doesn't flash its final value first.
+  return (
+    <span aria-label={value}>
+      <span aria-hidden="true">
+        {n ?? 0}
+        {suffix}
+      </span>
+    </span>
+  );
+};
+
+/**
  * Dedicated "visit the main website" panel with community stats. Keluarga TeamAra and Vendor TeamAra
  * are live counts of the main site's own lists (loaded once the panel scrolls into view); the
  * membership figure is the owner-supplied value in content.json. A count that can't be loaded is
@@ -87,9 +133,9 @@ const SiteStats: React.FC = () => {
             )}
           </div>
           <ul className="c-stats">
-            {(!counts || counts.collab !== null) && tile(Users, counts ? counts.collab : skeleton, 'site.collabLabel', 'collab')}
-            {(!counts || counts.vendor !== null) && tile(Handshake, counts ? counts.vendor : skeleton, 'site.vendorLabel', 'vendor')}
-            {tile(UserPlus, <Ed k="site.membersValue" />, 'site.membersLabel', 'members')}
+            {(!counts || counts.collab !== null) && tile(Users, counts ? <Figure value={String(counts.collab)} run delay={0} /> : skeleton, 'site.collabLabel', 'collab')}
+            {(!counts || counts.vendor !== null) && tile(Handshake, counts ? <Figure value={String(counts.vendor)} run delay={150} /> : skeleton, 'site.vendorLabel', 'vendor')}
+            {tile(UserPlus, editing ? <Ed k="site.membersValue" /> : <Figure value={get('site.membersValue')} run={seen} delay={300} />, 'site.membersLabel', 'members')}
           </ul>
         </div>
       </div>
