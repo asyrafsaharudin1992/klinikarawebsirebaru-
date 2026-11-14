@@ -116,6 +116,42 @@ async function startServer() {
 
   app.use(express.json());
 
+  // ── Dev only: save endpoints for the localhost page editor (/business-consultation?edit=1) ──
+  // Not registered in production, and only accepts requests from this machine (the server binds
+  // to 0.0.0.0, so other devices on the network are refused).
+  if (process.env.NODE_ENV !== 'production') {
+    const isLoopback = (req: express.Request) =>
+      ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress || '');
+    const consultDir = path.join(__dirname, 'src', 'components', 'consult');
+
+    app.post('/api/dev/consult-content', (req, res) => {
+      if (!isLoopback(req)) return res.status(403).end();
+      const contentPath = path.join(consultDir, 'content.json');
+      const current = JSON.parse(fs.readFileSync(contentPath, 'utf8'));
+      const next = req.body;
+      const sameKeys =
+        next && typeof next === 'object' && !Array.isArray(next) &&
+        JSON.stringify(Object.keys(next).sort()) === JSON.stringify(Object.keys(current).sort());
+      if (!sameKeys) return res.status(400).send('Unexpected content shape.');
+      fs.writeFileSync(contentPath, JSON.stringify(next, null, 2) + '\n', 'utf8');
+      res.json({ success: true });
+    });
+
+    app.post('/api/dev/consult-photo', express.raw({ type: 'application/octet-stream', limit: '12mb' }), (req, res) => {
+      if (!isLoopback(req)) return res.status(403).end();
+      const ext = String(req.query.ext || '').toLowerCase();
+      if (!['jpg', 'jpeg', 'png', 'webp', 'avif'].includes(ext) || !Buffer.isBuffer(req.body) || req.body.length === 0) {
+        return res.status(400).send('Send an image (jpg, png, webp or avif).');
+      }
+      const publicDir = path.join(__dirname, 'public');
+      for (const old of fs.readdirSync(publicDir)) {
+        if (/^consult-photo\./.test(old)) fs.unlinkSync(path.join(publicDir, old));
+      }
+      fs.writeFileSync(path.join(publicDir, `consult-photo.${ext}`), req.body);
+      res.json({ path: `/consult-photo.${ext}` });
+    });
+  }
+
   // ── API Routes ──────────────────────────────────────────────────────────────
   app.patch('/api/services/:id', async (req, res) => {
     if (!(await requireAdmin(req, res))) return;

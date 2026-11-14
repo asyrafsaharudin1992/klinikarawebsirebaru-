@@ -14,6 +14,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(__dirname, '..', 'dist');
 const meta = JSON.parse(await readFile(path.join(__dirname, '..', 'src', 'components', 'consult', 'meta.json'), 'utf8'));
 
+const { hero } = JSON.parse(await readFile(path.join(__dirname, '..', 'src', 'components', 'consult', 'content.json'), 'utf8'));
+
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const tags = [
@@ -40,6 +42,9 @@ const assets = await readdir(path.join(dist, 'assets'));
 const pageJs = assets.find((f) => /^BusinessConsultation-.*\.js$/.test(f));
 const pageCss = assets.find((f) => /^BusinessConsultation-.*\.css$/.test(f));
 const preloads = [
+  `<link data-prerender="true" rel="preconnect" href="https://fonts.googleapis.com" />`,
+  `<link data-prerender="true" rel="preconnect" href="https://fonts.gstatic.com" crossorigin />`,
+  `<link data-prerender="true" rel="stylesheet" href="${esc(meta.fontCss)}" />`,
   pageJs && `<link rel="modulepreload" crossorigin href="/assets/${pageJs}" />`,
   pageCss && `<link rel="stylesheet" crossorigin href="/assets/${pageCss}" />`,
 ]
@@ -57,11 +62,11 @@ const shell = `<div class="consult-page">
       </header>
       <main>
         <section class="c-section c-hero" aria-labelledby="c-h1">
-          <p class="c-chip">${esc(meta.hero.chip)}</p>
+          <p class="c-chip">${esc(hero.chip)}</p>
           <p class="c-soap"><span class="c-soap-letter">S</span><span class="c-soap-word">Subjective</span></p>
-          <h1 id="c-h1" class="c-h1">${esc(meta.hero.h1Lead)} <em>${esc(meta.hero.h1Em)}</em></h1>
-          <p class="c-lede">${esc(meta.hero.lede)}</p>
-          <p class="c-sub">${esc(meta.hero.sub)}</p>
+          <h1 id="c-h1" class="c-h1">${esc(hero.h1Lead)} <em>${esc(hero.h1Em)}</em></h1>
+          <p class="c-lede">${esc(hero.lede)}</p>
+          <p class="c-sub">${esc(hero.sub)}</p>
         </section>
       </main>
     </div>`;

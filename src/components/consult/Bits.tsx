@@ -35,6 +35,3 @@ export const goToForm = (where: string) => {
   el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
 };
 
-export const Placeholder: React.FC<{ children: string }> = ({ children }) => (
-  <span className="c-fill">[[FILL: {children}]]</span>
-);

@@ -10,12 +10,12 @@
   --c-red-deep: #b91c1c;
   --c-wa: #0b6b37;
   --c-wa-hover: #095a2e;
-  --c-serif: ui-serif, Georgia, 'Times New Roman', serif;
-  --c-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --c-serif: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  --c-mono: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
 
   background: var(--c-paper);
   color: var(--c-ink);
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
   line-height: 1.55;
   min-height: 100vh;
   padding-bottom: 0;
@@ -161,7 +161,7 @@
   max-width: 14ch;
 }
 .consult-page .c-h1 em {
-  font-style: italic;
+  font-style: normal;
   color: var(--c-red-deep);
 }
 .consult-page .c-h2 {
@@ -377,7 +377,7 @@
 }
 .consult-page .c-stage-teaser {
   font-family: var(--c-serif);
-  font-style: italic;
+  font-style: normal;
   font-size: 1.0625rem;
   line-height: 1.35;
 }
@@ -826,4 +826,121 @@
   .consult-page .c-sticky {
     transform: none;
   }
+}
+
+/* ---------- Photo (uploaded) ---------- */
+.consult-page .c-photo.has-photo {
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  background: var(--c-paper-2);
+}
+.consult-page .c-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ---------- Faq text blocks used only by the localhost editor ---------- */
+.consult-page .c-faq-edit {
+  background: var(--c-card);
+  border: 1px solid var(--c-line);
+  border-radius: 16px;
+  padding: 14px 18px;
+}
+.consult-page .c-faq-edit p {
+  margin: 0;
+  color: var(--c-muted);
+}
+.consult-page .c-faq-edit .c-faq-q {
+  color: var(--c-ink);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+/* ---------- Localhost editor (never rendered in production) ---------- */
+.consult-page.is-editing {
+  padding-top: 56px;
+}
+.consult-page .c-editbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 100;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 16px;
+  background: var(--c-ink);
+  color: var(--c-paper);
+  font-size: 0.875rem;
+}
+.consult-page .c-editbar-hint {
+  opacity: 0.75;
+  flex: 1 1 260px;
+}
+.consult-page .c-editbar-status {
+  min-width: 8rem;
+  font-weight: 700;
+  color: #fcd34d;
+}
+.consult-page .c-editbar button {
+  font: inherit;
+  font-weight: 700;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(251, 248, 242, 0.4);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.consult-page .c-editbar button.is-primary {
+  background: var(--c-red);
+  border-color: var(--c-red);
+}
+.consult-page .c-editbar button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.consult-page .c-ed {
+  outline: 1px dashed rgba(23, 19, 15, 0.28);
+  outline-offset: 3px;
+  border-radius: 4px;
+  cursor: text;
+  min-width: 1ch;
+}
+.consult-page .c-ed:hover {
+  outline-color: var(--c-red);
+}
+.consult-page .c-ed:focus {
+  outline: 2px solid var(--c-red);
+  background: rgba(220, 38, 38, 0.06);
+}
+.consult-page .c-ed:empty::before {
+  content: '(empty, click to type)';
+  color: var(--c-muted);
+}
+.consult-page .c-stages.is-editing .c-stage-reveal {
+  opacity: 1;
+  transform: none;
+}
+.consult-page .c-stages.is-editing .c-stage {
+  cursor: default;
+}
+.consult-page .c-photo.is-editable {
+  cursor: pointer;
+  position: relative;
+}
+.consult-page .c-photo-hint {
+  position: absolute;
+  inset: auto 8px 8px 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(23, 19, 15, 0.82);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-align: center;
 }

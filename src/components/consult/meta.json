@@ -4,11 +4,5 @@
   "title": "Free Clinic Business Consultation for Doctors | Klinik Ara 24 Jam",
   "description": "Thinking of opening your own clinic? Book a free online chat with Dr. Asyraf, a doctor who runs a 24-hour, 3-branch clinic group.",
   "image": "https://klinikara24jam.hsohealthcare.com/og-business-consultation.png",
-  "hero": {
-    "chip": "Case Note: Dr. You, Considering a Clinic",
-    "h1Lead": "From great doctor to",
-    "h1Em": "clinic owner.",
-    "lede": "You’re a good doctor. You’ve thought about owning a clinic.",
-    "sub": "A free online consultation, from a doctor who runs one."
-  }
+  "fontCss": "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap"
 }

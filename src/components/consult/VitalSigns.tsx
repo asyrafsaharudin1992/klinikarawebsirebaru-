@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useInView } from './consultLib';
-import { Placeholder } from './Bits';
+import { Ed, useContent } from './editing';
 
 const CountUp: React.FC<{ to: number; run: boolean }> = ({ to, run }) => {
   const [n, setN] = useState(to);
@@ -23,36 +23,29 @@ const CountUp: React.FC<{ to: number; run: boolean }> = ({ to, run }) => {
   return <>{n}</>;
 };
 
-/** "Vital signs" proof strip. Only numbers confirmed by Dr. Asyraf (3 branches, open 24 hours). */
+/** "Vital signs" proof strip. Whole numbers count up on view; anything else (words, placeholders) shows as is. */
 const VitalSigns: React.FC = () => {
+  const { editing, content, get } = useContent();
   const [ref, seen] = useInView<HTMLDListElement>(0.4);
   // <dt> comes first in the DOM (valid definition list); CSS shows the value above the label.
   return (
     <dl className="c-vitals" ref={ref}>
-      <div className="c-vital">
-        <dt className="c-vital-label">Branches</dt>
-        <dd className="c-vital-value">
-          <CountUp to={3} run={seen} />
-        </dd>
-      </div>
-      <div className="c-vital">
-        <dt className="c-vital-label">Hours, open daily</dt>
-        <dd className="c-vital-value">
-          <CountUp to={24} run={seen} />
-        </dd>
-      </div>
-      <div className="c-vital">
-        <dt className="c-vital-label">In-house systems</dt>
-        <dd className="c-vital-value c-vital-value--word">Own</dd>
-      </div>
-      <div className="c-vital">
-        <dt className="c-vital-label">
-          <Placeholder>proof point label</Placeholder>
-        </dt>
-        <dd className="c-vital-value c-vital-value--word">
-          <Placeholder>proof point value</Placeholder>
-        </dd>
-      </div>
+      {content.vitals.map((_, i) => {
+        const value = get(`vitals.${i}.value`);
+        const numeric = /^\d{1,4}$/.test(value);
+        return (
+          <div className="c-vital" key={i}>
+            <Ed as="dt" k={`vitals.${i}.label`} className="c-vital-label" />
+            {numeric && !editing ? (
+              <dd className="c-vital-value">
+                <CountUp to={Number(value)} run={seen} />
+              </dd>
+            ) : (
+              <Ed as="dd" k={`vitals.${i}.value`} className={`c-vital-value${numeric ? '' : ' c-vital-value--word'}`} />
+            )}
+          </div>
+        );
+      })}
     </dl>
   );
 };

@@ -1,0 +1,122 @@
+{
+  "hero": {
+    "chip": "Case Note: Dr. You, Considering a Clinic",
+    "h1Lead": "From great doctor to",
+    "h1Em": "clinic owner.",
+    "lede": "You’re a good doctor. You’ve thought about owning a clinic.",
+    "sub": "A free online consultation, from a doctor who runs one.",
+    "ctaPrimary": "Book free session",
+    "ctaWhatsApp": "WhatsApp me"
+  },
+  "why": {
+    "h2": "Doctor first. Operator second.",
+    "body": "I run Klinik Ara 24 Jam: three branches that never close, on systems we built ourselves.",
+    "credential": "[[FILL: one-line credential or personal fact]]",
+    "photo": "",
+    "photoPlaceholder": "[[FILL: photo of Dr. Asyraf, portrait, at least 800px wide]]"
+  },
+  "vitals": [
+    {
+      "label": "Branches",
+      "value": "3"
+    },
+    {
+      "label": "Hours, open daily",
+      "value": "24"
+    },
+    {
+      "label": "In-house systems",
+      "value": "Own"
+    },
+    {
+      "label": "[[FILL: proof point label]]",
+      "value": "[[FILL: proof point value]]"
+    }
+  ],
+  "assess": {
+    "h2": "Three stages. Most doctors stumble on at least one.",
+    "flowTitle": "Follow the money",
+    "nodes": [
+      "Patients",
+      "Revenue",
+      "Smart operations",
+      "Profit",
+      "Your pocket"
+    ]
+  },
+  "stages": [
+    {
+      "title": "START",
+      "line": "From idea to opening day, without the expensive mistakes.",
+      "teaser": "Most first-time owners get this part wrong, and it is rarely the part they worry about."
+    },
+    {
+      "title": "MANAGE",
+      "line": "A clinic that runs well even when you’re not in the room.",
+      "teaser": "The clinics that last are built on something most doctors never think to set up."
+    },
+    {
+      "title": "PROFIT",
+      "line": "Where the real money is, and how it ends up with you.",
+      "teaser": "Busy is not the same as profitable. Most doctors find that out late."
+    }
+  ],
+  "audience": {
+    "h2": "Who this is for",
+    "items": [
+      "You’re a doctor who has wondered, “What if this were my own clinic?”",
+      "You want straight answers from someone who actually runs clinics.",
+      "You’re not sure where to begin, or what you might be missing."
+    ]
+  },
+  "steps": {
+    "h2": "How the free session works",
+    "items": [
+      {
+        "title": "Book",
+        "line": "Tap the button and say hello on WhatsApp."
+      },
+      {
+        "title": "Chat online",
+        "line": "We talk through your situation, one doctor to another."
+      },
+      {
+        "title": "Leave with clarity",
+        "line": "You know what to do next, and what to avoid."
+      }
+    ]
+  },
+  "faq": {
+    "h2": "Quick questions",
+    "items": [
+      {
+        "q": "Is it really free?",
+        "a": "Yes, the first online session is on the house."
+      },
+      {
+        "q": "Do I need business experience?",
+        "a": "Not at all, we start from where you are in the session."
+      },
+      {
+        "q": "How much does it take to start?",
+        "a": "It depends on your situation, and that’s exactly what we map out in the session."
+      },
+      {
+        "q": "Do I have to leave my current job?",
+        "a": "Not necessarily, and we’ll look at what fits your life in the session."
+      },
+      {
+        "q": "What happens after the session?",
+        "a": "You decide your next step, with clarity from the session."
+      }
+    ]
+  },
+  "plan": {
+    "h2": "Book your free session",
+    "body": "Leave your details and we’ll continue on WhatsApp.",
+    "orLead": "Prefer to skip the form?"
+  },
+  "footer": {
+    "disclaimer": "This page offers general business guidance only. It is not legal, financial or tax advice."
+  }
+}
