@@ -137,9 +137,17 @@
     ],
     "name": "",
     "role": "",
-    "photo": "",
-    "glimpse": "Visit our main website and get a glimpse of how we run the business.",
-    "glimpseCta": "Visit our main website"
+    "photo": ""
+  },
+  "site": {
+    "eyebrow": "Our main website",
+    "h2": "See how we run the business.",
+    "body": "Visit our main website and get a glimpse of the clinics, the community and the partners behind Klinik Ara 24 Jam.",
+    "cta": "Visit our main website",
+    "collabLabel": "Keluarga TeamAra",
+    "vendorLabel": "Vendor TeamAra",
+    "membersLabel": "TeamAra membership",
+    "membersValue": "8k++"
   },
   "how": {
     "h2": "Your First Step Is Just a Conversation.",

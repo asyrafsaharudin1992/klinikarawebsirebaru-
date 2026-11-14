@@ -1,12 +1,13 @@
 import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, BadgeCheck, Check, ClipboardList, GitBranch, Handshake, Landmark, MapPin, ShieldCheck, UserRound, Video, Wallet } from 'lucide-react';
+import { BadgeCheck, Check, ClipboardList, GitBranch, Handshake, Landmark, MapPin, ShieldCheck, UserRound, Video, Wallet } from 'lucide-react';
 import SEO from '../components/SEO';
 import SiteFooter from '../components/SiteFooter';
 import ProblemCards, { CardPick } from '../components/consult/ProblemCards';
 import BookingForm, { Prefill } from '../components/consult/BookingForm';
 import StickyCta from '../components/consult/StickyCta';
+import SiteStats from '../components/consult/SiteStats';
 import { WhatsAppLink, goToForm, scrollToId } from '../components/consult/Bits';
 import { meta, track } from '../components/consult/consultLib';
 import { ContentProvider, Ed, useContent } from '../components/consult/editing';
@@ -250,19 +251,6 @@ function Page() {
               {content.credibility.paras.map((_, i) => (
                 <Ed as="p" key={i} k={`credibility.paras.${i}`} className="c-para" />
               ))}
-              <div className="c-glimpse">
-                <Ed as="p" k="credibility.glimpse" />
-                <a
-                  href="/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="c-btn c-btn--ghost"
-                  onClick={() => track('main_site_link_clicked')}
-                >
-                  {content.credibility.glimpseCta}
-                  <ArrowUpRight size={16} aria-hidden="true" />
-                </a>
-              </div>
               <div className="c-cred-sign">
                 <Ed as="p" k="credibility.name" className="c-cred-name" optional />
                 <Ed as="p" k="credibility.role" className="c-cred-role" optional />
@@ -270,6 +258,9 @@ function Page() {
             </div>
           </div>
         </section>
+
+        {/* Main website: its own space, with community stats */}
+        <SiteStats />
 
         {/* E. How it works */}
         <section className="c-section c-section--white" aria-labelledby="c-how">

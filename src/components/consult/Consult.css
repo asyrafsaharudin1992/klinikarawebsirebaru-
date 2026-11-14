@@ -490,31 +490,84 @@ div.c-pcard-head {
   font-size: 0.9375rem;
 }
 
-/* ---------- Main-site glimpse link ---------- */
-.consult-page .c-glimpse {
+/* ---------- Main website space with stats ---------- */
+.consult-page .c-site-sec {
+  padding-top: 0;
+}
+.consult-page .c-site {
+  display: grid;
+  gap: 28px;
+  padding: 28px 22px;
+  border-radius: 20px;
+  background: var(--c-navy);
+  color: #fff;
+  box-shadow: var(--c-shadow);
+}
+.consult-page .c-site-eyebrow {
+  display: inline-block;
+  margin-bottom: 12px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(220, 234, 254, 0.14);
+  color: var(--c-blue-soft);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+.consult-page .c-site-h2 {
+  color: #fff;
+  font-size: clamp(1.6rem, 5.4vw, 2.2rem);
+  font-weight: 800;
+  line-height: 1.15;
+}
+.consult-page .c-site-body {
+  margin: 12px 0 22px;
+  color: var(--c-blue-soft);
+  max-width: 34rem;
+}
+.consult-page .c-stats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  align-content: center;
+}
+.consult-page .c-stat {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 14px;
-  margin-top: 24px;
-  padding: 18px 20px;
-  border: 1px solid var(--c-line);
-  border-radius: var(--c-radius);
-  background: var(--c-white);
+  gap: 2px;
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--c-radius-sm);
+  background: rgba(255, 255, 255, 0.06);
 }
-.consult-page .c-glimpse p {
+.consult-page .c-stat-value {
+  min-height: 2.9rem;
+  font-size: 2.5rem;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+.consult-page .c-stat-skel {
+  display: block;
+  width: 3.5rem;
+  height: 2rem;
+  margin-top: 0.4rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.14);
+}
+.consult-page .c-stat-label {
+  color: var(--c-blue-soft);
   font-weight: 500;
-  color: var(--c-navy);
 }
-.consult-page .c-glimpse .c-btn {
-  min-height: 44px;
-  padding: 0 18px;
-}
-@media (min-width: 640px) {
-  .consult-page .c-glimpse {
-    flex-direction: row;
+@media (min-width: 1024px) {
+  .consult-page .c-site {
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 48px;
+    padding: 44px 48px;
     align-items: center;
-    justify-content: space-between;
   }
 }
 

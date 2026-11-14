@@ -158,6 +158,32 @@ export const recordTap = (d: LeadDetails) => {
   }
 };
 
+/**
+ * Live document count of a publicly readable Firestore collection (the main site's own lists), via
+ * the REST aggregation endpoint so the page doesn't need the Firebase SDK. Resolves null on any failure.
+ */
+export const fetchCollectionCount = async (collectionId: string): Promise<number | null> => {
+  try {
+    const base = `projects/${firebaseConfig.projectId}/databases/${firebaseConfig.firestoreDatabaseId || '(default)'}/documents`;
+    const res = await fetch(`https://firestore.googleapis.com/v1/${base}:runAggregationQuery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: JSON.stringify({
+        structuredAggregationQuery: {
+          structuredQuery: { from: [{ collectionId }] },
+          aggregations: [{ alias: 'n', count: {} }],
+        },
+      }),
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { result?: { aggregateFields?: { n?: { integerValue?: string } } } }[];
+    const n = Number(json?.[0]?.result?.aggregateFields?.n?.integerValue);
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
+  }
+};
+
 /** True once the element has been on screen (stays true). Content is always visible if IntersectionObserver is missing. */
 export const useInView = <T extends Element>(threshold = 0.25) => {
   const ref = useRef<T>(null);
