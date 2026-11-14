@@ -53,13 +53,36 @@ const getEmbedUrl = (url: string) => {
   const [activeMediaUrl, setActiveMediaUrl] = useState<string | null>(null);
   const [showIframe, setShowIframe] = useState(false);
 
+  // Only the AraCME pages are in English; the rest of the site stays in Malay.
+  const isAracme = slug?.toLowerCase() === 'aracme';
+  const isEnglish = isAracme || slug?.toLowerCase() === 'cme-ara';
+
+  const t = {
+    backToHome: isEnglish ? 'Back to Home' : 'Laman Utama',
+    pageNotFound: isEnglish ? 'Page not found.' : 'Halaman tidak dijumpai.',
+    loadError: isEnglish ? 'Error loading page.' : 'Ralat memuatkan halaman.',
+    backButton: isEnglish ? 'Back to Home' : 'Kembali ke Laman Utama',
+    noImage: isEnglish ? 'No Image' : 'Tiada Gambar',
+    learnMore: isEnglish ? 'Learn More' : 'Baca Lanjut',
+    moreInfo: isEnglish ? 'Learn More' : 'Maklumat Lanjut',
+    noDetails: isEnglish ? 'No additional details provided.' : 'Tiada butiran tambahan disediakan untuk rekod ini.',
+    share: isEnglish ? 'Share' : 'Kongsi',
+    contactUs: isEnglish ? 'Contact Us' : 'Hubungi',
+    bookNow: isEnglish ? 'Book Now' : 'Lanjut',
+    specialPage: isEnglish ? 'SPECIAL PAGE' : 'HALAMAN KHAS',
+    defaultPageDesc: isEnglish ? 'Special Page of Klinik Ara 24 Jam' : 'Halaman Khas Klinik Ara 24 Jam',
+    shareText: isEnglish ? 'Check out this info from Klinik Ara 24 Jam!' : 'Lihat promosi/info ini dari Klinik Ara 24 Jam!',
+    linkCopied: isEnglish ? 'Link copied to clipboard!' : 'Pautan telah disalin ke papan keratan!',
+    copyManually: isEnglish ? 'Please copy this link manually:' : 'Sila salin pautan ini secara manual:'
+  };
+
   // --- 🌟 CUSTOM SHARE FUNCTION ---
   const handleShare = async (card: CarouselCard) => {
     // Note: We are passing BOTH the card ID and the page slug so your backend 
     // knows exactly what image to fetch, and where to redirect the user afterwards!
     const shareUrl = `https://share.klinikara24jam.hsohealthcare.com/?card=${card.id}&page=${slug}`;
     const shareTitle = `${card.title} | Klinik Ara 24 Jam`;
-    const shareText = card.shortDescription || "Lihat promosi/info ini dari Klinik Ara 24 Jam!";
+    const shareText = card.shortDescription || t.shareText;
 
     try {
       if (navigator.share) {
@@ -70,13 +93,13 @@ const getEmbedUrl = (url: string) => {
         });
       } else if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(shareUrl);
-        alert(`Pautan telah disalin ke papan keratan!\n\n${shareUrl}`);
+        alert(`${t.linkCopied}\n\n${shareUrl}`);
       } else {
-        prompt("Sila salin pautan ini secara manual:", shareUrl);
+        prompt(t.copyManually, shareUrl);
       }
     } catch (error: any) {
       if (error.name !== "AbortError") {
-        prompt("Sila salin pautan ini secara manual:", shareUrl);
+        prompt(t.copyManually, shareUrl);
       }
     }
   };
@@ -135,7 +158,7 @@ const getEmbedUrl = (url: string) => {
         const querySnapshot = await fetchWithCache(q);
 
         if (querySnapshot.empty) {
-          setError('Halaman tidak dijumpai.'); // 404 Not Found
+          setError(t.pageNotFound); // 404 Not Found
         } else {
           // Grab the first matching document
           const doc = querySnapshot.docs[0];
@@ -143,7 +166,7 @@ const getEmbedUrl = (url: string) => {
         }
       } catch (err) {
         console.error("Error fetching page:", err);
-        setError('Ralat memuatkan halaman.');
+        setError(t.loadError);
       } finally {
         setLoading(false);
       }
@@ -178,7 +201,7 @@ const getEmbedUrl = (url: string) => {
             <div className="absolute bottom-[15%] left-4 md:left-12 max-w-2xl z-10 pointer-events-none">
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-red-600 font-bold tracking-widest text-sm drop-shadow-md">
-                  HALAMAN KHAS
+                  {t.specialPage}
                 </span>
               </div>
               
@@ -255,7 +278,7 @@ const getEmbedUrl = (url: string) => {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-zinc-800 text-zinc-500 font-medium text-sm">
-                        Tiada Gambar
+                        {t.noImage}
                       </div>
                     )}
                   </div>
@@ -266,7 +289,7 @@ const getEmbedUrl = (url: string) => {
                       <p className="text-sm text-zinc-400 line-clamp-2">{card.shortDescription}</p>
                     )}
                     <div className="mt-4 text-cyan-400 text-sm font-bold flex items-center gap-2 mt-auto pt-2">
-                      Baca Lanjut <ArrowRight className="w-4 h-4" />
+                      {t.learnMore} <ArrowRight className="w-4 h-4" />
                     </div>
                   </div>
                 </div>
@@ -297,21 +320,6 @@ const getEmbedUrl = (url: string) => {
     );
   }
 
-  const isAracme = slug?.toLowerCase() === 'aracme';
-  
-  const t = {
-    backToHome: isAracme ? 'Back to Home' : 'Laman Utama',
-    pageNotFound: isAracme ? 'Page not found.' : 'Halaman tidak dijumpai.',
-    backButton: isAracme ? 'Back to Home' : 'Kembali ke Laman Utama',
-    noImage: isAracme ? 'No Image' : 'Tiada Gambar',
-    learnMore: isAracme ? 'Learn More' : 'Baca Lanjut',
-    moreInfo: isAracme ? 'Learn More' : 'Maklumat Lanjut',
-    noDetails: isAracme ? 'No additional details provided.' : 'Tiada butiran tambahan disediakan untuk rekod ini.',
-    share: isAracme ? 'Share' : 'Kongsi',
-    contactUs: isAracme ? 'Contact Us' : 'Hubungi',
-    bookNow: isAracme ? 'Book Now' : 'Lanjut'
-  };
-
   if (error || !pageData) {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-white px-4 text-center">
@@ -325,7 +333,7 @@ const getEmbedUrl = (url: string) => {
     );
   }
 
-  const pageDesc = pageData.blocks.find(b => b.type === 'hero')?.subheading || pageData.blocks.find(b => b.type === 'text')?.content?.substring(0, 160) || "Halaman Khas Klinik Ara 24 Jam";
+  const pageDesc = pageData.blocks.find(b => b.type === 'hero')?.subheading || pageData.blocks.find(b => b.type === 'text')?.content?.substring(0, 160) || t.defaultPageDesc;
   const pageImage = pageData.blocks.find(b => b.type === 'hero')?.imageUrl || pageData.blocks.find(b => b.type === 'image')?.imageUrl || "";
 
   return (
