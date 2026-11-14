@@ -75,6 +75,49 @@ service cloud.firestore {
     }
 
     // ===============================================================
+    // CONSULTATION LEADS (/business-consultation "Book on WhatsApp" taps)
+    // Anyone may CREATE a record, but only one of exactly this shape:
+    // allowed keys only, string types and length caps, name + email
+    // required, status fixed to "clicked" (the record only proves the
+    // button was tapped, never that a WhatsApp message was sent), and
+    // createdAt must be the real server time. Nobody can update or delete
+    // from a client. Only verified admins can read.
+    // ===============================================================
+    function optionalString(d, key, maxLen) {
+      return !(key in d) || (d[key] is string && d[key].size() <= maxLen);
+    }
+
+    function isValidConsultLead() {
+      let d = request.resource.data;
+      return d.keys().hasOnly([
+          'name', 'email', 'phone', 'status', 'createdAt', 'sourcePage',
+          'utmSource', 'utmMedium', 'utmCampaign', 'utmTerm', 'utmContent',
+          'userAgent', 'consentVersion'
+        ])
+        && d.keys().hasAll(['name', 'email', 'status', 'createdAt', 'sourcePage', 'consentVersion'])
+        && d.name is string && d.name.size() >= 1 && d.name.size() <= 80
+        && d.email is string && d.email.size() >= 5 && d.email.size() <= 120
+        && d.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+        && optionalString(d, 'phone', 30)
+        && d.status == 'clicked'
+        && d.createdAt == request.time
+        && d.sourcePage is string && d.sourcePage.size() <= 100
+        && optionalString(d, 'utmSource', 100)
+        && optionalString(d, 'utmMedium', 100)
+        && optionalString(d, 'utmCampaign', 100)
+        && optionalString(d, 'utmTerm', 100)
+        && optionalString(d, 'utmContent', 100)
+        && optionalString(d, 'userAgent', 200)
+        && d.consentVersion is string && d.consentVersion.size() <= 40;
+    }
+
+    match /consultation_leads/{leadId} {
+      allow create: if leadId.matches('^[A-Za-z0-9]{20}$') && isValidConsultLead();
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // ===============================================================
     // ADMINS COLLECTION (Staff Management)
     // Document ID is the admin's email address (not an auto-generated
     // ID) so isAdmin() above can look it up directly.

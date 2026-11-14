@@ -12,6 +12,7 @@ import imageCompression from 'browser-image-compression';
 import { slugify, uniqueSlug } from '../utils';
 import DashboardStats from './DashboardStats';
 import ServiceRouting from './ServiceRouting';
+import ConsultationLeads from './ConsultationLeads';
 
 // Sortable Card Component (Horizontal Swimlane)
 const SortableServiceCard: React.FC<{ service: Service, onDelete: (id: string) => void, onEdit: (service: Service) => void, isHighlighted?: boolean }> = ({ service, onDelete, onEdit, isHighlighted }) => {
@@ -91,7 +92,7 @@ const SortableServiceCard: React.FC<{ service: Service, onDelete: (id: string) =
 }
 
 export default function AdminUI({ user }: { user: User }) {
-  const [activeTab, setActiveTab] = useState<'stats' | 'services' | 'locations' | 'panels' | 'collaborators' | 'leads' | 'staff' | 'vendors' | 'layout' | 'reviews' | 'pages' | 'setup' | 'arapower'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'services' | 'locations' | 'panels' | 'collaborators' | 'leads' | 'staff' | 'vendors' | 'layout' | 'reviews' | 'pages' | 'setup' | 'arapower' | 'consult-leads'>('stats');
   const [setupSubTab, setSetupSubTab] = useState<'general' | 'service-links'>('general');
 
   const [currentAdminInfo, setCurrentAdminInfo] = useState<AdminUser | null>(null);
@@ -1774,6 +1775,14 @@ const addCarouselCard = (blockId: string) => {
           >
             Patient Leads
           </button>
+          {currentAdminInfo?.role === 'superadmin' && (
+            <button
+              onClick={() => setActiveTab('consult-leads')}
+              className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'consult-leads' ? 'border-red-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
+            >
+              Consultation Leads
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('arapower')}
             className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'arapower' ? 'border-cyan-500 text-white' : 'border-transparent text-zinc-400 hover:text-zinc-200'}`}
@@ -3291,6 +3300,8 @@ const addCarouselCard = (blockId: string) => {
           </div>
         </main>
       )}
+
+      {activeTab === 'consult-leads' && currentAdminInfo?.role === 'superadmin' && <ConsultationLeads />}
 
       {activeTab === 'staff' && currentAdminInfo?.role === 'superadmin' && (
         <main className="max-w-6xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
