@@ -136,20 +136,6 @@ async function startServer() {
       fs.writeFileSync(contentPath, JSON.stringify(next, null, 2) + '\n', 'utf8');
       res.json({ success: true });
     });
-
-    app.post('/api/dev/consult-photo', express.raw({ type: 'application/octet-stream', limit: '12mb' }), (req, res) => {
-      if (!isLoopback(req)) return res.status(403).end();
-      const ext = String(req.query.ext || '').toLowerCase();
-      if (!['jpg', 'jpeg', 'png', 'webp', 'avif'].includes(ext) || !Buffer.isBuffer(req.body) || req.body.length === 0) {
-        return res.status(400).send('Send an image (jpg, png, webp or avif).');
-      }
-      const publicDir = path.join(__dirname, 'public');
-      for (const old of fs.readdirSync(publicDir)) {
-        if (/^consult-photo\./.test(old)) fs.unlinkSync(path.join(publicDir, old));
-      }
-      fs.writeFileSync(path.join(publicDir, `consult-photo.${ext}`), req.body);
-      res.json({ path: `/consult-photo.${ext}` });
-    });
   }
 
   // ── API Routes ──────────────────────────────────────────────────────────────

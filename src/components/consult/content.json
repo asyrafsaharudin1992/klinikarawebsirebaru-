@@ -8,31 +8,6 @@
     "ctaPrimary": "Book free session",
     "ctaWhatsApp": "WhatsApp me"
   },
-  "why": {
-    "h2": "Doctor first. Operator second.",
-    "body": "I run Klinik Ara 24 Jam: three branches that never close, on systems we built ourselves.",
-    "credential": "[[FILL: one-line credential or personal fact]]",
-    "photo": "",
-    "photoPlaceholder": "[[FILL: photo of Dr. Asyraf, portrait, at least 800px wide]]"
-  },
-  "vitals": [
-    {
-      "label": "Branches",
-      "value": "3"
-    },
-    {
-      "label": "Hours, open daily",
-      "value": "24"
-    },
-    {
-      "label": "In-house systems",
-      "value": "Own"
-    },
-    {
-      "label": "[[FILL: proof point label]]",
-      "value": "[[FILL: proof point value]]"
-    }
-  ],
   "assess": {
     "h2": "Three stages. Most doctors stumble on at least one.",
     "flowTitle": "Follow the money",

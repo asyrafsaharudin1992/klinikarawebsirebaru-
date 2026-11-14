@@ -34,7 +34,6 @@ interface Ctx {
   dirty: boolean;
   save: () => Promise<string | null>; // resolves to an error message, or null on success
   discard: () => void;
-  uploadPhoto: (file: File) => Promise<string | null>;
 }
 
 const EditCtx = createContext<Ctx>({
@@ -45,7 +44,6 @@ const EditCtx = createContext<Ctx>({
   dirty: false,
   save: async () => null,
   discard: () => {},
-  uploadPhoto: async () => null,
 });
 
 export const useContent = () => useContext(EditCtx);
@@ -75,25 +73,9 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const discard = useCallback(() => setDraft(saved), [saved]);
 
-  const uploadPhoto = useCallback(
-    async (file: File) => {
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
-      const res = await fetch(`/api/dev/consult-photo?ext=${encodeURIComponent(ext)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/octet-stream' },
-        body: file,
-      });
-      if (!res.ok) return null;
-      const { path: p } = (await res.json()) as { path: string };
-      set('why.photo', `${p}?v=${Date.now()}`);
-      return p;
-    },
-    [set],
-  );
-
   const value = useMemo<Ctx>(
-    () => ({ editing: EDIT_ENABLED, content: draft, get, set, dirty, save, discard, uploadPhoto }),
-    [draft, get, set, dirty, save, discard, uploadPhoto],
+    () => ({ editing: EDIT_ENABLED, content: draft, get, set, dirty, save, discard }),
+    [draft, get, set, dirty, save, discard],
   );
   return <EditCtx.Provider value={value}>{children}</EditCtx.Provider>;
 };

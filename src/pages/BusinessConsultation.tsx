@@ -1,10 +1,9 @@
-import React, { lazy, Suspense, useEffect, useRef } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 import SiteFooter from '../components/SiteFooter';
 import { ScrollEcg, EcgDivider } from '../components/consult/Ecg';
-import VitalSigns from '../components/consult/VitalSigns';
 import { StageCards, ProfitFlow } from '../components/consult/StageCards';
 import BookingForm from '../components/consult/BookingForm';
 import StickyCta from '../components/consult/StickyCta';
@@ -26,45 +25,6 @@ const Tag: React.FC<{ letter: string; word: string }> = ({ letter, word }) => (
     <span className="c-soap-word">{word}</span>
   </p>
 );
-
-/** Photo slot: shows the uploaded photo, or the placeholder. In the localhost editor, click to upload. */
-const Photo: React.FC = () => {
-  const { editing, get, uploadPhoto } = useContent();
-  const input = useRef<HTMLInputElement>(null);
-  const photo = get('why.photo');
-  return (
-    <div
-      className={`c-photo${photo ? ' has-photo' : ''}${editing ? ' is-editable' : ''}`}
-      role={editing ? 'button' : 'img'}
-      tabIndex={editing ? 0 : undefined}
-      aria-label={photo ? 'Photo of Dr. Asyraf' : 'Photo of Dr. Asyraf, to be added'}
-      onClick={editing ? () => input.current?.click() : undefined}
-      onKeyDown={editing ? (e) => (e.key === 'Enter' || e.key === ' ') && input.current?.click() : undefined}
-    >
-      {photo ? (
-        <img src={photo} alt="Dr. Asyraf" loading="lazy" decoding="async" />
-      ) : (
-        <Ed k="why.photoPlaceholder" />
-      )}
-      {editing && (
-        <>
-          <span className="c-photo-hint">{photo ? 'Click to replace photo' : 'Click to upload photo'}</span>
-          <input
-            ref={input}
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (file) await uploadPhoto(file);
-              e.target.value = '';
-            }}
-          />
-        </>
-      )}
-    </div>
-  );
-};
 
 function Page() {
   const { editing, content } = useContent();
@@ -126,22 +86,6 @@ function Page() {
           </div>
         </section>
         <div id="c-hero-end" aria-hidden="true" />
-
-        <EcgDivider />
-
-        {/* O - Objective */}
-        <section className="c-section" aria-labelledby="c-why">
-          <Tag letter="O" word="Objective" />
-          <div className="c-why">
-            <Photo />
-            <div>
-              <Ed as="h2" id="c-why" k="why.h2" className="c-h2" />
-              <Ed as="p" k="why.body" className="c-p" />
-              <Ed as="p" k="why.credential" className="c-p c-p--note" />
-            </div>
-          </div>
-          <VitalSigns />
-        </section>
 
         <EcgDivider />
 

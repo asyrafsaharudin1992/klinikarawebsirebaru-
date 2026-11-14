@@ -29,7 +29,7 @@ const EditorBar: React.FC = () => {
   return (
     <div className="c-editbar" role="region" aria-label="Page editor">
       <strong>Editing mode</strong>
-      <span className="c-editbar-hint">Click any text to edit it. Press Enter or click away to confirm. Click the photo box to upload.</span>
+      <span className="c-editbar-hint">Click any text to edit it. Press Enter or click away to confirm.</span>
       <span className="c-editbar-status" aria-live="polite">
         {status.kind === 'saving' && 'Saving…'}
         {status.kind === 'saved' && !dirty && 'Saved to content.json'}
