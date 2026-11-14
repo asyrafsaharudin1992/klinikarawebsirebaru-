@@ -11,7 +11,6 @@ import {
   track,
   validate,
 } from './consultLib';
-import { WhatsAppIcon } from './Bits';
 
 type Errors = Partial<Record<keyof LeadDetails, string>>;
 
@@ -148,8 +147,7 @@ const BookingForm: React.FC<{ prefill: Prefill }> = ({ prefill }) => {
       </div>
 
       <button type="submit" className="c-btn c-btn--wa c-btn--block">
-        <WhatsAppIcon className="c-icon" />
-        <span>Book on WhatsApp</span>
+        Submit
       </button>
       <p className="c-consent">{CONSENT_TEXT}</p>
 

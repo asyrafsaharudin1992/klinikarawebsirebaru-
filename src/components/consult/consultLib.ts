@@ -4,8 +4,8 @@ import meta from './meta.json';
 
 export const WA_NUMBER = '60182199218';
 /** Bump when the consent line under the form changes, so each record shows which wording was shown. */
-export const CONSENT_VERSION = 'wa-tap-v2';
-export const CONSENT_TEXT = 'By tapping Book on WhatsApp, you agree we store these details to contact you.';
+export const CONSENT_VERSION = 'wa-tap-v3';
+export const CONSENT_TEXT = 'By tapping Submit, you agree we store these details to contact you.';
 export const FORM_ID = 'book';
 
 const COOLDOWN_KEY = 'ara_consult_last_tap';
