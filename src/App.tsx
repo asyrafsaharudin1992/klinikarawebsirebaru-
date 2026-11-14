@@ -31,6 +31,7 @@ const Login = lazy(() => import('./components/Login'));
 const DynamicPage = lazy(() => import('./components/DynamicPage'));
 const AraPowerLanding = lazy(() => import('./components/AraPowerLanding'));
 const ServiceDetailPage = lazy(() => import('./components/ServiceDetailPage'));
+const BusinessConsultation = lazy(() => import('./pages/BusinessConsultation'));
 
 function AnalyticsTracker() {
   const location = useLocation();
@@ -146,6 +147,7 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<PublicUI />} />
                 <Route path="/arapower" element={<AraPowerLanding />} />
+                <Route path="/business-consultation" element={<BusinessConsultation />} />
                 <Route path="/service/:slug" element={<ServiceDetailPage />} />
                 <Route path="/p/:slug" element={<DynamicPage />} />
                 <Route path="/share" element={<SharePage />} />

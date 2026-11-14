@@ -9,6 +9,8 @@ interface SEOProps {
   url?: string;
   /** Clean URL for the canonical tag (no tracking/state query params). Defaults to `url`. */
   canonicalUrl?: string;
+  /** Page language. Defaults to Malay, the site language. */
+  lang?: string;
 }
 
 const SEO: React.FC<SEOProps> = ({
@@ -18,11 +20,12 @@ const SEO: React.FC<SEOProps> = ({
   image = "https://firebasestorage.googleapis.com/v0/b/new-website-7b8dd.firebasestorage.app/o/%7BA3113931-E36A-4750-9461-CF9E820F4CE2%7D.jpg?alt=media&token=0ec7467b-89e4-48c1-bde0-97736c744589",
   url = "https://klinikara24jam.hsohealthcare.com",
   canonicalUrl,
+  lang = 'ms',
 }) => {
 
   return (
     <Helmet>
-      <html lang="ms" />
+      <html lang={lang} />
       <title>{title}</title>
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
@@ -34,7 +37,7 @@ const SEO: React.FC<SEOProps> = ({
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={image} />
-      <meta property="og:locale" content="ms_MY" />
+      <meta property="og:locale" content={lang === 'en' ? 'en_MY' : 'ms_MY'} />
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />

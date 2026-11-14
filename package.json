@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "node scripts/generate-sitemap.mjs && vite build",
+    "build": "node scripts/generate-sitemap.mjs && vite build && node scripts/prerender-consult.mjs",
+    "check:placeholders": "node scripts/check-placeholders.mjs",
     "generate-sitemap": "node scripts/generate-sitemap.mjs",
     "start": "tsx server.ts",
     "preview": "vite preview",
