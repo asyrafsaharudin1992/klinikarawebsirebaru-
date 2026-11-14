@@ -7,7 +7,7 @@ import path from 'path';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SKIP = new Set(['node_modules', 'dist', '.git']);
-const MARKER = /\[\[FILL:[^\]]*\]\]/g;
+const MARKER = /\[\[FILL:[^\]{]*\]\]/g; // `{` excluded so the Placeholder component's own template text isn't listed
 // The consultation page renders markers through <Placeholder>text</Placeholder>.
 const COMPONENT = /<Placeholder>([^<{]+)<\/Placeholder>/g;
 const found = [];
