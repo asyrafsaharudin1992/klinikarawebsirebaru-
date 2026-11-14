@@ -526,6 +526,10 @@ export default function PublicUI() {
     AraPower
   </Link>
 
+  <Link to="/business-consultation" className="hover:text-white transition">
+    For Doctors
+  </Link>
+
   {customPages.length > 0 && (
     <div className="h-4 w-px bg-zinc-700 mx-2 hidden md:block" />
   )}
@@ -611,6 +615,9 @@ export default function PublicUI() {
             </button>
             <Link to="/arapower" onClick={() => setIsMobileMenuOpen(false)} className="w-full text-left px-4 py-3 text-lg font-bold text-cyan-400 hover:bg-zinc-900 rounded-xl">
               AraPower
+            </Link>
+            <Link to="/business-consultation" onClick={() => setIsMobileMenuOpen(false)} className="w-full text-left px-4 py-3 text-lg font-medium text-white hover:bg-zinc-900 rounded-xl">
+              For Doctors
             </Link>
 
             {customPages.length > 0 && (

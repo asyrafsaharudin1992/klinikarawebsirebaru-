@@ -42,6 +42,7 @@ function buildXml(serviceSlugs) {
   const otherUrls = [
     { loc: `${BASE_URL}/arapower`, changefreq: 'weekly', priority: '0.9' },
     { loc: `${BASE_URL}/p/cme-ara`, changefreq: 'weekly', priority: '0.9' },
+    { loc: `${BASE_URL}/business-consultation`, changefreq: 'monthly', priority: '0.8' },
     ...serviceSlugs.map((slug) => ({ loc: `${BASE_URL}/service/${slug}`, changefreq: 'monthly', priority: '0.7' })),
   ];
 
@@ -79,7 +80,7 @@ async function main() {
   const xml = buildXml(slugs);
   const outPath = path.join(__dirname, '..', 'public', 'sitemap.xml');
   await writeFile(outPath, xml, 'utf8');
-  console.log(`Wrote ${outPath} with ${3 + slugs.length} URLs.`);
+  console.log(`Wrote ${outPath} with ${4 + slugs.length} URLs.`);
 }
 
 main();
