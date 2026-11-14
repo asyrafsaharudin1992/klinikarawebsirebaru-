@@ -9,7 +9,12 @@
     "ctaSecondary": "Explore What We Can Discuss",
     "panelTitle": "Your clinic setup, in one conversation",
     "photo": "",
-    "trust": ["FREE consultation", "Online", "One-to-one", "No obligation"]
+    "trust": [
+      "FREE consultation",
+      "Online",
+      "One-to-one",
+      "No obligation"
+    ]
   },
   "problems": {
     "h2": "Does Any of This Sound Familiar?",
@@ -96,12 +101,30 @@
     "sub": "Your consultation is centred around your own situation and business goals.",
     "note": "These are general discussions. The consultation does not provide formal legal, tax, company secretarial or regulatory services.",
     "items": [
-      { "title": "Clinic Business Setup", "desc": "Understanding the steps involved in establishing a private medical clinic." },
-      { "title": "Company Structure", "desc": "General discussion about company registration, business structures and partnerships." },
-      { "title": "Capital and Startup Costs", "desc": "Understanding startup capital, renovation, equipment and initial expenses." },
-      { "title": "Premises and Location", "desc": "Considerations when evaluating a potential clinic location or tenancy." },
-      { "title": "Licensing and Approvals", "desc": "Understanding the general regulatory preparation involved in establishing a clinic." },
-      { "title": "Clinic Expansion", "desc": "Planning the setup of an additional branch or new clinic." }
+      {
+        "title": "Clinic Business Setup",
+        "desc": "Understanding the steps involved in establishing a private medical clinic."
+      },
+      {
+        "title": "Company Structure",
+        "desc": "General discussion about company registration, business structures and partnerships."
+      },
+      {
+        "title": "Capital and Startup Costs",
+        "desc": "Understanding startup capital, renovation, equipment and initial expenses."
+      },
+      {
+        "title": "Premises and Location",
+        "desc": "Considerations when evaluating a potential clinic location or tenancy."
+      },
+      {
+        "title": "Licensing and Approvals",
+        "desc": "Understanding the general regulatory preparation involved in establishing a clinic."
+      },
+      {
+        "title": "Clinic Expansion",
+        "desc": "Planning the setup of an additional branch or new clinic."
+      }
     ]
   },
   "credibility": {
@@ -114,32 +137,69 @@
     ],
     "name": "",
     "role": "",
-    "photo": ""
+    "photo": "",
+    "glimpse": "Visit our main website and get a glimpse of how we run the business.",
+    "glimpseCta": "Visit our main website"
   },
   "how": {
     "h2": "Your First Step Is Just a Conversation.",
     "steps": [
-      { "title": "Book your free session", "line": "Send your details on WhatsApp and we'll agree a time that suits you." },
-      { "title": "Tell me about your plans", "line": "Share your clinic idea, current situation and questions." },
-      { "title": "Discuss your options", "line": "Explore your challenges, possible approaches and next steps." }
+      {
+        "title": "Book your free session",
+        "line": "Send your details on WhatsApp and we'll agree a time that suits you."
+      },
+      {
+        "title": "Tell me about your plans",
+        "line": "Share your clinic idea, current situation and questions."
+      },
+      {
+        "title": "Discuss your options",
+        "line": "Explore your challenges, possible approaches and next steps."
+      }
     ]
   },
   "book": {
     "h2": "Let's Talk About Your Clinic.",
     "body": "You don't need a business plan. You don't need to have registered a company. You don't even need to have found a clinic location.",
     "emphasis": "All you need is an idea or a question.",
-    "trust": ["FREE initial consultation", "One-to-one discussion", "Online meeting", "No obligation"]
+    "trust": [
+      "FREE initial consultation",
+      "One-to-one discussion",
+      "Online meeting",
+      "No obligation"
+    ]
   },
   "faq": {
     "h2": "Frequently Asked Questions",
     "items": [
-      { "q": "Is the consultation really free?", "a": "Yes. Your initial business consultation is free, with no obligation to proceed with any further service." },
-      { "q": "Do I need to have a clinic already?", "a": "No. This consultation is open to doctors planning their first clinic as well as existing clinic owners considering another branch." },
-      { "q": "I'm only thinking about opening a clinic. Can I still book?", "a": "Absolutely. Speaking to someone before committing to premises or investment can help you understand the process and make better-informed decisions." },
-      { "q": "Can I discuss my proposed clinic business structure?", "a": "Yes. We can discuss general considerations around company structures, partnerships and business setup. Formal company secretarial, legal and tax advice should be obtained from the relevant professionals." },
-      { "q": "Is the consultation online?", "a": "Yes. Your consultation will be conducted online. Booking details and the meeting link will be provided after confirmation." },
-      { "q": "Will you help me open my clinic?", "a": "The initial session is a consultation to understand your plans, discuss your challenges and explore possible next steps. Any further assistance or services can be discussed separately." },
-      { "q": "Who can book?", "a": "Doctors planning to start their own clinic and existing clinic owners considering another clinic or branch." }
+      {
+        "q": "Is the consultation really free?",
+        "a": "Yes. Your initial business consultation is free, with no obligation to proceed with any further service."
+      },
+      {
+        "q": "Do I need to have a clinic already?",
+        "a": "No. This consultation is open to doctors planning their first clinic as well as existing clinic owners considering another branch."
+      },
+      {
+        "q": "I'm only thinking about opening a clinic. Can I still book?",
+        "a": "Absolutely. Speaking to someone before committing to premises or investment can help you understand the process and make better-informed decisions."
+      },
+      {
+        "q": "Can I discuss my proposed clinic business structure?",
+        "a": "Yes. We can discuss general considerations around company structures, partnerships and business setup. Formal company secretarial, legal and tax advice should be obtained from the relevant professionals."
+      },
+      {
+        "q": "Is the consultation online?",
+        "a": "Yes. Your consultation will be conducted online. Booking details and the meeting link will be provided after confirmation."
+      },
+      {
+        "q": "Will you help me open my clinic?",
+        "a": "The initial session is a consultation to understand your plans, discuss your challenges and explore possible next steps. Any further assistance or services can be discussed separately."
+      },
+      {
+        "q": "Who can book?",
+        "a": "Doctors planning to start their own clinic and existing clinic owners considering another clinic or branch."
+      }
     ]
   },
   "final": {

@@ -490,6 +490,34 @@ div.c-pcard-head {
   font-size: 0.9375rem;
 }
 
+/* ---------- Main-site glimpse link ---------- */
+.consult-page .c-glimpse {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 24px;
+  padding: 18px 20px;
+  border: 1px solid var(--c-line);
+  border-radius: var(--c-radius);
+  background: var(--c-white);
+}
+.consult-page .c-glimpse p {
+  font-weight: 500;
+  color: var(--c-navy);
+}
+.consult-page .c-glimpse .c-btn {
+  min-height: 44px;
+  padding: 0 18px;
+}
+@media (min-width: 640px) {
+  .consult-page .c-glimpse {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
 /* ---------- Photos (render only once a real photo is set) ---------- */
 .consult-page .c-photo {
   position: relative;

@@ -1,7 +1,7 @@
 import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { BadgeCheck, Check, ClipboardList, GitBranch, Handshake, Landmark, MapPin, ShieldCheck, UserRound, Video, Wallet } from 'lucide-react';
+import { ArrowUpRight, BadgeCheck, Check, ClipboardList, GitBranch, Handshake, Landmark, MapPin, ShieldCheck, UserRound, Video, Wallet } from 'lucide-react';
 import SEO from '../components/SEO';
 import SiteFooter from '../components/SiteFooter';
 import ProblemCards, { CardPick } from '../components/consult/ProblemCards';
@@ -250,6 +250,19 @@ function Page() {
               {content.credibility.paras.map((_, i) => (
                 <Ed as="p" key={i} k={`credibility.paras.${i}`} className="c-para" />
               ))}
+              <div className="c-glimpse">
+                <Ed as="p" k="credibility.glimpse" />
+                <a
+                  href="/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="c-btn c-btn--ghost"
+                  onClick={() => track('main_site_link_clicked')}
+                >
+                  {content.credibility.glimpseCta}
+                  <ArrowUpRight size={16} aria-hidden="true" />
+                </a>
+              </div>
               <div className="c-cred-sign">
                 <Ed as="p" k="credibility.name" className="c-cred-name" optional />
                 <Ed as="p" k="credibility.role" className="c-cred-role" optional />
