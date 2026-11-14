@@ -92,7 +92,7 @@ service cloud.firestore {
       return d.keys().hasOnly([
           'name', 'email', 'phone', 'status', 'createdAt', 'sourcePage',
           'utmSource', 'utmMedium', 'utmCampaign', 'utmTerm', 'utmContent',
-          'userAgent', 'consentVersion'
+          'userAgent', 'consentVersion', 'situation', 'topic'
         ])
         && d.keys().hasAll(['name', 'email', 'status', 'createdAt', 'sourcePage', 'consentVersion'])
         && d.name is string && d.name.size() >= 1 && d.name.size() <= 80
@@ -108,6 +108,8 @@ service cloud.firestore {
         && optionalString(d, 'utmTerm', 100)
         && optionalString(d, 'utmContent', 100)
         && optionalString(d, 'userAgent', 200)
+        && (!('situation' in d) || d.situation in ['first_clinic', 'existing_owner', 'another_branch', 'exploring'])
+        && optionalString(d, 'topic', 500)
         && d.consentVersion is string && d.consentVersion.size() <= 40;
     }
 

@@ -4,7 +4,7 @@ import meta from './meta.json';
 
 export const WA_NUMBER = '60182199218';
 /** Bump when the consent line under the form changes, so each record shows which wording was shown. */
-export const CONSENT_VERSION = 'wa-tap-v1';
+export const CONSENT_VERSION = 'wa-tap-v2';
 export const CONSENT_TEXT = 'By tapping Book on WhatsApp, you agree we store these details to contact you.';
 export const FORM_ID = 'book';
 
@@ -15,7 +15,18 @@ export interface LeadDetails {
   name: string;
   email: string;
   phone: string;
+  situation: string; // one of SITUATIONS' codes, or '' if not chosen
+  topic: string;
 }
+
+/** Codes are what gets stored (and checked by the Firestore rules); labels are what visitors see. */
+export const SITUATIONS: { code: string; label: string }[] = [
+  { code: 'first_clinic', label: 'Planning to open my first clinic' },
+  { code: 'existing_owner', label: 'Already own a clinic' },
+  { code: 'another_branch', label: 'Planning to open another clinic branch' },
+  { code: 'exploring', label: 'Exploring clinic ownership' },
+];
+export const situationLabel = (code: string) => SITUATIONS.find((s) => s.code === code)?.label ?? '';
 
 /** wa.me link. With details it carries what the visitor typed; without, a generic hello. */
 export const buildWaUrl = (details?: LeadDetails): string => {
@@ -27,6 +38,10 @@ export const buildWaUrl = (details?: LeadDetails): string => {
     const phone = clean(details.phone, 30);
     const contact = phone ? `${email}, ${phone}` : email;
     text = `Hi Dr. Asyraf, saya ${name} (${contact}). Saya berminat nak tahu lebih lanjut tentang sesi konsultasi bisnes klinik percuma.`;
+    const situation = situationLabel(details.situation);
+    const topic = clean(details.topic, 500);
+    if (situation) text += ` Situasi saya: ${situation}.`;
+    if (topic) text += ` Saya nak bincang: ${topic}`;
   }
   return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(text)}`;
 };
@@ -61,9 +76,12 @@ export const validate = (d: LeadDetails) => {
   else if (name.length > 80) errors.name = 'That name is a bit long. Please shorten it.';
   if (!email) errors.email = 'Please enter your email.';
   else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.length > 120) errors.email = 'That email doesn’t look right. Please check it.';
-  if (phone && (!/^[0-9+()\-\s]{7,30}$/.test(phone) || phone.replace(/\D/g, '').length < 7)) {
-    errors.phone = 'That phone number doesn’t look right, or leave it blank.';
+  if (!phone) errors.phone = 'Please enter your contact number.';
+  else if (!/^[0-9+()\-\s]{7,30}$/.test(phone) || phone.replace(/\D/g, '').length < 7) {
+    errors.phone = 'That phone number doesn’t look right. Please check it.';
   }
+  if (!SITUATIONS.some((s) => s.code === d.situation)) errors.situation = 'Please choose the option that fits you best.';
+  if (d.topic.trim().length > 500) errors.topic = 'Please keep this under 500 characters.';
   return errors;
 };
 
@@ -106,6 +124,8 @@ export const recordTap = (d: LeadDetails) => {
       consentVersion: { stringValue: CONSENT_VERSION },
     };
     if (d.phone.trim()) fields.phone = str(d.phone, 30);
+    if (d.situation) fields.situation = str(d.situation, 40);
+    if (d.topic.trim()) fields.topic = str(d.topic, 500);
     const qs = new URLSearchParams(window.location.search);
     for (const key of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']) {
       const v = qs.get(key);
@@ -128,7 +148,11 @@ export const recordTap = (d: LeadDetails) => {
       keepalive: true,
       headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
       body: JSON.stringify(body),
-    }).catch(() => {});
+    })
+      .then((res) => {
+        if (!res.ok) track('booking_error', { reason: `record_failed_${res.status}` });
+      })
+      .catch(() => track('booking_error', { reason: 'record_failed_network' }));
   } catch {
     /* recording must never block opening WhatsApp */
   }

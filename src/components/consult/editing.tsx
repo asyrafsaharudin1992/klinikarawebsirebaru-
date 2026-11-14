@@ -34,6 +34,7 @@ interface Ctx {
   dirty: boolean;
   save: () => Promise<string | null>; // resolves to an error message, or null on success
   discard: () => void;
+  uploadPhoto: (file: File, key: string) => Promise<void>;
 }
 
 const EditCtx = createContext<Ctx>({
@@ -44,6 +45,7 @@ const EditCtx = createContext<Ctx>({
   dirty: false,
   save: async () => null,
   discard: () => {},
+  uploadPhoto: async () => {},
 });
 
 export const useContent = () => useContext(EditCtx);
@@ -73,9 +75,25 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const discard = useCallback(() => setDraft(saved), [saved]);
 
+  const uploadPhoto = useCallback(
+    async (file: File, key: string) => {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const slot = key.split('.')[0]; // 'hero' or 'credibility'
+      const res = await fetch(`/api/dev/consult-photo?slot=${encodeURIComponent(slot)}&ext=${encodeURIComponent(ext)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: file,
+      });
+      if (!res.ok) return;
+      const { path: p } = (await res.json()) as { path: string };
+      set(key, `${p}?v=${Date.now()}`);
+    },
+    [set],
+  );
+
   const value = useMemo<Ctx>(
-    () => ({ editing: EDIT_ENABLED, content: draft, get, set, dirty, save, discard }),
-    [draft, get, set, dirty, save, discard],
+    () => ({ editing: EDIT_ENABLED, content: draft, get, set, dirty, save, discard, uploadPhoto }),
+    [draft, get, set, dirty, save, discard, uploadPhoto],
   );
   return <EditCtx.Provider value={value}>{children}</EditCtx.Provider>;
 };
@@ -85,14 +103,17 @@ interface EdProps {
   as?: React.ElementType;
   className?: string;
   id?: string;
+  /** Hide entirely for visitors when empty (still editable in the localhost editor). */
+  optional?: boolean;
 }
 
 /** A piece of page text. Plain text for visitors; click-to-type when the localhost editor is on. */
-export const Ed: React.FC<EdProps> = ({ k, as: Tag = 'span', className, id }) => {
+export const Ed: React.FC<EdProps> = ({ k, as: Tag = 'span', className, id, optional }) => {
   const { editing, get, set } = useContent();
   const value = get(k);
   const cls = [className, value.includes('[[FILL:') && 'c-fill', editing && 'c-ed'].filter(Boolean).join(' ') || undefined;
   if (!editing) {
+    if (optional && !value) return null;
     return (
       <Tag id={id} className={cls}>
         {value}

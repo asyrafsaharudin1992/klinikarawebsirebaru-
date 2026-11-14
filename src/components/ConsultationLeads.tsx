@@ -4,12 +4,15 @@ import { AlertCircle, Mail } from 'lucide-react';
 import { db, auth } from '../firebase';
 import { handleFirestoreError, OperationType } from '../types';
 import { formatPhoneNumber } from '../utils';
+import { situationLabel } from './consult/consultLib';
 
 interface ConsultLead {
   id: string;
   name: string;
   email: string;
   phone?: string;
+  situation?: string;
+  topic?: string;
   createdAt?: { toDate?: () => Date };
 }
 
@@ -102,6 +105,10 @@ export default function ConsultationLeads() {
                   <div className="text-white font-bold truncate">{lead.name}</div>
                   <div className="text-zinc-400 text-sm break-all">{lead.email}</div>
                   {lead.phone && <div className="text-zinc-400 text-sm">{lead.phone}</div>}
+                  {lead.situation && situationLabel(lead.situation) && (
+                    <div className="text-sky-300 text-sm mt-1">{situationLabel(lead.situation)}</div>
+                  )}
+                  {lead.topic && <div className="text-zinc-300 text-sm mt-1 break-words">“{lead.topic}”</div>}
                 </div>
                 <div className="sm:w-56 sm:text-right">
                   <div className="text-zinc-300 text-sm">{formatMyTime(lead)}</div>

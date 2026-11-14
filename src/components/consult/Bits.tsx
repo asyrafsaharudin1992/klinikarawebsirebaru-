@@ -27,11 +27,16 @@ export const WhatsAppLink: React.FC<{ where: string; className?: string; label?:
   </a>
 );
 
-export const goToForm = (where: string) => {
-  track('consult_cta_click', { placement: where });
-  const el = document.getElementById('book');
+export const scrollToId = (id: string) => {
+  const el = document.getElementById(id);
   if (!el) return;
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+};
+
+/** Scrolls to the booking form. `where` names the placement for analytics; the hero has its own event. */
+export const goToForm = (where: string) => {
+  track(where === 'hero' ? 'hero_cta_clicked' : 'consult_cta_click', { placement: where });
+  scrollToId('book');
 };
 

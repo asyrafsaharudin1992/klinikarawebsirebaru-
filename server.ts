@@ -136,6 +136,23 @@ async function startServer() {
       fs.writeFileSync(contentPath, JSON.stringify(next, null, 2) + '\n', 'utf8');
       res.json({ success: true });
     });
+
+    // Photo uploads for the editor: slot is "hero" or "credibility", saved as public/consult-<slot>.<ext>.
+    app.post('/api/dev/consult-photo', express.raw({ type: 'application/octet-stream', limit: '12mb' }), (req, res) => {
+      if (!isLoopback(req)) return res.status(403).end();
+      const slot = String(req.query.slot || '');
+      const ext = String(req.query.ext || '').toLowerCase();
+      if (!['hero', 'credibility'].includes(slot)) return res.status(400).send('Unknown photo slot.');
+      if (!['jpg', 'jpeg', 'png', 'webp', 'avif'].includes(ext) || !Buffer.isBuffer(req.body) || req.body.length === 0) {
+        return res.status(400).send('Send an image (jpg, png, webp or avif).');
+      }
+      const publicDir = path.join(__dirname, 'public');
+      for (const old of fs.readdirSync(publicDir)) {
+        if (old.startsWith(`consult-${slot}.`)) fs.unlinkSync(path.join(publicDir, old));
+      }
+      fs.writeFileSync(path.join(publicDir, `consult-${slot}.${ext}`), req.body);
+      res.json({ path: `/consult-${slot}.${ext}` });
+    });
   }
 
   // ── API Routes ──────────────────────────────────────────────────────────────

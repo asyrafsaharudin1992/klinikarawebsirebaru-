@@ -1,97 +1,154 @@
 {
   "hero": {
-    "chip": "Case Note: Dr. You, Considering a Clinic",
-    "h1Lead": "From great doctor to",
-    "h1Em": "clinic owner.",
-    "lede": "You’re a good doctor. You’ve thought about owning a clinic.",
-    "sub": "A free online consultation, from a doctor who runs one.",
-    "ctaPrimary": "Book free session",
-    "ctaWhatsApp": "WhatsApp me"
+    "eyebrow": "Free clinic setup consultation",
+    "h1Lead": "Start Your Own Clinic.",
+    "h1Em": "Let's Get You There.",
+    "sub": "Thinking of opening your own clinic? Not sure where to begin?",
+    "desc": "Starting a clinic involves more than finding a shop lot and putting up a signboard. Understand the business setup, capital, premises, licensing and preparations involved before taking the next step.",
+    "ctaPrimary": "BOOK YOUR FREE CONSULTATION",
+    "ctaSecondary": "Explore What We Can Discuss",
+    "panelTitle": "Your clinic setup, in one conversation",
+    "photo": "",
+    "trust": ["FREE consultation", "Online", "One-to-one", "No obligation"]
   },
-  "assess": {
-    "h2": "Three stages. Most doctors stumble on at least one.",
-    "flowTitle": "Follow the money",
-    "nodes": [
-      "Patients",
-      "Revenue",
-      "Smart operations",
-      "Profit",
-      "Your pocket"
-    ]
-  },
-  "stages": [
-    {
-      "title": "START",
-      "line": "From idea to opening day, without the expensive mistakes.",
-      "teaser": "Most first-time owners get this part wrong, and it is rarely the part they worry about."
-    },
-    {
-      "title": "MANAGE",
-      "line": "A clinic that runs well even when you’re not in the room.",
-      "teaser": "The clinics that last are built on something most doctors never think to set up."
-    },
-    {
-      "title": "PROFIT",
-      "line": "Where the real money is, and how it ends up with you.",
-      "teaser": "Busy is not the same as profitable. Most doctors find that out late."
-    }
-  ],
-  "audience": {
-    "h2": "Who this is for",
-    "items": [
-      "You’re a doctor who has wondered, “What if this were my own clinic?”",
-      "You want straight answers from someone who actually runs clinics.",
-      "You’re not sure where to begin, or what you might be missing."
-    ]
-  },
-  "steps": {
-    "h2": "How the free session works",
-    "items": [
+  "problems": {
+    "h2": "Does Any of This Sound Familiar?",
+    "sub": "You might be ready to start your own clinic, but something is holding you back.",
+    "ctaLine": "If you can relate to even one of these situations, let's talk.",
+    "cardCta": "Discuss this in my free consultation",
+    "cards": [
       {
-        "title": "Book",
-        "line": "Tap the button and say hello on WhatsApp."
+        "title": "I want to open my own clinic, but I don't know where to start.",
+        "desc": "Every clinic begins with a first step. Knowing what that step is changes everything.",
+        "topic": "Where to start when opening a clinic",
+        "situation": "first_clinic",
+        "questions": [
+          "I have always wanted to own a clinic, but I have no idea how to begin.",
+          "I don't know what steps I need to take before opening a clinic.",
+          "I don't know whether I should start alone or find a business partner.",
+          "I don't know how long it takes to get everything ready."
+        ]
       },
       {
-        "title": "Chat online",
-        "line": "We talk through your situation, one doctor to another."
+        "title": "I don't understand the business setup.",
+        "desc": "Company, partnership or sole proprietor? The structure you choose shapes what comes next.",
+        "topic": "Business setup and company structure",
+        "situation": "first_clinic",
+        "questions": [
+          "I don't know how to register a company or set up a Sdn. Bhd.",
+          "Should I operate as a sole proprietor, partnership or Sdn. Bhd.?",
+          "What business structure is suitable for a medical clinic?",
+          "What registrations and approvals do I need?"
+        ]
       },
       {
-        "title": "Leave with clarity",
-        "line": "You know what to do next, and what to avoid."
+        "title": "I found a potential location, but is it suitable?",
+        "desc": "A shop lot can look perfect and still be the wrong place for a clinic.",
+        "topic": "Choosing and assessing a clinic location",
+        "situation": "first_clinic",
+        "questions": [
+          "I found a shop lot, but I don't know whether it is suitable for a clinic.",
+          "What should I look out for before signing a tenancy agreement?",
+          "How do I assess the location and surrounding competition?",
+          "What requirements should I consider before committing to the premises?"
+        ]
+      },
+      {
+        "title": "I don't know how much money I need.",
+        "desc": "Knowing the numbers before you commit is the difference between a plan and a gamble.",
+        "topic": "Capital and startup cost planning",
+        "situation": "first_clinic",
+        "questions": [
+          "How much capital do I need to open a clinic?",
+          "How much should I allocate for renovation, equipment and medical supplies?",
+          "What are the ongoing monthly expenses?",
+          "How much revenue does my clinic need to generate to sustain itself?"
+        ]
+      },
+      {
+        "title": "I don't understand the licensing and approval process.",
+        "desc": "Approvals take preparation. Understanding them early helps you avoid avoidable delays.",
+        "topic": "Licensing and approval preparation",
+        "situation": "first_clinic",
+        "questions": [
+          "What approvals do I need from the Ministry of Health?",
+          "What is involved in setting up a private medical clinic?",
+          "What should I prepare before applying for the necessary licences?",
+          "What are the common mistakes that delay clinic opening?"
+        ]
+      },
+      {
+        "title": "I already own a clinic and want to expand.",
+        "desc": "A second branch is a new setup, not a copy of the first. Plan it properly.",
+        "topic": "Expanding to another clinic or branch",
+        "situation": "another_branch",
+        "questions": [
+          "I want to open a second branch but don't know how to plan it.",
+          "I want to establish a new clinic under a proper business structure.",
+          "I want to understand the financial commitment before expanding.",
+          "I want to know what I should prepare before taking the next step."
+        ]
       }
     ]
+  },
+  "discuss": {
+    "h2": "What Can We Discuss During Your Consultation?",
+    "sub": "Your consultation is centred around your own situation and business goals.",
+    "note": "These are general discussions. The consultation does not provide formal legal, tax, company secretarial or regulatory services.",
+    "items": [
+      { "title": "Clinic Business Setup", "desc": "Understanding the steps involved in establishing a private medical clinic." },
+      { "title": "Company Structure", "desc": "General discussion about company registration, business structures and partnerships." },
+      { "title": "Capital and Startup Costs", "desc": "Understanding startup capital, renovation, equipment and initial expenses." },
+      { "title": "Premises and Location", "desc": "Considerations when evaluating a potential clinic location or tenancy." },
+      { "title": "Licensing and Approvals", "desc": "Understanding the general regulatory preparation involved in establishing a clinic." },
+      { "title": "Clinic Expansion", "desc": "Planning the setup of an additional branch or new clinic." }
+    ]
+  },
+  "credibility": {
+    "h2": "Advice from a Doctor Who Understands Clinic Ownership.",
+    "paras": [
+      "Opening and running a clinic involves a completely different set of challenges from practising medicine.",
+      "As a fellow doctor with experience in clinic ownership and operations, I understand that the journey involves more than clinical knowledge.",
+      "My intention is to share practical experience, help you think through important decisions and give you a clearer picture of what lies ahead.",
+      "You deserve to make informed decisions before committing your time, money and effort."
+    ],
+    "name": "",
+    "role": "",
+    "photo": ""
+  },
+  "how": {
+    "h2": "Your First Step Is Just a Conversation.",
+    "steps": [
+      { "title": "Book your free session", "line": "Send your details on WhatsApp and we'll agree a time that suits you." },
+      { "title": "Tell me about your plans", "line": "Share your clinic idea, current situation and questions." },
+      { "title": "Discuss your options", "line": "Explore your challenges, possible approaches and next steps." }
+    ]
+  },
+  "book": {
+    "h2": "Let's Talk About Your Clinic.",
+    "body": "You don't need a business plan. You don't need to have registered a company. You don't even need to have found a clinic location.",
+    "emphasis": "All you need is an idea or a question.",
+    "trust": ["FREE initial consultation", "One-to-one discussion", "Online meeting", "No obligation"]
   },
   "faq": {
-    "h2": "Quick questions",
+    "h2": "Frequently Asked Questions",
     "items": [
-      {
-        "q": "Is it really free?",
-        "a": "Yes, the first online session is on the house."
-      },
-      {
-        "q": "Do I need business experience?",
-        "a": "Not at all, we start from where you are in the session."
-      },
-      {
-        "q": "How much does it take to start?",
-        "a": "It depends on your situation, and that’s exactly what we map out in the session."
-      },
-      {
-        "q": "Do I have to leave my current job?",
-        "a": "Not necessarily, and we’ll look at what fits your life in the session."
-      },
-      {
-        "q": "What happens after the session?",
-        "a": "You decide your next step, with clarity from the session."
-      }
+      { "q": "Is the consultation really free?", "a": "Yes. Your initial business consultation is free, with no obligation to proceed with any further service." },
+      { "q": "Do I need to have a clinic already?", "a": "No. This consultation is open to doctors planning their first clinic as well as existing clinic owners considering another branch." },
+      { "q": "I'm only thinking about opening a clinic. Can I still book?", "a": "Absolutely. Speaking to someone before committing to premises or investment can help you understand the process and make better-informed decisions." },
+      { "q": "Can I discuss my proposed clinic business structure?", "a": "Yes. We can discuss general considerations around company structures, partnerships and business setup. Formal company secretarial, legal and tax advice should be obtained from the relevant professionals." },
+      { "q": "Is the consultation online?", "a": "Yes. Your consultation will be conducted online. Booking details and the meeting link will be provided after confirmation." },
+      { "q": "Will you help me open my clinic?", "a": "The initial session is a consultation to understand your plans, discuss your challenges and explore possible next steps. Any further assistance or services can be discussed separately." },
+      { "q": "Who can book?", "a": "Doctors planning to start their own clinic and existing clinic owners considering another clinic or branch." }
     ]
   },
-  "plan": {
-    "h2": "Book your free session",
-    "body": "Leave your details and we’ll continue on WhatsApp.",
-    "orLead": "Prefer to skip the form?"
+  "final": {
+    "h2": "Ready to Take the First Step?",
+    "body": "Your clinic ownership journey doesn't have to start with guesswork.",
+    "cta": "BOOK YOUR FREE CONSULTATION",
+    "sub": "A free conversation could be the first step towards your own clinic."
   },
   "footer": {
-    "disclaimer": "This page offers general business guidance only. It is not legal, financial or tax advice."
+    "disclaimer": "This page offers general business guidance only. It is not legal, financial, tax or company secretarial advice."
   }
 }

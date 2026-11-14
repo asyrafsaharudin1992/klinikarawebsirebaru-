@@ -1,93 +1,69 @@
 /* Business Consultation page. Everything is scoped under .consult-page so nothing leaks to other routes. */
 .consult-page {
-  --c-paper: #fbf8f2;
-  --c-paper-2: #f3ede2;
-  --c-card: #ffffff;
-  --c-ink: #17130f;
-  --c-muted: #5a534a;
-  --c-line: #e3dacb;
-  --c-red: #dc2626;
-  --c-red-deep: #b91c1c;
+  --c-navy: #10233f;
+  --c-blue: #174a8b;
+  --c-blue-hover: #123a6f;
+  --c-blue-soft: #dceafe;
+  --c-bg: #f1f5f9;
+  --c-white: #ffffff;
+  --c-text: #334155;
+  --c-muted: #64748b;
+  --c-line: #dbe3ee;
   --c-wa: #0b6b37;
   --c-wa-hover: #095a2e;
-  --c-serif: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
-  --c-mono: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  --c-radius: 16px;
+  --c-radius-sm: 12px;
+  --c-shadow: 0 1px 2px rgba(16, 35, 63, 0.05), 0 8px 24px -12px rgba(16, 35, 63, 0.18);
+  --c-font: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
 
-  background: var(--c-paper);
-  color: var(--c-ink);
-  font-family: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
-  line-height: 1.55;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--c-font);
+  font-size: 1rem;
+  line-height: 1.6;
   min-height: 100vh;
-  padding-bottom: 0;
 }
-
 .consult-page *:focus-visible {
-  outline: 3px solid var(--c-ink);
+  outline: 3px solid var(--c-blue);
   outline-offset: 3px;
   border-radius: 6px;
 }
-
-/* ---------- ECG trace (shared by progress bar and dividers) ---------- */
-.consult-page .c-ecg-line {
-  height: 32px;
+.consult-page h1,
+.consult-page h2,
+.consult-page h3 {
+  margin: 0;
+  color: var(--c-navy);
+  font-family: var(--c-font);
+  letter-spacing: -0.02em;
+}
+.consult-page p {
+  margin: 0;
+}
+.c-container {
   width: 100%;
-  background-repeat: repeat-x;
-  background-position: left center;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='32' viewBox='0 0 160 32'%3E%3Cpath d='M0 16 H52 L58 16 L63 6 L69 27 L75 2 L81 22 L86 16 H160' fill='none' stroke='%23dc2626' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-}
-.consult-page .c-ecg-reveal,
-.consult-page .c-ecg-inner {
-  will-change: transform;
-}
-.consult-page .c-ecg-reveal {
-  overflow: hidden;
-  width: 100%;
-}
-.consult-page .c-ecg-progress {
-  position: fixed;
-  inset: 0 0 auto 0;
-  height: 32px;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 60;
-  opacity: 0.9;
-}
-.consult-page .c-ecg-divider {
-  max-width: 64rem;
+  max-width: 72rem;
   margin: 0 auto;
-  padding: 0 16px;
-  overflow: hidden;
-}
-.consult-page .c-ecg-divider .c-ecg-reveal {
-  transform: translateX(-100%);
-  transition: transform 1.4s cubic-bezier(0.22, 0.8, 0.3, 1);
-}
-.consult-page .c-ecg-divider .c-ecg-inner {
-  transform: translateX(100%);
-  transition: transform 1.4s cubic-bezier(0.22, 0.8, 0.3, 1);
-}
-.consult-page .c-ecg-divider.is-in .c-ecg-reveal,
-.consult-page .c-ecg-divider.is-in .c-ecg-inner {
-  transform: translateX(0);
+  padding: 0 20px;
 }
 
 /* ---------- Header ---------- */
 .consult-page .c-header {
-  max-width: 64rem;
-  margin: 0 auto;
-  padding: 44px 16px 0;
+  background: var(--c-white);
+  border-bottom: 1px solid var(--c-line);
+}
+.consult-page .c-header-in {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-height: 64px;
 }
 .consult-page .c-brand {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--c-ink);
+  color: var(--c-navy);
   text-decoration: none;
 }
 .consult-page .c-brand img {
@@ -102,103 +78,117 @@
   text-underline-offset: 3px;
 }
 
-/* ---------- Sections and type ---------- */
-.consult-page .c-section {
-  max-width: 64rem;
-  margin: 0 auto;
-  padding: 56px 16px;
-}
+/* ---------- Hero ---------- */
 .consult-page .c-hero {
-  padding-top: 40px;
-  padding-bottom: 64px;
+  background: var(--c-white);
+  padding: 40px 0 48px;
 }
-.consult-page .c-chip {
+.consult-page .c-hero-grid {
+  display: grid;
+  gap: 32px;
+}
+.consult-page .c-eyebrow {
   display: inline-block;
-  font-family: var(--c-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--c-red-deep);
-  border: 1px solid var(--c-red-deep);
-  border-radius: 999px;
+  margin-bottom: 16px;
   padding: 6px 12px;
-  margin: 0 0 20px;
-}
-.consult-page .c-soap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 0 14px;
-  font-family: var(--c-mono);
-  color: var(--c-muted);
+  border-radius: 999px;
+  background: var(--c-blue-soft);
+  color: var(--c-blue);
   font-size: 0.8125rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.consult-page .c-soap-letter {
-  display: inline-grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: var(--c-ink);
-  color: var(--c-paper);
   font-weight: 700;
-  font-size: 1rem;
-  letter-spacing: 0;
-}
-.consult-page .c-h1,
-.consult-page .c-h2,
-.consult-page .c-h3 {
-  font-family: var(--c-serif);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  margin: 0;
+  letter-spacing: 0.02em;
 }
 .consult-page .c-h1 {
-  font-size: clamp(2.5rem, 10vw, 4.75rem);
-  line-height: 1.02;
-  max-width: 14ch;
+  font-size: clamp(2.1rem, 8.4vw, 3.6rem);
+  line-height: 1.08;
+  font-weight: 800;
 }
-.consult-page .c-h1 em {
-  font-style: normal;
-  color: var(--c-red-deep);
+.consult-page .c-h1-em {
+  display: block;
+  color: var(--c-blue);
 }
-.consult-page .c-h2 {
-  font-size: clamp(1.75rem, 6vw, 2.75rem);
-  line-height: 1.1;
-  max-width: 20ch;
+.consult-page .c-sub {
+  margin-top: 20px;
+  font-size: 1.1875rem;
+  font-weight: 500;
+  color: var(--c-navy);
+  line-height: 1.45;
 }
-.consult-page .c-h3 {
-  font-size: 1.5rem;
-  line-height: 1.15;
-  margin-bottom: 16px;
+.consult-page .c-desc {
+  margin-top: 12px;
+  color: var(--c-text);
+  max-width: 40rem;
 }
-.consult-page .c-lede {
-  font-family: var(--c-serif);
-  font-size: clamp(1.25rem, 4.2vw, 1.75rem);
-  line-height: 1.3;
-  margin: 24px 0 8px;
-  max-width: 30ch;
-}
-.consult-page .c-sub,
-.consult-page .c-p {
-  font-size: 1.0625rem;
-  color: var(--c-muted);
-  margin: 12px 0 0;
-  max-width: 44ch;
-}
-.consult-page .c-p--note {
-  font-size: 0.9375rem;
-}
-
-/* ---------- Buttons ---------- */
 .consult-page .c-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 12px;
   margin-top: 28px;
 }
+.consult-page .c-trust {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--c-navy);
+}
+.consult-page .c-trust li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.consult-page .c-trust svg {
+  color: var(--c-blue);
+  flex: none;
+}
+
+/* Hero visual: a quiet "what we can discuss" panel, or a real photo once one is set */
+.consult-page .c-panel {
+  background: var(--c-navy);
+  color: #fff;
+  border-radius: var(--c-radius);
+  padding: 24px 22px;
+  box-shadow: var(--c-shadow);
+}
+.consult-page .c-panel-title {
+  font-weight: 700;
+  font-size: 1.0625rem;
+  margin-bottom: 14px;
+}
+.consult-page .c-panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.consult-page .c-panel li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-weight: 500;
+}
+.consult-page .c-panel li:first-child {
+  border-top: 0;
+}
+.consult-page .c-panel-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(220, 234, 254, 0.14);
+  color: var(--c-blue-soft);
+  flex: none;
+}
+
+/* ---------- Buttons ---------- */
 .consult-page .c-btn {
   display: inline-flex;
   align-items: center;
@@ -206,25 +196,41 @@
   gap: 10px;
   min-height: 52px;
   padding: 0 24px;
-  border-radius: 14px;
+  border-radius: var(--c-radius-sm);
   border: 2px solid transparent;
   font: inherit;
   font-weight: 700;
-  font-size: 1rem;
-  cursor: pointer;
+  font-size: 0.9375rem;
+  letter-spacing: 0.02em;
+  text-align: center;
   text-decoration: none;
-  transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 .consult-page .c-btn:active {
-  transform: scale(0.98);
+  transform: scale(0.985);
 }
-.consult-page .c-btn--red {
-  background: var(--c-red);
+.consult-page .c-btn--primary {
+  background: var(--c-blue);
   color: #fff;
-  box-shadow: 0 8px 20px -8px rgba(220, 38, 38, 0.6);
 }
-.consult-page .c-btn--red:hover {
-  background: var(--c-red-deep);
+.consult-page .c-btn--primary:hover {
+  background: var(--c-blue-hover);
+}
+.consult-page .c-btn--ghost {
+  background: transparent;
+  border-color: var(--c-line);
+  color: var(--c-navy);
+}
+.consult-page .c-btn--ghost:hover {
+  border-color: var(--c-navy);
+}
+.consult-page .c-btn--light {
+  background: #fff;
+  color: var(--c-navy);
+}
+.consult-page .c-btn--light:hover {
+  background: var(--c-blue-soft);
 }
 .consult-page .c-btn--wa {
   background: var(--c-wa);
@@ -232,15 +238,6 @@
 }
 .consult-page .c-btn--wa:hover {
   background: var(--c-wa-hover);
-}
-.consult-page .c-btn--ghost {
-  background: transparent;
-  color: var(--c-ink);
-  border-color: var(--c-ink);
-}
-.consult-page .c-btn--ghost:hover {
-  background: var(--c-ink);
-  color: var(--c-paper);
 }
 .consult-page .c-btn--block {
   width: 100%;
@@ -255,342 +252,355 @@
   flex: none;
 }
 
-/* ---------- Why me ---------- */
-.consult-page .c-why {
-  display: grid;
-  gap: 28px;
-  margin-top: 8px;
+/* ---------- Sections ---------- */
+.consult-page .c-section {
+  padding: 56px 0;
 }
-.consult-page .c-photo {
-  aspect-ratio: 4 / 5;
-  width: 100%;
-  max-width: 320px;
-  display: grid;
-  place-items: center;
+.consult-page .c-section--white {
+  background: var(--c-white);
+}
+.consult-page .c-head {
+  max-width: 44rem;
+  margin-bottom: 32px;
+}
+.consult-page .c-head--center {
+  margin-left: auto;
+  margin-right: auto;
   text-align: center;
-  padding: 16px;
-  border: 2px dashed var(--c-line);
-  border-radius: 20px;
-  background: var(--c-paper-2);
 }
-.consult-page .c-fill {
-  font-family: var(--c-mono);
-  font-size: 0.8125rem;
-  color: var(--c-red-deep);
-  background: rgba(220, 38, 38, 0.08);
-  border-radius: 6px;
-  padding: 2px 6px;
+.consult-page .c-h2 {
+  font-size: clamp(1.65rem, 5.6vw, 2.35rem);
+  line-height: 1.15;
+  font-weight: 800;
 }
-.consult-page .c-vitals {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin: 40px 0 0;
-}
-.consult-page .c-vital {
-  display: flex;
-  flex-direction: column-reverse;
-  justify-content: flex-end;
-  gap: 4px;
-  background: var(--c-card);
-  border: 1px solid var(--c-line);
-  border-radius: 18px;
-  padding: 18px 16px;
-  box-shadow: 0 1px 0 rgba(23, 19, 15, 0.04), 0 14px 28px -20px rgba(23, 19, 15, 0.35);
-}
-.consult-page .c-vital-value {
-  margin: 0;
-  font-family: var(--c-serif);
-  font-size: 2.75rem;
-  line-height: 1;
+.consult-page .c-h3 {
+  font-size: 1.125rem;
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--c-red-deep);
+  line-height: 1.3;
 }
-.consult-page .c-vital-value--word {
-  font-size: 1.75rem;
-  line-height: 1.2;
-}
-.consult-page .c-vital-label {
-  font-family: var(--c-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--c-muted);
+.consult-page .c-lead {
+  margin-top: 12px;
+  font-size: 1.0625rem;
+  color: var(--c-text);
 }
 
-/* ---------- Stages ---------- */
-.consult-page .c-stages {
+/* ---------- Problem cards ---------- */
+.consult-page .c-pgrid {
   list-style: none;
+  margin: 0;
   padding: 0;
-  margin: 32px 0 0;
   display: grid;
-  gap: 14px;
+  gap: 16px;
+  align-items: start;
 }
-.consult-page .c-stage {
+.consult-page .c-pcard {
+  background: var(--c-white);
+  border: 1px solid var(--c-line);
+  border-radius: var(--c-radius);
+  padding: 20px;
+  box-shadow: var(--c-shadow);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.consult-page .c-pcard.is-open {
+  border-color: var(--c-blue);
+}
+@media (hover: hover) {
+  .consult-page .c-pcard:hover {
+    border-color: var(--c-blue);
+  }
+}
+.consult-page .c-pcard-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-height: 44px;
+}
+div.c-pcard-head {
+  cursor: default;
+}
+.consult-page .c-pcard-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 12px;
+  background: var(--c-blue-soft);
+  color: var(--c-blue);
+}
+.consult-page .c-pcard-title {
+  flex: 1;
+  font-weight: 700;
+  font-size: 1.0625rem;
+  line-height: 1.35;
+  color: var(--c-navy);
+  padding-top: 2px;
+}
+.consult-page .c-pcard-chev {
+  flex: none;
+  margin-top: 10px;
+  color: var(--c-muted);
+  transition: transform 0.2s ease;
+}
+.consult-page .c-pcard.is-open .c-pcard-chev {
+  transform: rotate(180deg);
+}
+.consult-page .c-pcard-desc {
+  margin-top: 12px;
+  color: var(--c-muted);
+  font-size: 0.9375rem;
+}
+.consult-page .c-pcard-panel {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--c-line);
+}
+.consult-page .c-pcard-panel[hidden] {
+  display: none;
+}
+.consult-page .c-pcard-qs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.consult-page .c-pcard-qs li {
   position: relative;
+  padding-left: 18px;
+  font-size: 0.9375rem;
+}
+.consult-page .c-pcard-qs li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-blue);
+}
+.consult-page .c-pcard-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--c-blue);
+  cursor: pointer;
+}
+.consult-page .c-pcard-cta:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.consult-page .c-pcard-edit-note {
+  margin-top: 12px;
+  font-size: 0.8125rem;
+  color: var(--c-muted);
+}
+.consult-page .c-inline-cta {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
-  width: 100%;
-  height: 100%;
-  text-align: left;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  background: var(--c-card);
-  border: 1px solid var(--c-line);
-  border-radius: 22px;
-  padding: 22px 20px 20px;
-  box-shadow: 0 1px 0 rgba(23, 19, 15, 0.04), 0 18px 32px -22px rgba(23, 19, 15, 0.4);
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  gap: 16px;
+  margin-top: 36px;
+  padding: 24px;
+  border-radius: var(--c-radius);
+  background: var(--c-blue-soft);
 }
-.consult-page .c-stage-tag {
-  font-family: var(--c-mono);
-  font-size: 0.75rem;
-  color: var(--c-muted);
-  letter-spacing: 0.08em;
-}
-.consult-page .c-stage-title {
-  font-family: var(--c-serif);
-  font-size: 2rem;
+.consult-page .c-inline-cta p {
+  font-size: 1.1875rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--c-red-deep);
-}
-.consult-page .c-stage-line {
-  font-size: 1.0625rem;
-  line-height: 1.4;
-}
-.consult-page .c-stage-reveal {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 10px;
-  padding-top: 14px;
-  border-top: 1px dashed var(--c-line);
-  min-height: 7.5rem; /* reserved up front so revealing never shifts the layout */
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 0.25s ease, transform 0.25s ease;
-}
-.consult-page .c-stage-teaser {
-  font-family: var(--c-serif);
-  font-style: normal;
-  font-size: 1.0625rem;
-  line-height: 1.35;
-}
-.consult-page .c-stage-nudge {
-  font-family: var(--c-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-  color: var(--c-red-deep);
-  font-weight: 700;
-}
-.consult-page .c-stage[aria-expanded='true'],
-.consult-page .c-stage:focus-visible {
-  border-color: var(--c-red);
-  transform: translateY(-3px);
-}
-.consult-page .c-stage[aria-expanded='true'] .c-stage-reveal,
-.consult-page .c-stage:focus-visible .c-stage-reveal {
-  opacity: 1;
-  transform: none;
-}
-@media (hover: hover) {
-  .consult-page .c-stage:hover {
-    border-color: var(--c-red);
-    transform: translateY(-3px);
-  }
-  .consult-page .c-stage:hover .c-stage-reveal {
-    opacity: 1;
-    transform: none;
-  }
+  color: var(--c-navy);
 }
 
-/* ---------- Profit flow ---------- */
-.consult-page .c-flow-wrap {
-  margin-top: 48px;
-  padding: 24px 16px;
-  background: var(--c-paper-2);
-  border-radius: 22px;
-}
-.consult-page .c-flow-title {
-  font-family: var(--c-mono);
-  font-size: 0.8125rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--c-muted);
-  margin: 0 0 16px;
-}
-.consult-page .c-flow {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-}
-.consult-page .c-flow-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.consult-page .c-flow-node {
-  display: block;
-  width: 100%;
-  text-align: center;
-  padding: 14px 12px;
-  border-radius: 14px;
-  background: var(--c-card);
-  border: 1px solid var(--c-line);
-  font-weight: 700;
-}
-.consult-page .c-flow-node--end {
-  background: var(--c-ink);
-  color: var(--c-paper);
-  border-color: var(--c-ink);
-}
-.consult-page .c-flow-link {
-  position: relative;
-  display: block;
-  width: 3px;
-  height: 30px;
-  background: var(--c-line);
-  overflow: hidden;
-}
-.consult-page .c-flow-link::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent, var(--c-red), transparent);
-  transform: translateY(-100%);
-  animation: c-flow-v 2.2s ease-in-out infinite;
-  animation-delay: var(--d, 0s);
-}
-@keyframes c-flow-v {
-  to {
-    transform: translateY(100%);
-  }
-}
-@keyframes c-flow-h {
-  to {
-    transform: translateX(100%);
-  }
-}
-
-/* ---------- Audience + steps ---------- */
-.consult-page .c-two {
-  display: grid;
-  gap: 40px;
-}
-.consult-page .c-list,
-.consult-page .c-steps {
+/* ---------- What we can discuss ---------- */
+.consult-page .c-dgrid {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 12px;
+  gap: 16px;
 }
-.consult-page .c-list li {
-  position: relative;
-  padding: 14px 16px 14px 44px;
-  background: var(--c-card);
+.consult-page .c-dcard {
+  background: var(--c-bg);
   border: 1px solid var(--c-line);
-  border-radius: 16px;
+  border-radius: var(--c-radius);
+  padding: 22px;
 }
-.consult-page .c-list li::before {
-  content: '';
-  position: absolute;
-  left: 16px;
-  top: 19px;
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--c-red-deep);
-  border-radius: 4px;
-}
-.consult-page .c-steps {
-  counter-reset: step;
-}
-.consult-page .c-steps li {
-  counter-increment: step;
-  display: grid;
-  grid-template-columns: 36px 1fr;
-  column-gap: 14px;
-  align-items: start;
-}
-.consult-page .c-steps li::before {
-  content: counter(step);
-  grid-row: span 2;
+.consult-page .c-dcard-icon {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--c-ink);
-  color: var(--c-paper);
-  font-family: var(--c-mono);
-  font-weight: 700;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  background: var(--c-white);
+  color: var(--c-blue);
+  box-shadow: var(--c-shadow);
 }
-.consult-page .c-steps strong {
-  font-family: var(--c-serif);
-  font-size: 1.125rem;
+.consult-page .c-dcard p {
+  margin-top: 8px;
+  color: var(--c-text);
+  font-size: 0.9375rem;
 }
-.consult-page .c-steps span {
-  color: var(--c-muted);
-}
-
-/* ---------- FAQ ---------- */
-.consult-page .c-faq {
+.consult-page .c-note {
   margin-top: 24px;
-  display: grid;
-  gap: 10px;
+  font-size: 0.875rem;
+  color: var(--c-muted);
   max-width: 44rem;
 }
-.consult-page .c-faq details {
-  background: var(--c-card);
-  border: 1px solid var(--c-line);
-  border-radius: 16px;
-  padding: 0 18px;
+
+/* ---------- Credibility ---------- */
+.consult-page .c-cred {
+  display: grid;
+  gap: 28px;
+  align-items: center;
 }
-.consult-page .c-faq summary {
-  cursor: pointer;
-  list-style: none;
-  padding: 16px 0;
+.consult-page .c-cred-copy {
+  max-width: 42rem;
+}
+.consult-page .c-para {
+  margin-top: 16px;
+  font-size: 1.0625rem;
+}
+.consult-page .c-cred-sign {
+  margin-top: 20px;
+}
+.consult-page .c-cred-name {
   font-weight: 700;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  color: var(--c-navy);
+  font-size: 1.0625rem;
 }
-.consult-page .c-faq summary::-webkit-details-marker {
-  display: none;
-}
-.consult-page .c-faq summary::after {
-  content: '+';
-  font-family: var(--c-mono);
-  color: var(--c-red-deep);
-}
-.consult-page .c-faq details[open] summary::after {
-  content: '\2212';
-}
-.consult-page .c-faq p {
-  margin: 0 0 16px;
+.consult-page .c-cred-role {
   color: var(--c-muted);
+  font-size: 0.9375rem;
 }
 
-/* ---------- Plan / form ---------- */
-.consult-page .c-plan {
-  padding-bottom: 72px;
+/* ---------- Photos (render only once a real photo is set) ---------- */
+.consult-page .c-photo {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--c-radius);
+  overflow: hidden;
+  background: var(--c-blue-soft);
+  box-shadow: var(--c-shadow);
 }
-.consult-page .c-plan-card {
-  margin-top: 24px;
-  max-width: 28rem;
-  background: var(--c-card);
+.consult-page .c-photo--hero {
+  max-width: 420px;
+  margin: 0 auto;
+}
+.consult-page .c-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.consult-page .c-photo-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--c-muted);
+  font-weight: 500;
+}
+
+/* ---------- How it works ---------- */
+.consult-page .c-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 28px;
+  position: relative;
+}
+.consult-page .c-steps li {
+  position: relative;
+  padding-left: 64px;
+}
+.consult-page .c-steps li:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 21px;
+  top: 46px;
+  bottom: -22px;
+  width: 2px;
+  background: var(--c-line);
+}
+.consult-page .c-step-num {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--c-blue);
+  color: #fff;
+  font-weight: 700;
+}
+.consult-page .c-steps p {
+  margin-top: 6px;
+  color: var(--c-text);
+}
+
+/* ---------- Booking ---------- */
+.consult-page .c-book-grid {
+  display: grid;
+  gap: 32px;
+  align-items: start;
+}
+.consult-page .c-emphasis {
+  margin-top: 16px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-navy);
+}
+.consult-page .c-checks {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.consult-page .c-checks li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  color: var(--c-navy);
+}
+.consult-page .c-checks svg {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  padding: 5px;
+  border-radius: 50%;
+  background: var(--c-blue-soft);
+  color: var(--c-blue);
+}
+.consult-page .c-book-card {
+  background: var(--c-white);
   border: 1px solid var(--c-line);
-  border-radius: 24px;
+  border-radius: var(--c-radius);
   padding: 22px 18px;
-  box-shadow: 0 24px 48px -28px rgba(23, 19, 15, 0.5);
+  box-shadow: var(--c-shadow);
 }
 .consult-page .c-form {
   display: grid;
@@ -598,40 +608,57 @@
 }
 .consult-page .c-field label {
   display: block;
+  margin-bottom: 6px;
   font-weight: 700;
   font-size: 0.9375rem;
-  margin-bottom: 6px;
+  color: var(--c-navy);
 }
 .consult-page .c-optional {
   font-weight: 400;
   color: var(--c-muted);
 }
-.consult-page .c-field input {
+.consult-page .c-field input,
+.consult-page .c-field select,
+.consult-page .c-field textarea {
   width: 100%;
   min-height: 52px;
   padding: 0 14px;
   font: inherit;
   font-size: 1rem; /* 16px stops iOS zooming into the field */
-  color: var(--c-ink);
+  color: var(--c-navy);
   background: #fff;
   border: 2px solid var(--c-line);
-  border-radius: 12px;
+  border-radius: var(--c-radius-sm);
 }
-.consult-page .c-field input:hover {
-  border-color: #cfc3ae;
+.consult-page .c-field textarea {
+  padding: 12px 14px;
+  min-height: 96px;
+  resize: vertical;
 }
-.consult-page .c-field input:focus-visible {
-  outline: 3px solid var(--c-ink);
+.consult-page .c-field input:hover,
+.consult-page .c-field select:hover,
+.consult-page .c-field textarea:hover {
+  border-color: #b8c4d6;
+}
+.consult-page .c-field input:focus-visible,
+.consult-page .c-field select:focus-visible,
+.consult-page .c-field textarea:focus-visible {
+  outline: 3px solid var(--c-blue);
   outline-offset: 2px;
 }
-.consult-page .c-field input[aria-invalid='true'] {
-  border-color: var(--c-red-deep);
+.consult-page .c-field [aria-invalid='true'] {
+  border-color: #b91c1c;
 }
 .consult-page .c-error {
-  margin: 6px 0 0;
-  color: var(--c-red-deep);
+  margin-top: 6px;
+  color: #b91c1c;
   font-size: 0.875rem;
   font-weight: 600;
+}
+.consult-page .c-filled-note {
+  font-size: 0.875rem;
+  color: var(--c-blue);
+  font-weight: 500;
 }
 .consult-page .c-hp {
   position: absolute;
@@ -641,23 +668,18 @@
   overflow: hidden;
 }
 .consult-page .c-consent {
-  margin: 0;
   font-size: 0.8125rem;
   color: var(--c-muted);
 }
-.consult-page .c-after {
-  min-height: 0;
-}
 .consult-page .c-after-main {
-  margin: 0;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--c-radius-sm);
   background: #e8f6ee;
   color: #0b5a30;
   font-weight: 700;
 }
 .consult-page .c-after-sub {
-  margin: 8px 0 0;
+  margin-top: 8px;
   font-size: 0.9375rem;
 }
 .consult-page .c-after-sub a,
@@ -668,8 +690,9 @@
   text-underline-offset: 3px;
 }
 .consult-page .c-or {
-  margin: 20px 0 0;
+  margin-top: 18px;
   color: var(--c-muted);
+  font-size: 0.9375rem;
 }
 .consult-page .c-link-wa {
   display: inline-flex;
@@ -682,6 +705,94 @@
   height: 18px;
 }
 
+/* ---------- FAQ ---------- */
+.consult-page .c-faq-wrap {
+  max-width: 52rem;
+}
+.consult-page .c-faq {
+  margin-top: 24px;
+  display: grid;
+  gap: 10px;
+}
+.consult-page .c-faq details,
+.consult-page .c-faq-edit {
+  background: var(--c-bg);
+  border: 1px solid var(--c-line);
+  border-radius: var(--c-radius-sm);
+  padding: 0 18px;
+}
+.consult-page .c-faq summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 16px 0;
+  min-height: 44px;
+  font-weight: 700;
+  color: var(--c-navy);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.consult-page .c-faq summary::-webkit-details-marker {
+  display: none;
+}
+.consult-page .c-faq summary::after {
+  content: '+';
+  color: var(--c-blue);
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+.consult-page .c-faq details[open] summary::after {
+  content: '\2212';
+}
+.consult-page .c-faq details p {
+  padding-bottom: 16px;
+  color: var(--c-text);
+}
+.consult-page .c-faq-edit {
+  padding: 14px 18px;
+}
+.consult-page .c-faq-edit .c-faq-q {
+  font-weight: 700;
+  color: var(--c-navy);
+  margin-bottom: 4px;
+}
+
+/* ---------- Final CTA ---------- */
+.consult-page .c-final {
+  background: var(--c-navy);
+  color: #fff;
+  padding: 64px 0;
+}
+.consult-page .c-final-in {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+.consult-page .c-final-h2 {
+  color: #fff;
+  font-size: clamp(1.8rem, 6vw, 2.6rem);
+  font-weight: 800;
+  line-height: 1.12;
+}
+.consult-page .c-final-body {
+  font-size: 1.125rem;
+  color: var(--c-blue-soft);
+  max-width: 36rem;
+}
+.consult-page .c-final .c-btn {
+  margin-top: 8px;
+}
+.consult-page .c-final-sub {
+  color: #b5c3d9;
+  font-size: 0.9375rem;
+}
+
+/* ---------- Footer (shared SiteFooter, dark) ---------- */
+.consult-page footer {
+  padding-bottom: 96px;
+}
+
 /* ---------- Sticky CTA ---------- */
 .consult-page .c-sticky {
   position: fixed;
@@ -692,7 +803,7 @@
   right: 0;
   bottom: 0;
   padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-  background: rgba(251, 248, 242, 0.96);
+  background: rgba(255, 255, 255, 0.96);
   border-top: 1px solid var(--c-line);
   transform: translateY(110%);
   visibility: hidden;
@@ -705,76 +816,92 @@
 }
 .consult-page .c-sticky-main {
   flex: 1;
+  padding: 0 12px;
 }
 .consult-page .c-sticky-wa {
   display: inline-flex;
 }
 
-/* Footer needs room so the mobile bar never hides its last line */
-.consult-page footer {
-  padding-bottom: 88px;
-}
-
-/* ---------- Larger screens ---------- */
-@media (min-width: 768px) {
-  .consult-page .c-header,
-  .consult-page .c-section,
-  .consult-page .c-ecg-divider {
-    padding-left: 32px;
-    padding-right: 32px;
+/* ---------- Tablet and up ---------- */
+@media (min-width: 640px) {
+  .c-container {
+    padding: 0 28px;
   }
-  .consult-page .c-section {
-    padding-top: 80px;
-    padding-bottom: 80px;
+  .consult-page .c-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
   }
-  .consult-page .c-why {
-    grid-template-columns: 280px 1fr;
-    align-items: center;
-    gap: 48px;
+  .consult-page .c-trust {
+    grid-template-columns: repeat(4, auto);
+    justify-content: start;
+    gap: 10px 24px;
   }
-  .consult-page .c-vitals {
-    grid-template-columns: repeat(4, 1fr);
+  .consult-page .c-pgrid,
+  .consult-page .c-dgrid {
+    grid-template-columns: repeat(2, 1fr);
   }
-  .consult-page .c-stages {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  .consult-page .c-two {
-    grid-template-columns: 1fr 1fr;
-    gap: 56px;
-  }
-  .consult-page .c-flow {
+  .consult-page .c-inline-cta {
     flex-direction: row;
     align-items: center;
+    justify-content: space-between;
+    padding: 24px 28px;
   }
-  .consult-page .c-flow-item {
-    flex: 1 1 0;
-    flex-direction: row;
-    min-width: 0;
-  }
-  .consult-page .c-flow-node {
-    flex: none;
-    width: auto;
-    padding: 14px 16px;
-  }
-  .consult-page .c-flow-item:last-child {
-    flex: none;
-  }
-  .consult-page .c-flow-link {
-    flex: 1;
-    width: auto;
-    height: 3px;
-    min-width: 20px;
-  }
-  .consult-page .c-flow-link::after {
-    background: linear-gradient(90deg, transparent, var(--c-red), transparent);
-    transform: translateX(-100%);
-    animation-name: c-flow-h;
-  }
-  .consult-page .c-plan-card {
+  .consult-page .c-book-card {
     padding: 30px 28px;
   }
+}
 
-  /* desktop: bar becomes a quiet pill */
+/* ---------- Desktop ---------- */
+@media (min-width: 1024px) {
+  .consult-page .c-hero {
+    padding: 72px 0 80px;
+  }
+  .consult-page .c-hero-grid {
+    grid-template-columns: 1.15fr 0.85fr;
+    align-items: center;
+    gap: 56px;
+  }
+  .consult-page .c-trust {
+    grid-template-columns: repeat(2, auto);
+  }
+  .consult-page .c-section {
+    padding: 88px 0;
+  }
+  .consult-page .c-pgrid,
+  .consult-page .c-dgrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .consult-page .c-cred {
+    grid-template-columns: 340px 1fr;
+    gap: 64px;
+  }
+  .consult-page .c-cred.c-cred--solo {
+    grid-template-columns: 1fr;
+  }
+  .consult-page .c-steps {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+  .consult-page .c-steps li {
+    padding: 64px 0 0;
+  }
+  .consult-page .c-steps li:not(:last-child)::before {
+    left: 56px;
+    right: -32px;
+    top: 21px;
+    bottom: auto;
+    width: auto;
+    height: 2px;
+  }
+  .consult-page .c-book-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+  }
+  .consult-page .c-final {
+    padding: 88px 0;
+  }
+
+  /* desktop: the bar becomes a quiet pill */
   .consult-page .c-sticky {
     left: auto;
     right: 24px;
@@ -782,12 +909,13 @@
     padding: 8px;
     border: 1px solid var(--c-line);
     border-radius: 999px;
-    box-shadow: 0 16px 36px -14px rgba(23, 19, 15, 0.45);
+    box-shadow: 0 16px 36px -14px rgba(16, 35, 63, 0.4);
   }
   .consult-page .c-sticky-main {
     flex: none;
     min-height: 44px;
     border-radius: 999px;
+    padding: 0 22px;
   }
   .consult-page .c-sticky .c-btn--icon {
     width: 44px;
@@ -807,56 +935,9 @@
     animation: none !important;
     transition: none !important;
   }
-  .consult-page .c-ecg-progress {
-    opacity: 0.35;
-  }
-  .consult-page .c-ecg-progress .c-ecg-reveal,
-  .consult-page .c-ecg-progress .c-ecg-inner,
-  .consult-page .c-ecg-divider .c-ecg-reveal,
-  .consult-page .c-ecg-divider .c-ecg-inner {
-    transform: none !important;
-  }
-  .consult-page .c-stage-reveal {
-    opacity: 1;
-    transform: none;
-  }
-  .consult-page .c-flow-link::after {
-    display: none;
-  }
   .consult-page .c-sticky {
     transform: none;
   }
-}
-
-/* ---------- Photo (uploaded) ---------- */
-.consult-page .c-photo.has-photo {
-  padding: 0;
-  border: 0;
-  overflow: hidden;
-  background: var(--c-paper-2);
-}
-.consult-page .c-photo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* ---------- Faq text blocks used only by the localhost editor ---------- */
-.consult-page .c-faq-edit {
-  background: var(--c-card);
-  border: 1px solid var(--c-line);
-  border-radius: 16px;
-  padding: 14px 18px;
-}
-.consult-page .c-faq-edit p {
-  margin: 0;
-  color: var(--c-muted);
-}
-.consult-page .c-faq-edit .c-faq-q {
-  color: var(--c-ink);
-  font-weight: 700;
-  margin-bottom: 4px;
 }
 
 /* ---------- Localhost editor (never rendered in production) ---------- */
@@ -872,8 +953,8 @@
   align-items: center;
   gap: 8px 12px;
   padding: 10px 16px;
-  background: var(--c-ink);
-  color: var(--c-paper);
+  background: var(--c-navy);
+  color: #fff;
   font-size: 0.875rem;
 }
 .consult-page .c-editbar-hint {
@@ -891,54 +972,55 @@
   min-height: 36px;
   padding: 0 14px;
   border-radius: 8px;
-  border: 1px solid rgba(251, 248, 242, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   background: transparent;
   color: inherit;
   cursor: pointer;
 }
 .consult-page .c-editbar button.is-primary {
-  background: var(--c-red);
-  border-color: var(--c-red);
+  background: var(--c-blue);
+  border-color: var(--c-blue);
 }
 .consult-page .c-editbar button:disabled {
   opacity: 0.4;
   cursor: default;
 }
 .consult-page .c-ed {
-  outline: 1px dashed rgba(23, 19, 15, 0.28);
+  outline: 1px dashed rgba(16, 35, 63, 0.3);
   outline-offset: 3px;
   border-radius: 4px;
   cursor: text;
   min-width: 1ch;
 }
+.consult-page .c-final .c-ed,
+.consult-page .c-panel .c-ed {
+  outline-color: rgba(255, 255, 255, 0.45);
+}
 .consult-page .c-ed:hover {
-  outline-color: var(--c-red);
+  outline-color: var(--c-blue);
 }
 .consult-page .c-ed:focus {
-  outline: 2px solid var(--c-red);
-  background: rgba(220, 38, 38, 0.06);
+  outline: 2px solid var(--c-blue);
+  background: rgba(23, 74, 139, 0.08);
 }
 .consult-page .c-ed:empty::before {
   content: '(empty, click to type)';
   color: var(--c-muted);
 }
-.consult-page .c-stages.is-editing .c-stage-reveal {
-  opacity: 1;
-  transform: none;
-}
-.consult-page .c-stages.is-editing .c-stage {
-  cursor: default;
+.consult-page .c-fill {
+  font-family: ui-monospace, Consolas, monospace;
+  color: #b91c1c;
 }
 .consult-page .c-photo.is-editable {
   cursor: pointer;
-  position: relative;
+  border: 2px dashed var(--c-blue);
 }
 .consult-page .c-photo-hint {
   position: absolute;
   inset: auto 8px 8px 8px;
   padding: 6px 10px;
   border-radius: 8px;
-  background: rgba(23, 19, 15, 0.82);
+  background: rgba(16, 35, 63, 0.85);
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 700;

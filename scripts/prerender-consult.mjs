@@ -44,7 +44,8 @@ const pageCss = assets.find((f) => /^BusinessConsultation-.*\.css$/.test(f));
 const preloads = [
   `<link data-prerender="true" rel="preconnect" href="https://fonts.googleapis.com" />`,
   `<link data-prerender="true" rel="preconnect" href="https://fonts.gstatic.com" crossorigin />`,
-  `<link data-prerender="true" rel="stylesheet" href="${esc(meta.fontCss)}" />`,
+  // Non-blocking: first paint uses the system fallback, then swaps to Roboto when it arrives.
+  `<link data-prerender="true" rel="stylesheet" href="${esc(meta.fontCss)}" media="print" onload="this.media='all'" />`,
   pageJs && `<link rel="modulepreload" crossorigin href="/assets/${pageJs}" />`,
   pageCss && `<link rel="stylesheet" crossorigin href="/assets/${pageCss}" />`,
 ]
@@ -56,18 +57,18 @@ const preloads = [
 // React replaces it with identical content once it boots; if JavaScript never loads, the
 // visitor still sees the headline. The booking form and everything below need JS.
 const shell = `<div class="consult-page">
-      <header class="c-header">
+      <header class="c-header"><div class="c-container c-header-in">
         <a href="/" class="c-brand" aria-label="Klinik Ara 24 Jam home"><img src="/consult-logo.png" alt="" width="40" height="40" /><span>Klinik Ara 24 Jam</span></a>
         <a href="/" class="c-back">Main site</a>
-      </header>
+      </div></header>
       <main>
-        <section class="c-section c-hero" aria-labelledby="c-h1">
-          <p class="c-chip">${esc(hero.chip)}</p>
-          <p class="c-soap"><span class="c-soap-letter">S</span><span class="c-soap-word">Subjective</span></p>
-          <h1 id="c-h1" class="c-h1">${esc(hero.h1Lead)} <em>${esc(hero.h1Em)}</em></h1>
-          <p class="c-lede">${esc(hero.lede)}</p>
+        <section class="c-hero" aria-labelledby="c-h1"><div class="c-container c-hero-grid"><div class="c-hero-copy">
+          <p class="c-eyebrow">${esc(hero.eyebrow)}</p>
+          <h1 id="c-h1" class="c-h1"><span>${esc(hero.h1Lead)}</span> <span class="c-h1-em">${esc(hero.h1Em)}</span></h1>
           <p class="c-sub">${esc(hero.sub)}</p>
-        </section>
+          <p class="c-desc">${esc(hero.desc)}</p>
+          <div class="c-actions"><a href="#book" class="c-btn c-btn--primary">${esc(hero.ctaPrimary)}</a><a href="#discuss" class="c-btn c-btn--ghost">${esc(hero.ctaSecondary)}</a></div>
+        </div></div></section>
       </main>
     </div>`;
 
